@@ -62,5 +62,26 @@ namespace CafeteriaInsti.ViewModels
         {
             Total = _carritoService.GetTotal();
         }
+
+        [RelayCommand]
+        private void IncrementarCantidad(ItemCarrito item)
+        {
+            item.Cantidad++;
+            _carritoService.ActualizarCantidad(item.Producto.Id, item.Cantidad);
+            CalcularTotal();
+        }
+
+        [RelayCommand]
+        private void DecrementarCantidad(ItemCarrito item)
+        {
+            if (item.Cantidad > 1)
+            {
+                item.Cantidad--;
+                _carritoService.ActualizarCantidad(item.Producto.Id, item.Cantidad);
+                CalcularTotal();
+            }
+        }
+
+
     }
 }

@@ -16,12 +16,20 @@
                             <Label Text="{Binding Producto.Precio, StringFormat='{0:C}'}" FontSize="Small" TextColor="Gray" />
                         </VerticalStackLayout>
 
-                        <Stepper Grid.Column="1"
-                                  Value="{Binding Cantidad}"
-                                  Minimum="1"
-                                  Increment="1"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center" />
+                        <HorizontalStackLayout Grid.Column="1" Spacing="10">
+                            <Button Text="-"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                CommandParameter="{Binding .}"
+                                WidthRequest="40" />
+                            <Label Text="{Binding Cantidad}"
+                                VerticalOptions="Center"
+                                WidthRequest="30"
+                                HorizontalTextAlignment="Center"/>
+                            <Button Text="+"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                CommandParameter="{Binding .}"
+                                WidthRequest="40" />
+                        </HorizontalStackLayout>
 
                         <Button Grid.Column="2"
                                 Text="Eliminar"

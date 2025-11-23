@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ViewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             x:DataType="ViewModels:ListaProductosViewModel"
+             x:Class="CafeteriaInsti.Views.ListaProductosPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="Auto,*" Padding="10">
+
+        <!-- Encabezado -->
+        <Label Grid.Row="0" 
+               Text="Menú de la Cafetería" 
+               FontSize="24" 
+               FontAttributes="Bold" 
+               HorizontalOptions="Center" 
+               Margin="0,10,0,20" />
+
+        <!-- Lista de productos -->
+        <CollectionView Grid.Row="1" 
+                       ItemsSource="{Binding Productos}"
+                       SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Producto">
+                    <Frame Padding="15" 
+                           Margin="10,5" 
+                           CornerRadius="10" 
+                           HasShadow="True"
+                           BackgroundColor="White">
+
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+
+                            <!-- NOMBRE -->
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Text="{Binding Nombre}"
+                                   FontSize="20"
+                                   FontAttributes="Bold"
+                                   TextColor="Black"/>
+
+                            <!-- CATEGORÍA -->
+                            <Label Grid.Row="1" Grid.Column="0"
+                                   Text="{Binding Categoria}"
+                                   FontSize="14"
+                                   TextColor="Purple"
+                                   FontAttributes="Italic"
+                                   Margin="0,5,0,0"/>
+
+                            <!-- DESCRIPCIÓN -->
+                            <Label Grid.Row="2" Grid.Column="0"
+                                   Text="{Binding Descripcion}"
+                                   FontSize="14"
+                                   TextColor="Gray"
+                                   LineBreakMode="WordWrap"
+                                   Margin="0,5,0,0"/>
+
+                            <!-- PRECIO -->
+                            <Label Grid.Row="3" Grid.Column="0"
+                                   Text="{Binding Precio, StringFormat='{0:C}'}"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   TextColor="#512BD4"
+                                   Margin="0,10,0,0"/>
+
+                            <!-- BOTÓN VER -->
+                            <Button Grid.Row="0" 
+                                    Grid.RowSpan="4"
+                                    Grid.Column="1"
+                                    Text="Ver"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ViewModels:ListaProductosViewModel}}, Path=GoToDetailsCommand}"
+                                    CommandParameter="{Binding .}"
+                                    VerticalOptions="Center"
+                                    WidthRequest="80"
+                                    HeightRequest="60"
+                                    FontSize="16"
+                                    BackgroundColor="#512BD4"
+                                    TextColor="White"
+                                    CornerRadius="10"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Mensaje si está vacío -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="10">
+                    <Label Text="❌ NO HAY PRODUCTOS"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="Red"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+    </Grid>
+</ContentPage>
