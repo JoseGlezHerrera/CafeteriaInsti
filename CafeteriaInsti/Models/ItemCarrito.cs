@@ -1,13 +1,15 @@
 ﻿// Models/ItemCarrito.cs
-using CafeteriaInsti.Models;
-
-namespace CafeteriaInsti.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-public partial class ItemCarrito : ObservableObject
+namespace CafeteriaInsti.Models
 {
-    public Producto Producto { get; set; } = new Producto();
+    // ✅ CORREGIDO: Ahora hereda de ObservableObject
+    public partial class ItemCarrito : ObservableObject
+    {
+        public Producto Producto { get; set; } = new Producto();
 
-    [ObservableProperty]
-    private int _cantidad; // ✅ Ahora notifica cambios
+        // ✅ CORREGIDO: Ahora usa [ObservableProperty] para notificar cambios
+        [ObservableProperty]
+        private int _cantidad;
+    }
 }

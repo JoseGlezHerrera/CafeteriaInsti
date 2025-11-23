@@ -8,7 +8,7 @@ namespace CafeteriaInsti
         {
             InitializeComponent();
 
-            // ✅ REGISTRAR LA RUTA
+            // ✅ REGISTRAR LA RUTA PARA NAVEGACIÓN
             Routing.RegisterRoute(nameof(DetalleProductoPage), typeof(DetalleProductoPage));
         }
     }

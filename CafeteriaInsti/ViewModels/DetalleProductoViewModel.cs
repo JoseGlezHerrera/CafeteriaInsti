@@ -22,8 +22,9 @@ namespace CafeteriaInsti.ViewModels
             _carritoService = carritoService;
         }
 
+        // ✅ CORREGIDO: Ahora es async Task con await
         [RelayCommand]
-        private async Task AnadirAlCarritoAsync() // ✅ Cambiar a async Task
+        private async Task AnadirAlCarritoAsync()
         {
             if (Cantidad > 0)
             {
@@ -32,8 +33,10 @@ namespace CafeteriaInsti.ViewModels
                     _carritoService.AnadirAlCarrito(Producto);
                 }
 
-                // ✅ Usar await
+                // ✅ Usar await correctamente
                 await Shell.Current.DisplayAlert("Añadido", $"{Cantidad} x {Producto.Nombre} añadido al carrito", "OK");
+
+                // ✅ Usar await correctamente
                 await Shell.Current.GoToAsync("..");
             }
         }
