@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:converters="clr-namespace:CafeteriaInsti.Converters"
+             x:DataType="viewModels:DetalleProductoViewModel"
+             x:Class="CafeteriaInsti.Views.DetalleProductoPage"
+             Title="{Binding Producto.Nombre}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <Grid Padding="20" RowDefinitions="Auto, Auto, Auto, Auto, Auto, *">
+            <Image Grid.Row="0"
+                   Source="{Binding Producto.UrlImagen}"
+                   Aspect="AspectFill"
+                   HeightRequest="250"
+                   HorizontalOptions="Center" />
+
+            <Label Grid.Row="1"
+                   Text="{Binding Producto.Nombre}"
+                   FontSize="Title"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0" />
+
+            <Label Grid.Row="2"
+                   Text="{Binding Producto.Descripcion}"
+                   FontSize="Medium"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Grid.Row="3"
+                   Text="{Binding Producto.Precio, StringFormat='Precio: {0:C}'}"
+                   FontSize="Large"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0" />
+
+            <HorizontalStackLayout Grid.Row="4"
+                                    HorizontalOptions="Center"
+                                    Spacing="20"
+                                    Margin="0,20,0,0">
+                <Button Text="-"
+                        Command="{Binding DecrementarCantidadCommand}"
+                        WidthRequest="50" />
+                <Label Text="{Binding Cantidad}"
+                       FontSize="Large"
+                       VerticalOptions="Center" />
+                <Button Text="+"
+                        Command="{Binding IncrementarCantidadCommand}"
+                        WidthRequest="50" />
+            </HorizontalStackLayout>
+
+            <Button Grid.Row="5"
+                    Text="Añadir al Carrito"
+                    Command="{Binding AnadirAlCarritoCommand}"
+                    IsVisible="{Binding Producto.Disponible}"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="End"
+                    Margin="0,20,0,0" />
+
+            <Label Grid.Row="5"
+                   Text="Producto no disponible"
+                   IsVisible="{Binding Producto.Disponible, Converter={StaticResource InverseBoolConverter}}"
+                   TextColor="Red"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="End" />
+        </Grid>
+    </ScrollView>
+</ContentPage>

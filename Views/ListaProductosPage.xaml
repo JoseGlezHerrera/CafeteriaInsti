@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ViewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:DataType="ViewModels:ListaProductosViewModel"
+             x:Class="CafeteriaInsti.Views.ListaProductosPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="Auto, *">
+        <Label Grid.Row="0" Text="Menú de la Cafetería" FontSize="Large" FontAttributes="Bold" HorizontalOptions="Center" Padding="10" />
+
+        <RefreshView Grid.Row="1" IsRefreshing="{Binding IsBusy}" Command="{Binding LoadProductosCommand}">
+            <CollectionView ItemsSource="{Binding Productos}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="15" RowDefinitions="Auto, Auto" ColumnDefinitions="Auto, *, Auto">
+                            <Image Grid.RowSpan="3"
+                                   Source="{Binding UrlImagen}"
+                                   Aspect="AspectFill"
+                                   HeightRequest="80"
+                                   WidthRequest="80" />
+
+                            <Label Grid.Column="1"
+                                   Text="{Binding Nombre}"
+                                   FontSize="Medium"
+                                   FontAttributes="Bold"
+                                   LineBreakMode="TailTruncation" />
+
+                            <Label Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="{Binding Descripcion}"
+                                   FontSize="Small"
+                                   TextColor="Gray"
+                                   LineBreakMode="WordWrap" />
+
+                            <Label Grid.Row="2"
+                                   Grid.Column="1"
+                                   Text="{Binding Precio, StringFormat='{0:C}'}"
+                                   FontSize="Medium"
+                                   FontAttributes="Bold"
+                                   VerticalOptions="End" />
+
+                            <Button Grid.Row="0"
+                                    Grid.RowSpan="3"
+                                    Grid.Column="2"
+                                    Text="Ver"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=GoToDetailsCommand}"
+                                    CommandParameter="{Binding .}"
+                                    HorizontalOptions="End"
+                                    VerticalOptions="Center"
+                                    Margin="10,0,0,0" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

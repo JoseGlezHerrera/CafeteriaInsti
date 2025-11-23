@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:DataType="viewModels:CarritoViewModel"
+             x:Class="CafeteriaInsti.Views.CarritoPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="*, Auto">
+        <CollectionView Grid.Row="0" ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="15" ColumnDefinitions="*, Auto, Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="5">
+                            <Label Text="{Binding Producto.Nombre}" FontSize="Medium" FontAttributes="Bold" />
+                            <Label Text="{Binding Producto.Precio, StringFormat='{0:C}'}" FontSize="Small" TextColor="Gray" />
+                        </VerticalStackLayout>
+
+                        <Stepper Grid.Column="1"
+                                  Value="{Binding Cantidad}"
+                                  Minimum="1"
+                                  Increment="1"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
+
+                        <Button Grid.Column="2"
+                                Text="Eliminar"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=EliminarItemCommand}"
+                                CommandParameter="{Binding Producto.Id}"
+                                HorizontalOptions="End"
+                                VerticalOptions="Center" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <VerticalStackLayout Grid.Row="1" Padding="20" Spacing="10">
+            <Label Text="Total:"
+                   FontSize="Large"
+                   FontAttributes="Bold" />
+            <Label Text="{Binding Total, StringFormat='{0:C}'}"
+                   FontSize="Large"
+                   FontAttributes="Bold"
+                   HorizontalOptions="End" />
+            <Button Text="Finalizar Pedido"
+                    Command="{Binding FinalizarPedidoCommand}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
