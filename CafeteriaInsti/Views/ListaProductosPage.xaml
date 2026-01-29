@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             xmlns:converters="clr-namespace:CafeteriaInsti.Converters"
+             x:Class="CafeteriaInsti.Views.ListaProductosPage"
+             x:DataType="viewModels:ListaProductosViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:CategoryBackgroundConverter x:Key="CategoryBackgroundConverter"/>
+            <converters:CategoryTextConverter x:Key="CategoryTextConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        
+        <!-- Barra de búsqueda -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="White" 
+               Padding="15" 
+               Margin="10,10,10,0"
+               CornerRadius="15"
+               HasShadow="True">
+            <SearchBar Placeholder="Buscar productos..." 
+                       Text="{Binding TextoBusqueda}"
+                       SearchCommand="{Binding BuscarCommand}"
+                       HeightRequest="45"/>
+        </Frame>
+
+        <!-- Filtros de categoría -->
+        <ScrollView Grid.Row="1" 
+                    Orientation="Horizontal" 
+                    Margin="10,10,10,5"
+                    HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="10" Padding="5">
+                <Button Text="? Bebidas Calientes" 
+                        Clicked="OnCategoriaClicked"
+                        BackgroundColor="#FFF3E0"
+                        TextColor="#D84315"
+                        CornerRadius="20"
+                        Padding="15,8"/>
+                <Button Text="?? Bebidas Frías" 
+                        Clicked="OnCategoriaClicked"
+                        BackgroundColor="#E3F2FD"
+                        TextColor="#1976D2"
+                        CornerRadius="20"
+                        Padding="15,8"/>
+                <Button Text="?? Postres" 
+                        Clicked="OnCategoriaClicked"
+                        BackgroundColor="#FCE4EC"
+                        TextColor="#C2185B"
+                        CornerRadius="20"
+                        Padding="15,8"/>
+                <Button Text="?? Snacks" 
+                        Clicked="OnCategoriaClicked"
+                        BackgroundColor="#F1F8E9"
+                        TextColor="#689F38"
+                        CornerRadius="20"
+                        Padding="15,8"/>
+                <Button Text="??? Todas" 
+                        Clicked="OnCategoriaClicked"
+                        BackgroundColor="#F5F5F5"
+                        TextColor="#424242"
+                        CornerRadius="20"
+                        Padding="15,8"/>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- Lista de productos -->
+        <CollectionView Grid.Row="2" 
+                        ItemsSource="{Binding Productos}"
+                        SelectionMode="None"
+                        Margin="10,0,10,10">
+            
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" 
+                                Span="2" 
+                                HorizontalItemSpacing="10" 
+                                VerticalItemSpacing="10"/>
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Producto">
+                    <Frame Padding="0" 
+                           CornerRadius="15" 
+                           HasShadow="True"
+                           BackgroundColor="{Binding Categoria, Converter={StaticResource CategoryBackgroundConverter}}">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=GoToDetailsCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Frame.GestureRecognizers>
+
+                        <Grid RowDefinitions="150,Auto,Auto,Auto" Padding="10">
+                            
+                            <!-- Imagen del producto -->
+                            <Image Grid.Row="0" 
+                                   Source="{Binding UrlImagen}"
+                                   Aspect="AspectFill"
+                                   HeightRequest="150"
+                                   WidthRequest="150"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+
+                            <!-- Categoría con emoji -->
+                            <Frame Grid.Row="0" 
+                                   BackgroundColor="White"
+                                   Padding="8,4"
+                                   CornerRadius="10"
+                                   HasShadow="False"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Start"
+                                   Margin="5">
+                                <Label Text="{Binding Categoria, Converter={StaticResource CategoryTextConverter}}" 
+                                       FontSize="20"/>
+                            </Frame>
+
+                            <!-- Nombre del producto -->
+                            <Label Grid.Row="1" 
+                                   Text="{Binding Nombre}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   LineBreakMode="TailTruncation"
+                                   MaxLines="2"
+                                   Margin="0,10,0,5"
+                                   HorizontalOptions="Center"
+                                   HorizontalTextAlignment="Center"/>
+
+                            <!-- Descripción -->
+                            <Label Grid.Row="2" 
+                                   Text="{Binding Descripcion}"
+                                   FontSize="12"
+                                   TextColor="Gray"
+                                   LineBreakMode="TailTruncation"
+                                   MaxLines="2"
+                                   Margin="0,0,0,5"
+                                   HorizontalOptions="Center"
+                                   HorizontalTextAlignment="Center"/>
+
+                            <!-- Precio -->
+                            <Label Grid.Row="3" 
+                                   Text="{Binding Precio, StringFormat='{0:C}'}"
+                                   FontSize="20"
+                                   FontAttributes="Bold"
+                                   TextColor="#512BD4"
+                                   HorizontalOptions="Center"
+                                   Margin="0,5,0,0"/>
+
+                            <!-- Indicador no disponible -->
+                            <Frame Grid.Row="0" Grid.RowSpan="4"
+                                   IsVisible="{Binding Disponible, Converter={StaticResource InverseBoolConverter}}"
+                                   BackgroundColor="#80000000"
+                                   CornerRadius="15"
+                                   Padding="0">
+                                <Label Text="No disponible" 
+                                       TextColor="White"
+                                       FontAttributes="Bold"
+                                       FontSize="16"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       Rotation="-15"/>
+                            </Frame>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Vista vacía -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="20"
+                                    Margin="20">
+                    <Label Text="??" 
+                           FontSize="80" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="No se encontraron productos" 
+                           FontSize="20" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Intenta con otra búsqueda o categoría" 
+                           FontSize="16" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Indicador de carga -->
+        <ActivityIndicator Grid.Row="2" 
+                          IsRunning="{Binding IsBusy}"
+                          IsVisible="{Binding IsBusy}"
+                          Color="#512BD4"
+                          VerticalOptions="Center"
+                          HorizontalOptions="Center"/>
+    </Grid>
+</ContentPage>

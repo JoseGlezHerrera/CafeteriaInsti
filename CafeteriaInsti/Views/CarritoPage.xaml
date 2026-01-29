@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             x:DataType="viewModels:CarritoViewModel"
+             x:Class="CafeteriaInsti.Views.CarritoPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Lista de items del carrito -->
+        <CollectionView Grid.Row="0" ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:ItemCarrito">
+                    <Frame Padding="15" Margin="10,5" CornerRadius="10" HasShadow="True" BackgroundColor="White">
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
+
+                            <!-- Información del producto -->
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                                <Label Text="{Binding Producto.Nombre}" 
+                                       FontSize="18" 
+                                       FontAttributes="Bold" />
+                                <Label Text="{Binding Producto.Precio, StringFormat='{0:C} c/u'}" 
+                                       FontSize="14" 
+                                       TextColor="Gray" />
+                            </VerticalStackLayout>
+
+                            <!-- Botón eliminar -->
+                            <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                    Text="🗑️"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=EliminarItemCommand}"
+                                    CommandParameter="{Binding Producto.Id}"
+                                    WidthRequest="50" 
+                                    HeightRequest="50"
+                                    BackgroundColor="Red"
+                                    TextColor="White"
+                                    CornerRadius="25"
+                                    VerticalOptions="Center" />
+
+                            <!-- Controles de cantidad -->
+                            <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Spacing="10">
+                                <Button Text="-"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                        CommandParameter="{Binding .}"
+                                        WidthRequest="40" 
+                                        HeightRequest="40"
+                                        CornerRadius="20" />
+
+                                <Label Text="{Binding Cantidad}"
+                                       VerticalOptions="Center"
+                                       WidthRequest="40"
+                                       HorizontalTextAlignment="Center"
+                                       FontSize="18" 
+                                       FontAttributes="Bold"/>
+
+                                <Button Text="+"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                        CommandParameter="{Binding .}"
+                                        WidthRequest="40" 
+                                        HeightRequest="40"
+                                        CornerRadius="20" />
+
+                                <!-- Subtotal -->
+                                <Label VerticalOptions="Center"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="#512BD4"
+                                       Margin="20,0,0,0">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="Subtotal: " />
+                                            <Span Text="{Binding Subtotal, StringFormat='{0:C}'}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Mensaje cuando el carrito está vacío -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="20">
+                    <Label Text="🛒" 
+                           FontSize="80" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Tu carrito está vacío" 
+                           FontSize="20" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Añade productos desde el menú" 
+                           FontSize="16" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Panel inferior con total y botón -->
+        <Frame Grid.Row="1" 
+               BackgroundColor="#512BD4" 
+               CornerRadius="15" 
+               Padding="20" 
+               Margin="10" 
+               HasShadow="True">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+
+                <Label Grid.Column="0" Grid.Row="0"
+                       Text="Total:" 
+                       FontSize="20" 
+                       TextColor="White" 
+                       FontAttributes="Bold"/>
+
+                <Label Grid.Column="1" Grid.Row="0"
+                       Text="{Binding Total, StringFormat='{0:C}'}" 
+                       FontSize="24" 
+                       TextColor="White" 
+                       FontAttributes="Bold"/>
+
+                <Button Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
+                        Text="Finalizar Pedido"
+                        Command="{Binding FinalizarPedidoCommand}"
+                        BackgroundColor="White"
+                        TextColor="#512BD4"
+                        FontSize="18"
+                        HeightRequest="50"
+                        CornerRadius="10"
+                        Margin="0,10,0,0"/>
+            </Grid>
+        </Frame>
+    </Grid>
+</ContentPage>

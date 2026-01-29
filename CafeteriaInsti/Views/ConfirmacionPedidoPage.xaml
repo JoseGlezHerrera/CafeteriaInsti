@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:DataType="viewModels:ConfirmacionPedidoViewModel"
+             x:Class="CafeteriaInsti.Views.ConfirmacionPedidoPage"
+             Title="Pedido Confirmado"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="20">
+        
+        <!-- Contenido principal -->
+        <VerticalStackLayout Grid.Row="0" 
+                            VerticalOptions="Center"
+                            Spacing="30">
+            
+            <!-- Icono de éxito -->
+            <Label Text="?" 
+                   FontSize="120" 
+                   HorizontalOptions="Center"/>
+
+            <Label Text="¡Pedido Realizado!" 
+                   FontSize="32" 
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"/>
+
+            <!-- Número de pedido -->
+            <Frame BackgroundColor="#F0F0F0" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Número de Pedido" 
+                           FontSize="16" 
+                           TextColor="Gray"
+                           HorizontalOptions="Center"/>
+                    <Label Text="{Binding NumeroPedido}" 
+                           FontSize="36" 
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Detalles del pedido -->
+            <Frame BorderColor="#512BD4" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <Grid RowDefinitions="Auto,Auto,Auto" 
+                      ColumnDefinitions="*,Auto"
+                      RowSpacing="15">
+                    
+                    <Label Grid.Row="0" Grid.Column="0"
+                           Text="Total del pedido:" 
+                           FontSize="18"/>
+                    <Label Grid.Row="0" Grid.Column="1"
+                           Text="{Binding Total, StringFormat='{0:C}'}" 
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"/>
+
+                    <Label Grid.Row="1" Grid.Column="0"
+                           Text="Artículos:" 
+                           FontSize="18"/>
+                    <Label Grid.Row="1" Grid.Column="1"
+                           Text="{Binding CantidadItems}" 
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+
+                    <Label Grid.Row="2" Grid.Column="0"
+                           Text="Hora estimada:" 
+                           FontSize="18"/>
+                    <Label Grid.Row="2" Grid.Column="1"
+                           Text="{Binding HoraEstimada, StringFormat='{0:HH:mm}'}" 
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+                </Grid>
+            </Frame>
+
+            <Label Text="Recibirás una notificación cuando tu pedido esté listo" 
+                   FontSize="14" 
+                   TextColor="Gray"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"/>
+
+        </VerticalStackLayout>
+
+        <!-- Botones -->
+        <VerticalStackLayout Grid.Row="1" Spacing="15">
+            
+            <Button Text="Compartir Pedido"
+                    Command="{Binding CompartirPedidoCommand}"
+                    BackgroundColor="White"
+                    TextColor="#512BD4"
+                    BorderColor="#512BD4"
+                    BorderWidth="2"
+                    HeightRequest="55"
+                    CornerRadius="15"
+                    FontAttributes="Bold"
+                    FontSize="16"/>
+
+            <Button Text="Volver al Menú"
+                    Command="{Binding VolverAlMenuCommand}"
+                    BackgroundColor="#512BD4"
+                    TextColor="White"
+                    HeightRequest="55"
+                    CornerRadius="15"
+                    FontAttributes="Bold"
+                    FontSize="16"/>
+            
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentPage>

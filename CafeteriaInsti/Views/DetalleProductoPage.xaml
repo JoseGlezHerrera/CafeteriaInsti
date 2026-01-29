@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:converters="clr-namespace:CafeteriaInsti.Converters"
+             x:DataType="viewModels:DetalleProductoViewModel"
+             x:Class="CafeteriaInsti.Views.DetalleProductoPage"
+             Title="{Binding Producto.Nombre}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <!-- Nombre del producto -->
+            <Label Text="{Binding Producto.Nombre}"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"/>
+
+            <!-- Categoría -->
+            <Label Text="{Binding Producto.Categoria}"
+                   FontSize="18"
+                   TextColor="Purple"
+                   FontAttributes="Italic"
+                   HorizontalOptions="Center"/>
+
+            <!-- Descripción -->
+            <Label Text="{Binding Producto.Descripcion}"
+                   FontSize="16"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   TextColor="Gray"
+                   Margin="0,10,0,0"/>
+
+            <!-- Precio -->
+            <Label Text="{Binding Producto.Precio, StringFormat='{0:C}'}"
+                   FontSize="40"
+                   FontAttributes="Bold"
+                   TextColor="#512BD4"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0"/>
+
+            <!-- Selector de cantidad -->
+            <Frame BorderColor="#512BD4"
+                   CornerRadius="15"
+                   Padding="20"
+                   HasShadow="False"
+                   Margin="0,20,0,0">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Cantidad"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"/>
+
+                    <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+                        <!-- Botón decrementar -->
+                        <Button Text="-"
+                                Command="{Binding DecrementarCantidadCommand}"
+                                WidthRequest="60"
+                                HeightRequest="60"
+                                FontSize="28"
+                                CornerRadius="30"
+                                BackgroundColor="#512BD4"
+                                TextColor="White"/>
+
+                        <!-- Cantidad -->
+                        <Label Text="{Binding Cantidad}"
+                               FontSize="36"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center"
+                               WidthRequest="80"
+                               HorizontalTextAlignment="Center"/>
+
+                        <!-- Botón incrementar -->
+                        <Button Text="+"
+                                Command="{Binding IncrementarCantidadCommand}"
+                                WidthRequest="60"
+                                HeightRequest="60"
+                                FontSize="28"
+                                CornerRadius="30"
+                                BackgroundColor="#512BD4"
+                                TextColor="White"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Botón añadir al carrito -->
+            <Button Text="Añadir al Carrito"
+                    Command="{Binding AnadirAlCarritoCommand}"
+                    IsVisible="{Binding Producto.Disponible}"
+                    FontSize="20"
+                    HeightRequest="65"
+                    CornerRadius="15"
+                    BackgroundColor="#512BD4"
+                    TextColor="White"
+                    Margin="0,30,0,0"/>
+
+            <!-- Mensaje producto no disponible -->
+            <Frame IsVisible="{Binding Producto.Disponible, Converter={StaticResource InverseBoolConverter}}"
+                   BackgroundColor="#FFE5E5"
+                   BorderColor="Red"
+                   CornerRadius="10"
+                   Padding="20"
+                   Margin="0,30,0,0">
+                <Label Text="⚠️ Producto no disponible"
+                       TextColor="Red"
+                       FontAttributes="Bold"
+                       FontSize="18"
+                       HorizontalOptions="Center"/>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
