@@ -5,18 +5,25 @@ namespace CafeteriaInsti.Views
 {
     public partial class FavoritosPage : ContentPage
     {
-        private readonly FavoritosViewModel _viewModel;
-
-        public FavoritosPage(FavoritosViewModel viewModel)
+        public FavoritosPage()
         {
             InitializeComponent();
-            BindingContext = _viewModel = viewModel;
         }
 
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            _viewModel.CargarFavoritos();
+            
+            if (BindingContext == null)
+            {
+                BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<FavoritosViewModel>();
+            }
+            
+            if (BindingContext is FavoritosViewModel viewModel)
+            {
+                viewModel.CargarFavoritos();
+            }
         }
     }
 }
+

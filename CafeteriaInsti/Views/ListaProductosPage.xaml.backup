@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             xmlns:converters="clr-namespace:CafeteriaInsti.Converters"
+             xmlns:behaviors="clr-namespace:CafeteriaInsti.Behaviors"
+             x:Class="CafeteriaInsti.Views.ListaProductosPage"
+             x:DataType="viewModels:ListaProductosViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:CategoryBackgroundConverter x:Key="CategoryBackgroundConverter"/>
+            <converters:CategoryTextConverter x:Key="CategoryTextConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:BoolToHeartConverter x:Key="BoolToHeartConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        
+        <!-- Barra de busqueda mejorada -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="White" 
+               Padding="15" 
+               Margin="15,15,15,10"
+               CornerRadius="20"
+               HasShadow="False"
+               BorderColor="#E0E0E0">
+            <Frame.Shadow>
+                <Shadow Brush="Black"
+                        Opacity="0.08"
+                        Radius="12"
+                        Offset="0,2"/>
+            </Frame.Shadow>
+            <Grid ColumnDefinitions="*,Auto">
+                <SearchBar Grid.Column="0"
+                           Placeholder="Buscar productos, ingredientes..." 
+                           Text="{Binding TextoBusqueda}"
+                           SearchCommand="{Binding BuscarCommand}"
+                           HeightRequest="45"
+                           BackgroundColor="Transparent"
+                           PlaceholderColor="#999999"/>
+                <Button Grid.Column="1"
+                        Text="{Binding MostrarFiltrosAvanzados, StringFormat='{0}'}"
+                        Command="{Binding ToggleFiltrosAvanzadosCommand}"
+                        BackgroundColor="#512BD4"
+                        TextColor="White"
+                        CornerRadius="15"
+                        Padding="20,0"
+                        Margin="10,0,0,0"
+                        FontSize="14"
+                        FontAttributes="Bold">
+                    <Button.Shadow>
+                        <Shadow Brush="#512BD4"
+                                Opacity="0.3"
+                                Radius="10"
+                                Offset="0,4"/>
+                    </Button.Shadow>
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarFiltrosAvanzados}" Value="True">
+                            <Setter Property="Text" Value="Cerrar"/>
+                            <Setter Property="BackgroundColor" Value="#FF5722"/>
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarFiltrosAvanzados}" Value="False">
+                            <Setter Property="Text" Value="Filtros"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Grid>
+        </Frame>
+
+        <!-- Panel de filtros avanzados (expansible) con diseño mejorado -->
+        <Frame Grid.Row="1" 
+               IsVisible="{Binding MostrarFiltrosAvanzados}"
+               BackgroundColor="White"
+               Padding="20"
+               Margin="15,0"
+               CornerRadius="20"
+               HasShadow="False"
+               BorderColor="#E0E0E0">
+            <Frame.Shadow>
+                <Shadow Brush="Black"
+                        Opacity="0.08"
+                        Radius="12"
+                        Offset="0,2"/>
+            </Frame.Shadow>
+            <VerticalStackLayout Spacing="15">
+                <Label Text="Opciones de Filtrado" 
+                       FontSize="18" 
+                       FontAttributes="Bold"
+                       TextColor="#1A1A1A"/>
+                
+                <BoxView HeightRequest="1" 
+                         BackgroundColor="#E0E0E0"
+                         Margin="0,5"/>
+                
+                <Label Text="Ordenar por:" 
+                       FontSize="14" 
+                       FontAttributes="Bold"
+                       TextColor="#666666"/>
+                <Frame BackgroundColor="#F5F5F5"
+                       Padding="10"
+                       CornerRadius="12"
+                       HasShadow="False">
+                    <Picker ItemsSource="{Binding OpcionesOrden}"
+                            SelectedItem="{Binding OrdenSeleccionado}"
+                            FontSize="14"
+                            TextColor="#1A1A1A"/>
+                </Frame>
+                
+                <Button Text="Limpiar Filtros"
+                        Command="{Binding RestablecerFiltrosCommand}"
+                        BackgroundColor="#FF5722"
+                        TextColor="White"
+                        HeightRequest="48"
+                        CornerRadius="12"
+                        FontSize="15"
+                        FontAttributes="Bold"
+                        Margin="0,10,0,0">
+                    <Button.Shadow>
+                        <Shadow Brush="#FF5722"
+                                Opacity="0.3"
+                                Radius="10"
+                                Offset="0,4"/>
+                    </Button.Shadow>
+                </Button>
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- Filtros rapidos con diseño mejorado -->
+        <Frame Grid.Row="1"
+               IsVisible="{Binding MostrarFiltrosAvanzados, Converter={StaticResource InverseBoolConverter}}"
+               BackgroundColor="White"
+               Padding="15,12"
+               Margin="15,0"
+               CornerRadius="20"
+               HasShadow="False"
+               BorderColor="#E0E0E0">
+            <HorizontalStackLayout Spacing="20" 
+                                  HorizontalOptions="Center">
+                <Frame Padding="10,8"
+                       CornerRadius="15"
+                       BackgroundColor="#FFF3E0"
+                       HasShadow="False">
+                    <HorizontalStackLayout Spacing="8">
+                        <CheckBox IsChecked="{Binding SoloOfertas}"
+                                  Color="#FF5722"/>
+                        <Label Text="Ofertas" 
+                               VerticalOptions="Center"
+                               TextColor="#FF5722"
+                               FontSize="14"
+                               FontAttributes="Bold"/>
+                    </HorizontalStackLayout>
+                </Frame>
+                
+                <Frame Padding="10,8"
+                       CornerRadius="15"
+                       BackgroundColor="#E8F5E9"
+                       HasShadow="False">
+                    <HorizontalStackLayout Spacing="8">
+                        <CheckBox IsChecked="{Binding SoloDisponibles}"
+                                  Color="#4CAF50"/>
+                        <Label Text="Disponibles" 
+                               VerticalOptions="Center"
+                               TextColor="#4CAF50"
+                               FontSize="14"
+                               FontAttributes="Bold"/>
+                    </HorizontalStackLayout>
+                </Frame>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!-- Filtros de categoria con diseño moderno -->
+        <ScrollView Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    Margin="15,10,15,5"
+                    HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="10" Padding="5">
+                <Frame Padding="0" HasShadow="False" CornerRadius="20">
+                    <Button Text="Bebidas Calientes" 
+                            Command="{Binding SeleccionarCategoriaCommand}"
+                            CommandParameter="Bebidas Calientes"
+                            BackgroundColor="#FFF3E0"
+                            TextColor="#D84315"
+                            CornerRadius="20"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            Padding="18,10"
+                            BorderWidth="0"/>
+                </Frame>
+                <Frame Padding="0" HasShadow="False" CornerRadius="20">
+                    <Button Text="Bebidas Frias" 
+                            Command="{Binding SeleccionarCategoriaCommand}"
+                            CommandParameter="Bebidas Frias"
+                            BackgroundColor="#E3F2FD"
+                            TextColor="#1976D2"
+                            CornerRadius="20"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            Padding="18,10"
+                            BorderWidth="0"/>
+                </Frame>
+                <Frame Padding="0" HasShadow="False" CornerRadius="20">
+                    <Button Text="Postres" 
+                            Command="{Binding SeleccionarCategoriaCommand}"
+                            CommandParameter="Postres"
+                            BackgroundColor="#FCE4EC"
+                            TextColor="#C2185B"
+                            CornerRadius="20"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            Padding="18,10"
+                            BorderWidth="0"/>
+                </Frame>
+                <Frame Padding="0" HasShadow="False" CornerRadius="20">
+                    <Button Text="Snacks" 
+                            Command="{Binding SeleccionarCategoriaCommand}"
+                            CommandParameter="Snacks"
+                            BackgroundColor="#F1F8E9"
+                            TextColor="#689F38"
+                            CornerRadius="20"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            Padding="18,10"
+                            BorderWidth="0"/>
+                </Frame>
+                <Frame Padding="0" HasShadow="False" CornerRadius="20">
+                    <Button Text="Todas" 
+                            Command="{Binding SeleccionarCategoriaCommand}"
+                            CommandParameter="Todas"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            CornerRadius="20"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            Padding="18,10"
+                            BorderWidth="0"/>
+                </Frame>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- Lista de productos - SIMPLIFICADO PARA DEBUG -->
+        <CollectionView Grid.Row="3" 
+                        ItemsSource="{Binding Productos}"
+                        SelectionMode="None"
+                        Margin="10,0,10,10"
+                        BackgroundColor="LightBlue">
+            
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" 
+                                Span="2" 
+                                HorizontalItemSpacing="10" 
+                                VerticalItemSpacing="10"/>
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Producto">
+                    <!-- TEMPLATE ULTRA SIMPLE PARA DEBUG -->
+                    <Frame BackgroundColor="Red" 
+                           Padding="20"
+                           Margin="10"
+                           HeightRequest="100">
+                        <Label Text="{Binding Nombre}" 
+                               FontSize="20"
+                               TextColor="White"
+                               FontAttributes="Bold"/>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+                        <Frame.Shadow>
+                            <Shadow Brush="Black"
+                                    Opacity="0.15"
+                                    Radius="15"
+                                    Offset="0,5"/>
+                        </Frame.Shadow>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=GoToDetailsCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Frame.GestureRecognizers>
+
+                        <Grid RowDefinitions="160,Auto,Auto,Auto" Padding="0">
+                            
+                            <!-- Contenedor de imagen con gradiente y fallback -->
+                            <Grid Grid.Row="0">
+                                <!-- Color de fondo como fallback -->
+                                <BoxView BackgroundColor="#F5F5F5"/>
+                                
+                                <!-- Imagen del producto con error handling -->
+                                <Image Source="{Binding UrlImagen}"
+                                       Aspect="AspectFill"
+                                       HeightRequest="160"
+                                       WidthRequest="200">
+                                    <Image.Triggers>
+                                        <DataTrigger TargetType="Image" Binding="{Binding UrlImagen}" Value="">
+                                            <Setter Property="Source" Value="dotnet_bot.png"/>
+                                        </DataTrigger>
+                                    </Image.Triggers>
+                                </Image>
+                                
+                                <!-- Icono de placeholder si no hay imagen -->
+                                <Label Text="☕"
+                                       FontSize="80"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       TextColor="#CCCCCC"
+                                       IsVisible="False">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding UrlImagen}" Value="">
+                                            <Setter Property="IsVisible" Value="True"/>
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                
+                                <!-- Gradiente sutil sobre la imagen -->
+                                <BoxView>
+                                    <BoxView.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="Transparent" Offset="0.0"/>
+                                            <GradientStop Color="#20000000" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </BoxView.Background>
+                                </BoxView>
+                            </Grid>
+
+                            <!-- Boton de favorito centrado correctamente -->
+                            <Frame Grid.Row="0"
+                                   BackgroundColor="White"
+                                   Padding="0"
+                                   CornerRadius="22"
+                                   HasShadow="False"
+                                   WidthRequest="44"
+                                   HeightRequest="44"
+                                   HorizontalOptions="Start"
+                                   VerticalOptions="Start"
+                                   Margin="10">
+                                <Frame.Shadow>
+                                    <Shadow Brush="Black"
+                                            Opacity="0.15"
+                                            Radius="8"
+                                            Offset="0,2"/>
+                                </Frame.Shadow>
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=ToggleFavoritoCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Frame.GestureRecognizers>
+                                <!-- Corazon GRIS por defecto, perfectamente centrado -->
+                                <Label Text="♥"
+                                       FontSize="22"
+                                       TextColor="#CCCCCC"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
+                                       Margin="0"/>
+                            </Frame>
+
+                            <!-- Badge de categoria (esquina superior derecha) -->
+                            <Frame Grid.Row="0" 
+                                   BackgroundColor="#512BD4"
+                                   Padding="10,5"
+                                   CornerRadius="12"
+                                   HasShadow="False"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Start"
+                                   Margin="10">
+                                <Label Text="{Binding Categoria, Converter={StaticResource CategoryTextConverter}}" 
+                                       FontSize="10"
+                                       FontAttributes="Bold"
+                                       TextColor="White"/>
+                            </Frame>
+
+                            <!-- Contenido de la tarjeta -->
+                            <VerticalStackLayout Grid.Row="1" 
+                                                Padding="15,12"
+                                                Spacing="8">
+                                
+                                <!-- Nombre del producto -->
+                                <Label Text="{Binding Nombre}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="#1A1A1A"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"/>
+
+                                <!-- Descripcion -->
+                                <Label Text="{Binding Descripcion}"
+                                       FontSize="12"
+                                       TextColor="#666666"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       Margin="0,0,0,5"/>
+
+                                <!-- Precio con oferta -->
+                                <VerticalStackLayout Spacing="4"
+                                                    HorizontalOptions="Center">
+                                    
+                                    <!-- Badge de descuento (solo si hay oferta) -->
+                                    <Frame IsVisible="{Binding TieneDescuento}"
+                                           BackgroundColor="#FF5722"
+                                           Padding="8,3"
+                                           CornerRadius="8"
+                                           HasShadow="False"
+                                           HorizontalOptions="Center">
+                                        <Label Text="{Binding PorcentajeDescuento, StringFormat='-{0}%'}"
+                                               FontSize="11"
+                                               FontAttributes="Bold"
+                                               TextColor="White"/>
+                                    </Frame>
+                                    
+                                    <!-- Precio original tachado (solo si hay oferta) -->
+                                    <Label Text="{Binding PrecioOriginal, StringFormat='{0:C}'}"
+                                           IsVisible="{Binding TieneDescuento}"
+                                           FontSize="13"
+                                           TextColor="#999999"
+                                           TextDecorations="Strikethrough"
+                                           HorizontalOptions="Center"/>
+                                    
+                                    <!-- Precio actual -->
+                                    <Label Text="{Binding Precio, StringFormat='{0:C}'}"
+                                           FontSize="22"
+                                           FontAttributes="Bold"
+                                           TextColor="#512BD4"
+                                           HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+
+                            <!-- Indicador no disponible mejorado -->
+                            <Grid Grid.Row="0" Grid.RowSpan="4"
+                                  IsVisible="{Binding Disponible, Converter={StaticResource InverseBoolConverter}}">
+                                <!-- Overlay semitransparente gris -->
+                                <BoxView BackgroundColor="#AA666666"
+                                         CornerRadius="20"/>
+                                
+                                <!-- Badge "No disponible" -->
+                                <Frame BackgroundColor="#E53935"
+                                       Padding="15,8"
+                                       CornerRadius="12"
+                                       HasShadow="False"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       BorderColor="White"
+                                       BorderWidth="2">
+                                    <Label Text="No disponible" 
+                                           TextColor="White"
+                                           FontAttributes="Bold"
+                                           FontSize="15"
+                                           HorizontalTextAlignment="Center"/>
+                            </Grid>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Vista vacía DEBUG -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="20"
+                                    Margin="20">
+                    <Label Text="??" 
+                           FontSize="80" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="No se encontraron productos" 
+                           FontSize="20" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Intenta con otra b�squeda o categor�a" 
+                           FontSize="16" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Indicador de carga -->
+        <ActivityIndicator Grid.Row="3" 
+                          IsRunning="{Binding IsBusy}"
+                          IsVisible="{Binding IsBusy}"
+                          Color="#512BD4"
+                          VerticalOptions="Center"
+                          HorizontalOptions="Center"/>
+    </Grid>
+</ContentPage>

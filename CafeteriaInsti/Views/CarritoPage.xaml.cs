@@ -5,20 +5,27 @@ namespace CafeteriaInsti.Views
 {
     public partial class CarritoPage : ContentPage
     {
-        private readonly CarritoViewModel _viewModel;
-
-        public CarritoPage(CarritoViewModel viewModel)
+        public CarritoPage()
         {
             InitializeComponent();
-            BindingContext = _viewModel = viewModel;
         }
 
-        // ? NUEVO: Actualizar carrito cada vez que se muestra la página
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            System.Diagnostics.Debug.WriteLine("[INFO] CarritoPage - OnAppearing");
-            _viewModel.ActualizarCarrito();
+            
+            // Obtener el ViewModel desde DI si no existe
+            if (BindingContext == null)
+            {
+                BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<CarritoViewModel>();
+            }
+            
+            // Actualizar carrito
+            if (BindingContext is CarritoViewModel viewModel)
+            {
+                System.Diagnostics.Debug.WriteLine("[INFO] CarritoPage - OnAppearing");
+                viewModel.ActualizarCarrito();
+            }
         }
     }
 }

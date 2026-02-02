@@ -91,4 +91,10 @@
   </MauiXaml>
 </ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Views\ListaProductosPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </None>
+	</ItemGroup>
+
 </Project>

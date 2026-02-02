@@ -5,10 +5,18 @@ namespace CafeteriaInsti.Views
 {
     public partial class HistorialPedidosPage : ContentPage
     {
-        public HistorialPedidosPage(HistorialPedidosViewModel viewModel)
+        public HistorialPedidosPage()
         {
             InitializeComponent();
-            BindingContext = viewModel;
+        }
+
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext == null)
+            {
+                BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<HistorialPedidosViewModel>();
+            }
         }
     }
 }

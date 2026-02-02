@@ -32,13 +32,16 @@ public static class MauiProgram
 
         // --- REGISTRO DE SERVICIOS ---
         // Registramos los servicios como Singleton para que solo haya una instancia en toda la app
+        System.Diagnostics.Debug.WriteLine("[MAUI] Registrando servicios...");
         builder.Services.AddSingleton<ProductoService>();
         builder.Services.AddSingleton<CarritoService>();
         builder.Services.AddSingleton<FavoritosService>();
         builder.Services.AddSingleton<PedidoService>(); // ✅ NUEVO
+        System.Diagnostics.Debug.WriteLine("[MAUI] Servicios registrados");
 
         // --- REGISTRO DE VIEWMODELS ---
         // Registramos los ViewModels como Transient para que se cree una nueva instancia cada vez que navegamos a la página
+        System.Diagnostics.Debug.WriteLine("[MAUI] Registrando ViewModels...");
         builder.Services.AddTransient<ListaProductosViewModel>();
         builder.Services.AddTransient<DetalleProductoViewModel>();
         builder.Services.AddTransient<CarritoViewModel>();
@@ -46,9 +49,11 @@ public static class MauiProgram
         builder.Services.AddTransient<HistorialPedidosViewModel>(); // ✅ NUEVO
         builder.Services.AddTransient<FavoritosViewModel>(); // ✅ NUEVO
         builder.Services.AddTransient<InformacionViewModel>(); // ✅ NUEVO
+        System.Diagnostics.Debug.WriteLine("[MAUI] ViewModels registrados");
 
         // --- REGISTRO DE PÁGINAS (VIEWS) ---
         // Registramos las páginas para que la inyección de dependencias pueda inyectar los ViewModels en sus constructores
+        System.Diagnostics.Debug.WriteLine("[MAUI] Registrando páginas...");
         builder.Services.AddTransient<ListaProductosPage>();
         builder.Services.AddTransient<DetalleProductoPage>();
         builder.Services.AddTransient<CarritoPage>();
@@ -56,6 +61,7 @@ public static class MauiProgram
         builder.Services.AddTransient<HistorialPedidosPage>(); // ✅ NUEVO
         builder.Services.AddTransient<FavoritosPage>(); // ✅ NUEVO
         builder.Services.AddTransient<InformacionPage>(); // ✅ NUEVO
+        System.Diagnostics.Debug.WriteLine("[MAUI] Páginas registradas");
 
         return builder.Build();
     }

@@ -5,10 +5,10 @@ namespace CafeteriaInsti.Views
 {
     public partial class DetalleProductoPage : ContentPage
     {
-        public DetalleProductoPage(DetalleProductoViewModel viewModel)
+        public DetalleProductoPage()
         {
             InitializeComponent();
-            BindingContext = viewModel;
+            BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<DetalleProductoViewModel>();
         }
     }
 }

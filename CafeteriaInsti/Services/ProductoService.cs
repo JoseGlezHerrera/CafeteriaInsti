@@ -9,12 +9,15 @@ namespace CafeteriaInsti.Services
 
         public ProductoService()
         {
+            System.Diagnostics.Debug.WriteLine("[ProductoService] Constructor llamado");
             // Cargamos los productos al crear el servicio
             CargarProductos();
+            System.Diagnostics.Debug.WriteLine($"[ProductoService] Productos cargados: {_productos.Count}");
         }
 
         public List<Producto> GetProductos()
         {
+            System.Diagnostics.Debug.WriteLine($"[ProductoService.GetProductos] Devolviendo {_productos.Count} productos");
             return _productos;
         }
 

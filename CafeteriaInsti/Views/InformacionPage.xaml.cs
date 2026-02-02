@@ -5,10 +5,18 @@ namespace CafeteriaInsti.Views
 {
     public partial class InformacionPage : ContentPage
     {
-        public InformacionPage(InformacionViewModel viewModel)
+        public InformacionPage()
         {
             InitializeComponent();
-            BindingContext = viewModel;
+        }
+
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            if (BindingContext == null)
+            {
+                BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<InformacionViewModel>();
+            }
         }
     }
 }

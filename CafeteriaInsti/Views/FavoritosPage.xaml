@@ -24,81 +24,140 @@
 
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:Producto">
-                    <Frame Padding="10" 
-                           CornerRadius="15" 
+                    <Frame Padding="0" 
+                           CornerRadius="20" 
                            HasShadow="True"
-                           BackgroundColor="White">
+                           BackgroundColor="White"
+                           Margin="5">
+                        <Frame.Shadow>
+                            <Shadow Brush="Black"
+                                    Opacity="0.15"
+                                    Radius="15"
+                                    Offset="0,5"/>
+                        </Frame.Shadow>
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer 
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FavoritosViewModel}}, Path=GoToDetailsCommand}"
                                 CommandParameter="{Binding .}"/>
                         </Frame.GestureRecognizers>
 
-                        <Grid RowDefinitions="150,Auto,Auto,Auto,Auto" Padding="5">
+                        <Grid RowDefinitions="160,Auto,Auto,Auto" Padding="0">
                             
-                            <!-- Imagen del producto -->
-                            <Image Grid.Row="0" 
-                                   Source="{Binding UrlImagen}"
-                                   Aspect="AspectFill"
-                                   HeightRequest="150"
-                                   HorizontalOptions="Center"/>
+                            <!-- Contenedor de imagen -->
+                            <Grid Grid.Row="0">
+                                <BoxView BackgroundColor="#F5F5F5"/>
+                                <Image Source="{Binding UrlImagen}"
+                                       Aspect="AspectFill"
+                                       HeightRequest="160"
+                                       WidthRequest="200"/>
+                                <BoxView>
+                                    <BoxView.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="Transparent" Offset="0.0"/>
+                                            <GradientStop Color="#20000000" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </BoxView.Background>
+                                </BoxView>
+                            </Grid>
 
-                            <!-- Boton quitar de favoritos -->
-                            <Button Grid.Row="0" 
-                                    Text="X"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FavoritosViewModel}}, Path=QuitarDeFavoritosCommand}"
-                                    CommandParameter="{Binding .}"
-                                    BackgroundColor="#E91E63"
-                                    TextColor="White"
-                                    FontSize="20"
-                                    FontAttributes="Bold"
-                                    WidthRequest="40"
-                                    HeightRequest="40"
-                                    CornerRadius="20"
-                                    Padding="0"
-                                    HorizontalOptions="End"
-                                    VerticalOptions="Start"
-                                    Margin="5"/>
+                            <!-- Boton quitar de favoritos - ROJO porque está en favoritos -->
+                            <Frame Grid.Row="0"
+                                   BackgroundColor="White"
+                                   Padding="0"
+                                   CornerRadius="22"
+                                   HasShadow="False"
+                                   WidthRequest="44"
+                                   HeightRequest="44"
+                                   HorizontalOptions="Start"
+                                   VerticalOptions="Start"
+                                   Margin="10">
+                                <Frame.Shadow>
+                                    <Shadow Brush="Black"
+                                            Opacity="0.15"
+                                            Radius="8"
+                                            Offset="0,2"/>
+                                </Frame.Shadow>
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FavoritosViewModel}}, Path=QuitarDeFavoritosCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Frame.GestureRecognizers>
+                                <!-- Corazon ROJO porque está en favoritos -->
+                                <Label Text="?"
+                                       FontSize="22"
+                                       TextColor="#E91E63"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
+                                       Margin="0"/>
+                            </Frame>
 
-                            <!-- Nombre del producto -->
-                            <Label Grid.Row="1" 
-                                   Text="{Binding Nombre}"
-                                   FontSize="16"
-                                   FontAttributes="Bold"
-                                   LineBreakMode="TailTruncation"
-                                   MaxLines="2"
-                                   Margin="0,10,0,5"
-                                   HorizontalTextAlignment="Center"/>
+                            <!-- Badge de categoria -->
+                            <Frame Grid.Row="0" 
+                                   BackgroundColor="#512BD4"
+                                   Padding="10,5"
+                                   CornerRadius="12"
+                                   HasShadow="False"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Start"
+                                   Margin="10">
+                                <Label Text="{Binding Categoria}" 
+                                       FontSize="10"
+                                       FontAttributes="Bold"
+                                       TextColor="White"/>
+                            </Frame>
 
-                            <!-- Categoría -->
-                            <Label Grid.Row="2" 
-                                   Text="{Binding Categoria}"
-                                   FontSize="12"
-                                   TextColor="Gray"
-                                   Margin="0,0,0,5"
-                                   HorizontalTextAlignment="Center"/>
+                            <!-- Contenido -->
+                            <VerticalStackLayout Grid.Row="1" 
+                                                Padding="15,12"
+                                                Spacing="8">
+                                
+                                <Label Text="{Binding Nombre}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="#1A1A1A"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"/>
 
-                            <!-- Precio -->
-                            <Label Grid.Row="3" 
-                                   Text="{Binding Precio, StringFormat='{0:C}'}"
-                                   FontSize="18"
-                                   FontAttributes="Bold"
-                                   TextColor="#512BD4"
-                                   HorizontalTextAlignment="Center"
-                                   Margin="0,5,0,5"/>
-
-                            <!-- Valoracion -->
-                            <HorizontalStackLayout Grid.Row="4" 
-                                                  HorizontalOptions="Center"
-                                                  Spacing="5">
-                                <Label Text="*" FontSize="18" TextColor="#FFC107" FontAttributes="Bold"/>
-                                <Label Text="{Binding Valoracion, StringFormat='{0:0.0}'}" 
+                                <Label Text="{Binding Descripcion}"
                                        FontSize="12"
-                                       TextColor="Gray"/>
-                                <Label Text="{Binding NumeroValoraciones, StringFormat='({0})'}" 
-                                       FontSize="12"
-                                       TextColor="Gray"/>
-                            </HorizontalStackLayout>
+                                       TextColor="#666666"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       Margin="0,0,0,5"/>
+
+                                <!-- Precio con oferta -->
+                                <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                                    <Frame IsVisible="{Binding TieneDescuento}"
+                                           BackgroundColor="#FF5722"
+                                           Padding="8,3"
+                                           CornerRadius="8"
+                                           HasShadow="False"
+                                           HorizontalOptions="Center">
+                                        <Label Text="{Binding PorcentajeDescuento, StringFormat='-{0}%'}"
+                                               FontSize="11"
+                                                FontAttributes="Bold"
+                                                TextColor="White"/>
+                                    </Frame>
+                                    <Label Text="{Binding PrecioOriginal, StringFormat='{0:C}'}"
+                                           IsVisible="{Binding TieneDescuento}"
+                                           FontSize="13"
+                                           TextColor="#999999"
+                                           TextDecorations="Strikethrough"
+                                           HorizontalOptions="Center"/>
+                                    <Label Text="{Binding Precio, StringFormat='{0:C}'}"
+                                           FontSize="22"
+                                           FontAttributes="Bold"
+                                           TextColor="#512BD4"
+                                           HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
                         </Grid>
                     </Frame>
                 </DataTemplate>

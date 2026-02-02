@@ -41,27 +41,6 @@ namespace CafeteriaInsti.ViewModels
         [ObservableProperty]
         private bool _mostrarFiltrosAvanzados = false;
 
-        // ✅ Método que se ejecuta automáticamente cuando cambia CategoriaSeleccionada
-        partial void OnCategoriaSeleccionadaChanged(string value)
-        {
-            AplicarFiltros();
-        }
-
-        partial void OnSoloOfertasChanged(bool value)
-        {
-            AplicarFiltros();
-        }
-
-        partial void OnSoloDisponiblesChanged(bool value)
-        {
-            AplicarFiltros();
-        }
-
-        partial void OnOrdenSeleccionadoChanged(string value)
-        {
-            AplicarFiltros();
-        }
-
         public List<string> Categorias { get; } = new List<string>
         {
             "Todas",
@@ -88,56 +67,52 @@ namespace CafeteriaInsti.ViewModels
             _productos = new ObservableCollection<Producto>();
             _todosLosProductos = new List<Producto>();
             
-            // Suscribirse a cambios en favoritos para refrescar UI
-            _favoritosService.FavoritoToggled += (s, e) =>
-            {
-                // Forzar actualización de la UI
-                var temp = Productos.ToList();
-                Productos.Clear();
-                foreach (var p in temp)
-                {
-                    Productos.Add(p);
-                }
-            };
+            System.Diagnostics.Debug.WriteLine("[CONSTRUCTOR] ListaProductosViewModel creado");
             
-            CargarProductosInicial();
+            // Cargar productos inmediatamente
+            CargarProductos();
+            
+            System.Diagnostics.Debug.WriteLine($"[CONSTRUCTOR] Productos cargados: {Productos.Count}");
         }
 
-        private void CargarProductosInicial()
+        private void CargarProductos()
         {
+            System.Diagnostics.Debug.WriteLine("[CargarProductos] INICIO");
+            
             try
             {
                 var productos = _productoService.GetProductos();
+                System.Diagnostics.Debug.WriteLine($"[CargarProductos] Productos del servicio: {productos?.Count ?? 0}");
 
                 if (productos != null && productos.Any())
                 {
                     _todosLosProductos = productos.ToList();
+                    System.Diagnostics.Debug.WriteLine($"[CargarProductos] _todosLosProductos tiene: {_todosLosProductos.Count}");
+                    
+                    // Limpiar y agregar todos los productos
+                    Productos.Clear();
+                    System.Diagnostics.Debug.WriteLine($"[CargarProductos] Productos.Clear() ejecutado");
+                    
                     foreach (var producto in productos)
                     {
                         Productos.Add(producto);
+                        System.Diagnostics.Debug.WriteLine($"[CargarProductos] Agregado: {producto.Nombre} (ID: {producto.Id})");
                     }
+                    
+                    System.Diagnostics.Debug.WriteLine($"[CargarProductos] Total productos en Productos collection: {Productos.Count}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ERROR] ProductoService.GetProductos() devolvió NULL o vacío!");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ERROR] Exception: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Exception en CargarProductos: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
             }
-        }
-
-        [RelayCommand]
-        private void LoadProductos()
-        {
-            IsBusy = true;
-            try
-            {
-                var productos = _productoService.GetProductos();
-                _todosLosProductos = productos?.ToList() ?? new List<Producto>();
-                AplicarFiltros();
-            }
-            finally
-            {
-                IsBusy = false;
-            }
+            
+            System.Diagnostics.Debug.WriteLine("[CargarProductos] FIN");
         }
 
         [RelayCommand]
@@ -152,13 +127,16 @@ namespace CafeteriaInsti.ViewModels
             if (!string.IsNullOrEmpty(categoria))
             {
                 CategoriaSeleccionada = categoria;
-                System.Diagnostics.Debug.WriteLine($"[INFO] Categoría seleccionada: {categoria}");
+                System.Diagnostics.Debug.WriteLine($"[INFO] Categoria seleccionada: {categoria}");
+                AplicarFiltros();
             }
         }
 
         private void AplicarFiltros()
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros INICIO ===");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros ===");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Categoria: {CategoriaSeleccionada}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Busqueda: {TextoBusqueda}");
 
             var productosFiltrados = _todosLosProductos.AsEnumerable();
 
@@ -168,14 +146,14 @@ namespace CafeteriaInsti.ViewModels
                 productosFiltrados = productosFiltrados.Where(p => p.Categoria == CategoriaSeleccionada);
             }
 
-            // Filtrar por búsqueda (nombre, descripción, ingredientes)
+            // Filtrar por búsqueda
             if (!string.IsNullOrWhiteSpace(TextoBusqueda))
             {
                 productosFiltrados = productosFiltrados.Where(p =>
                     p.Nombre.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
                     p.Descripcion.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
-                    p.Ingredientes.Any(i => i.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)) ||
-                    p.Alergenos.Any(a => a.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)));
+                    (p.Ingredientes?.Any(i => i.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)) ?? false) ||
+                    (p.Alergenos?.Any(a => a.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)) ?? false));
             }
 
             // Filtrar por precio
@@ -210,14 +188,12 @@ namespace CafeteriaInsti.ViewModels
             }
             
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos filtrados: {Productos.Count}");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros FIN ===");
         }
 
         [RelayCommand]
         private async Task GoToDetailsAsync(Producto producto)
         {
-            if (producto == null)
-                return;
+            if (producto == null) return;
 
             try
             {
@@ -229,7 +205,6 @@ namespace CafeteriaInsti.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ERROR] Navegacion fallo: {ex.Message}");
-                await Shell.Current.DisplayAlertAsync("Error", $"No se pudo navegar: {ex.Message}", "OK");
             }
         }
 
@@ -237,29 +212,10 @@ namespace CafeteriaInsti.ViewModels
         private void ToggleFavorito(Producto producto)
         {
             if (producto == null) return;
-            
             _favoritosService.ToggleFavorito(producto.Id);
-            
-            // Forzar actualización de la UI
-            OnPropertyChanged(nameof(Productos));
-            
-            System.Diagnostics.Debug.WriteLine($"[INFO] Favorito toggled para: {producto.Nombre}");
+            System.Diagnostics.Debug.WriteLine($"[INFO] Favorito toggled: {producto.Nombre}");
         }
 
-        // ✅ NUEVO: Verificar si es favorito
-        public bool IsFavorito(int productoId)
-        {
-            return _favoritosService.IsFavorito(productoId);
-        }
-
-        // ✅ NUEVO: Aplicar filtros de precio
-        [RelayCommand]
-        private void AplicarFiltroPrecio()
-        {
-            AplicarFiltros();
-        }
-
-        // ✅ NUEVO: Restablecer filtros
         [RelayCommand]
         private void RestablecerFiltros()
         {
@@ -270,10 +226,15 @@ namespace CafeteriaInsti.ViewModels
             SoloOfertas = false;
             SoloDisponibles = false;
             OrdenSeleccionado = "Ninguno";
-            AplicarFiltros();
+            
+            // Recargar todos los productos
+            Productos.Clear();
+            foreach (var producto in _todosLosProductos)
+            {
+                Productos.Add(producto);
+            }
         }
 
-        // ✅ NUEVO: Toggle filtros avanzados
         [RelayCommand]
         private void ToggleFiltrosAvanzados()
         {

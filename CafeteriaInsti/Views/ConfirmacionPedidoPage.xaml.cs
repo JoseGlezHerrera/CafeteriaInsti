@@ -5,12 +5,10 @@ namespace CafeteriaInsti.Views
 {
     public partial class ConfirmacionPedidoPage : ContentPage
     {
-        private readonly ConfirmacionPedidoViewModel _viewModel;
-
-        public ConfirmacionPedidoPage(ConfirmacionPedidoViewModel viewModel)
+        public ConfirmacionPedidoPage()
         {
             InitializeComponent();
-            BindingContext = _viewModel = viewModel;
+            BindingContext = App.Current?.Handler?.MauiContext?.Services.GetService<ConfirmacionPedidoViewModel>();
             System.Diagnostics.Debug.WriteLine("[INFO] ConfirmacionPedidoPage - Constructor llamado");
         }
 
@@ -18,9 +16,14 @@ namespace CafeteriaInsti.Views
         {
             base.OnNavigatedTo(args);
             System.Diagnostics.Debug.WriteLine("[INFO] ConfirmacionPedidoPage - OnNavigatedTo");
-            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - NumeroPedido: {_viewModel.NumeroPedido}");
-            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - Total: {_viewModel.Total:C}");
-            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - CantidadItems: {_viewModel.CantidadItems}");
+            
+            if (BindingContext is ConfirmacionPedidoViewModel viewModel)
+            {
+                System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - NumeroPedido: {viewModel.NumeroPedido}");
+                System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - Total: {viewModel.Total:C}");
+                System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedidoPage - CantidadItems: {viewModel.CantidadItems}");
+            }
         }
     }
 }
+
