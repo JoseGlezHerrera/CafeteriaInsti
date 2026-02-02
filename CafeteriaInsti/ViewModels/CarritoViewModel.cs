@@ -136,19 +136,39 @@ namespace CafeteriaInsti.ViewModels
 
                 // Generar número de pedido único
                 var numeroPedido = $"CF{DateTime.Now:yyyyMMddHHmmss}";
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Generando pedido: {numeroPedido}");
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Total: {totalPedido:C}, Cantidad: {cantidadItems}");
 
-                // Limpiamos el carrito
-                _carritoService.LimpiarCarrito();
-
-                // Navegamos a la página de confirmación con los parámetros
+                // Preparar los parámetros de navegación
                 var navigationParameter = new Dictionary<string, object>
                 {
                     { "NumeroPedido", numeroPedido },
                     { "TotalString", totalPedido.ToString() },
-                    { "CantidadItemsString", cantidadItems.ToString() }
+                    { "CantidadItemsString", cantidadItems.ToString() },
+                    { "Timestamp", DateTime.Now.Ticks.ToString() }
                 };
 
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Navegando con parámetros:");
+                System.Diagnostics.Debug.WriteLine($"  - NumeroPedido: {numeroPedido}");
+                System.Diagnostics.Debug.WriteLine($"  - Total: {totalPedido}");
+                System.Diagnostics.Debug.WriteLine($"  - CantidadItems: {cantidadItems}");
+                
+                // SOLUCIÓN DEFINITIVA: Primero volver a la raíz para limpiar el stack de navegación
+                // Esto asegura que siempre se crea una instancia nueva de ConfirmacionPedidoPage
+                await Shell.Current.GoToAsync("//ListaProductosPage");
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Volvimos a la raíz");
+                
+                // Limpiar el carrito ANTES de navegar a la confirmación
+                _carritoService.LimpiarCarrito();
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Carrito limpiado, navegando a confirmación");
+                
+                // Ahora navegar a la página de confirmación con una instancia completamente nueva
                 await Shell.Current.GoToAsync("ConfirmacionPedidoPage", navigationParameter);
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Proceso completado");
             }
             catch (Exception ex)
             {

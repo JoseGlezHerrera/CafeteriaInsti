@@ -14,24 +14,26 @@
                             VerticalOptions="Center"
                             Spacing="30">
             
-            <!-- Icono de éxito -->
-            <Label Text="?" 
+            <!-- Icono de Ã©xito -->
+            <Label Text="âœ“" 
                    FontSize="120" 
+                   TextColor="#28a745"
+                   FontAttributes="Bold"
                    HorizontalOptions="Center"/>
 
-            <Label Text="¡Pedido Realizado!" 
+            <Label Text="Â¡Pedido Realizado!" 
                    FontSize="32" 
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center"/>
 
-            <!-- Número de pedido -->
+            <!-- Nï¿½mero de pedido -->
             <Frame BackgroundColor="#F0F0F0" 
                    CornerRadius="15" 
                    Padding="20"
                    HasShadow="False">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Número de Pedido" 
+                    <Label Text="Nï¿½mero de Pedido" 
                            FontSize="16" 
                            TextColor="Gray"
                            HorizontalOptions="Center"/>
@@ -62,7 +64,7 @@
                            TextColor="#512BD4"/>
 
                     <Label Grid.Row="1" Grid.Column="0"
-                           Text="Artículos:" 
+                           Text="Artï¿½culos:" 
                            FontSize="18"/>
                     <Label Grid.Row="1" Grid.Column="1"
                            Text="{Binding CantidadItems}" 
@@ -79,7 +81,7 @@
                 </Grid>
             </Frame>
 
-            <Label Text="Recibirás una notificación cuando tu pedido esté listo" 
+            <Label Text="Recibirï¿½s una notificaciï¿½n cuando tu pedido estï¿½ listo" 
                    FontSize="14" 
                    TextColor="Gray"
                    HorizontalOptions="Center"
@@ -101,7 +103,7 @@
                     FontAttributes="Bold"
                     FontSize="16"/>
 
-            <Button Text="Volver al Menú"
+            <Button Text="Volver al Menï¿½"
                     Command="{Binding VolverAlMenuCommand}"
                     BackgroundColor="#512BD4"
                     TextColor="White"

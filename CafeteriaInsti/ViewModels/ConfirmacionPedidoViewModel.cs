@@ -7,6 +7,7 @@ namespace CafeteriaInsti.ViewModels
     [QueryProperty(nameof(NumeroPedido), nameof(NumeroPedido))]
     [QueryProperty(nameof(TotalString), nameof(TotalString))]
     [QueryProperty(nameof(CantidadItemsString), nameof(CantidadItemsString))]
+    [QueryProperty(nameof(Timestamp), nameof(Timestamp))] // Nuevo parámetro para forzar navegación fresca
     public partial class ConfirmacionPedidoViewModel : BaseViewModel
     {
         [ObservableProperty]
@@ -20,15 +21,24 @@ namespace CafeteriaInsti.ViewModels
 
         [ObservableProperty]
         private DateTime _horaEstimada;
+        
+        // Parámetro auxiliar para forzar navegación fresca (no se usa en la UI)
+        public string Timestamp { get; set; } = string.Empty;
 
         public string TotalString
         {
             get => Total.ToString();
             set
             {
+                System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - TotalString recibido: {value}");
                 if (decimal.TryParse(value, out var result))
                 {
                     Total = result;
+                    System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - Total asignado: {Total:C}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[WARNING] ConfirmacionPedido - No se pudo parsear TotalString: {value}");
                 }
             }
         }
@@ -38,9 +48,15 @@ namespace CafeteriaInsti.ViewModels
             get => CantidadItems.ToString();
             set
             {
+                System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - CantidadItemsString recibido: {value}");
                 if (int.TryParse(value, out var result))
                 {
                     CantidadItems = result;
+                    System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - CantidadItems asignado: {CantidadItems}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[WARNING] ConfirmacionPedido - No se pudo parsear CantidadItemsString: {value}");
                 }
             }
         }
@@ -49,6 +65,17 @@ namespace CafeteriaInsti.ViewModels
         {
             Title = "Confirmación";
             HoraEstimada = DateTime.Now.AddMinutes(15);
+            System.Diagnostics.Debug.WriteLine("[INFO] ConfirmacionPedido - Constructor llamado");
+            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - Valores iniciales: NumeroPedido={NumeroPedido}, Total={Total:C}, CantidadItems={CantidadItems}");
+        }
+
+        // Este método se llama automáticamente cuando NumeroPedido cambia (gracias a ObservableProperty)
+        partial void OnNumeroPedidoChanged(string value)
+        {
+            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - NumeroPedido cambió a: {value}");
+            // Actualizar la hora estimada cada vez que se recibe un nuevo número de pedido
+            HoraEstimada = DateTime.Now.AddMinutes(15);
+            System.Diagnostics.Debug.WriteLine($"[INFO] ConfirmacionPedido - HoraEstimada actualizada: {HoraEstimada:HH:mm}");
         }
 
         [RelayCommand]
@@ -59,11 +86,11 @@ namespace CafeteriaInsti.ViewModels
                 await Share.Default.RequestAsync(new ShareTextRequest
                 {
                     Title = "Mi Pedido - Cafetería Insti",
-                    Text = $"¡He realizado un pedido en la Cafetería! ??\n\n" +
-                           $"?? Pedido: #{NumeroPedido}\n" +
-                           $"?? Total: {Total:C}\n" +
-                           $"?? Artículos: {CantidadItems}\n" +
-                           $"? Recogida estimada: {HoraEstimada:HH:mm}"
+                    Text = $"He realizado un pedido en la Cafetería!\n\n" +
+                           $"Pedido: #{NumeroPedido}\n" +
+                           $"Total: {Total:C}\n" +
+                           $"Artículos: {CantidadItems}\n" +
+                           $"Recogida estimada: {HoraEstimada:HH:mm}"
                 });
             }
             catch (Exception ex)
