@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Colores para modo oscuro -->
+    <Color x:Key="PrimaryDark">#BB86FC</Color>
+    <Color x:Key="SecondaryDark">#03DAC6</Color>
+    <Color x:Key="BackgroundDark">#121212</Color>
+    <Color x:Key="SurfaceDark">#1E1E1E</Color>
+    <Color x:Key="TextPrimaryDark">#FFFFFF</Color>
+    <Color x:Key="TextSecondaryDark">#B3B3B3</Color>
+
+    <!-- Estilos para modo oscuro -->
+    <Style TargetType="Page" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F5F5F5, Dark={StaticResource BackgroundDark}}" />
+    </Style>
+
+    <Style TargetType="Label" ApplyToDerivedTypes="True">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#000000, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style TargetType="Frame" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light=#512BD4, Dark={StaticResource PrimaryDark}}" />
+    </Style>
+
+    <Style TargetType="Button" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#512BD4, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#FFFFFF, Dark=#000000}}" />
+    </Style>
+
+    <Style TargetType="SearchBar" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#000000, Dark={StaticResource TextPrimaryDark}}" />
+        <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light=#999999, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+</ResourceDictionary>

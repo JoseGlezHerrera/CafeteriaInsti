@@ -45,6 +45,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ConfirmacionPedidoViewModel>();
         builder.Services.AddTransient<HistorialPedidosViewModel>(); // ✅ NUEVO
         builder.Services.AddTransient<FavoritosViewModel>(); // ✅ NUEVO
+        builder.Services.AddTransient<InformacionViewModel>(); // ✅ NUEVO
 
         // --- REGISTRO DE PÁGINAS (VIEWS) ---
         // Registramos las páginas para que la inyección de dependencias pueda inyectar los ViewModels en sus constructores
@@ -54,6 +55,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ConfirmacionPedidoPage>();
         builder.Services.AddTransient<HistorialPedidosPage>(); // ✅ NUEVO
         builder.Services.AddTransient<FavoritosPage>(); // ✅ NUEVO
+        builder.Services.AddTransient<InformacionPage>(); // ✅ NUEVO
 
         return builder.Build();
     }

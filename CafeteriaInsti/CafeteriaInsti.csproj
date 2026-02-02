@@ -64,6 +64,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+  <MauiXaml Update="Resources\Styles\DarkTheme.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
   <MauiXaml Update="Views\CarritoPage.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
@@ -78,6 +81,9 @@
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
   <MauiXaml Update="Views\HistorialPedidosPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\InformacionPage.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
   <MauiXaml Update="Views\ListaProductosPage.xaml">

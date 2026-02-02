@@ -7,134 +7,269 @@
              x:Class="CafeteriaInsti.Views.CarritoPage"
              Title="{Binding Title}">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto" BackgroundColor="#F5F5F5">
 
-        <!-- Lista de items del carrito -->
-        <CollectionView Grid.Row="0" ItemsSource="{Binding Items}">
+        <!-- Lista de items del carrito mejorada -->
+        <CollectionView Grid.Row="0" ItemsSource="{Binding Items}" Margin="0,10">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ItemCarrito">
-                    <Frame Padding="15" Margin="10,5" CornerRadius="10" HasShadow="True" BackgroundColor="White">
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
+                    <Frame Padding="0" 
+                           Margin="15,8" 
+                           CornerRadius="20" 
+                           HasShadow="False"
+                           BackgroundColor="White"
+                           BorderColor="#E0E0E0">
+                        <Frame.Shadow>
+                            <Shadow Brush="Black"
+                                    Opacity="0.08"
+                                    Radius="12"
+                                    Offset="0,2"/>
+                        </Frame.Shadow>
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="100,*,Auto" Padding="15" RowSpacing="12">
 
-                            <!-- Información del producto -->
-                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                            <!-- Imagen del producto -->
+                            <Frame Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                   Padding="0"
+                                   CornerRadius="15"
+                                   HasShadow="False"
+                                   BackgroundColor="#F5F5F5"
+                                   VerticalOptions="Center"
+                                   Margin="0,0,15,0">
+                                <Image Source="{Binding Producto.UrlImagen}"
+                                       Aspect="AspectFill"
+                                       HeightRequest="90"
+                                       WidthRequest="90"/>
+                            </Frame>
+
+                            <!-- Informacion del producto -->
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6" VerticalOptions="Center">
                                 <Label Text="{Binding Producto.Nombre}" 
-                                       FontSize="18" 
-                                       FontAttributes="Bold" />
+                                       FontSize="17" 
+                                       FontAttributes="Bold"
+                                       TextColor="#1A1A1A"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"/>
                                 <Label Text="{Binding Producto.Precio, StringFormat='{0:C} c/u'}" 
                                        FontSize="14" 
-                                       TextColor="Gray" />
+                                       TextColor="#666666"/>
                             </VerticalStackLayout>
 
-                            <!-- Boton eliminar -->
-                            <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                    Text="X"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=EliminarItemCommand}"
-                                    CommandParameter="{Binding Producto.Id}"
-                                    WidthRequest="50" 
-                                    HeightRequest="50"
-                                    BackgroundColor="Red"
-                                    TextColor="White"
-                                    FontSize="20"
-                                    FontAttributes="Bold"
-                                    CornerRadius="25"
-                                    VerticalOptions="Center" />
-
-                            <!-- Controles de cantidad -->
-                            <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Spacing="10">
-                                <Button Text="-"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
-                                        CommandParameter="{Binding .}"
-                                        WidthRequest="40" 
-                                        HeightRequest="40"
-                                        CornerRadius="20" />
-
-                                <Label Text="{Binding Cantidad}"
-                                       VerticalOptions="Center"
-                                       WidthRequest="40"
-                                       HorizontalTextAlignment="Center"
-                                       FontSize="18" 
-                                       FontAttributes="Bold"/>
-
-                                <Button Text="+"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
-                                        CommandParameter="{Binding .}"
-                                        WidthRequest="40" 
-                                        HeightRequest="40"
-                                        CornerRadius="20" />
-
-                                <!-- Subtotal -->
-                                <Label VerticalOptions="Center"
-                                       FontSize="16"
+                            <!-- Boton eliminar mejorado -->
+                            <Frame Grid.Row="0" Grid.Column="2"
+                                   Padding="10"
+                                   CornerRadius="15"
+                                   HasShadow="False"
+                                   BackgroundColor="#FFE5E5"
+                                   VerticalOptions="Start"
+                                   WidthRequest="45"
+                                   HeightRequest="45">
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=EliminarItemCommand}"
+                                        CommandParameter="{Binding Producto.Id}"/>
+                                </Frame.GestureRecognizers>
+                                <Label Text="X"
+                                       FontSize="18"
                                        FontAttributes="Bold"
-                                       TextColor="#512BD4"
-                                       Margin="20,0,0,0">
-                                    <Label.FormattedText>
-                                        <FormattedString>
-                                            <Span Text="Subtotal: " />
-                                            <Span Text="{Binding Subtotal, StringFormat='{0:C}'}" />
-                                        </FormattedString>
-                                    </Label.FormattedText>
-                                </Label>
+                                       TextColor="#FF5722"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       Margin="-2,-4,0,0"/>
+                            </Frame>
+
+                            <!-- Controles de cantidad mejorados -->
+                            <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Spacing="15" HorizontalOptions="Start">
+                                <Frame Padding="0"
+                                       CornerRadius="20"
+                                       HasShadow="False"
+                                       BackgroundColor="#F5F5F5">
+                                    <HorizontalStackLayout Spacing="0">
+                                        <Button Text="-"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                                CommandParameter="{Binding .}"
+                                                WidthRequest="45" 
+                                                HeightRequest="45"
+                                                BackgroundColor="Transparent"
+                                                TextColor="#512BD4"
+                                                FontSize="20"
+                                                FontAttributes="Bold"
+                                                CornerRadius="20"/>
+
+                                        <Label Text="{Binding Cantidad}"
+                                               VerticalOptions="Center"
+                                               WidthRequest="40"
+                                               HorizontalTextAlignment="Center"
+                                               FontSize="18" 
+                                               FontAttributes="Bold"
+                                               TextColor="#1A1A1A"/>
+
+                                        <Button Text="+"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                                CommandParameter="{Binding .}"
+                                                WidthRequest="45" 
+                                                HeightRequest="45"
+                                                BackgroundColor="Transparent"
+                                                TextColor="#512BD4"
+                                                FontSize="20"
+                                                FontAttributes="Bold"
+                                                CornerRadius="20"/>
+                                    </HorizontalStackLayout>
+                                </Frame>
+
+                                <!-- Subtotal destacado -->
+                                <Frame Padding="15,10"
+                                       CornerRadius="12"
+                                       HasShadow="False"
+                                       BackgroundColor="#F0E6FF"
+                                       VerticalOptions="Center">
+                                    <Label FontSize="18"
+                                           FontAttributes="Bold"
+                                           TextColor="#512BD4">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding Subtotal, StringFormat='{0:C}'}"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </Frame>
                             </HorizontalStackLayout>
                         </Grid>
                     </Frame>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
 
-            <!-- Mensaje cuando el carrito está vacío -->
+            <!-- Vista vacia del carrito mejorada -->
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" 
                                     VerticalOptions="Center"
-                                    Spacing="20">
+                                    Spacing="25"
+                                    Padding="40">
+                    <!-- Icono de carrito vacio -->
+                    <Frame BackgroundColor="#F5F5F5"
+                           CornerRadius="70"
+                           HasShadow="False"
+                           Padding="35"
+                           HorizontalOptions="Center"
+                           BorderColor="Transparent">
+                        <Label Text="🛒" 
+                               FontSize="70"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
+                    
+                    <!-- Titulo -->
                     <Label Text="Carrito vacio" 
-                           FontSize="40" 
+                           FontSize="28" 
                            FontAttributes="Bold"
-                           TextColor="Gray"
+                           TextColor="#1A1A1A"
                            HorizontalOptions="Center"/>
-                    <Label Text="Tu carrito esta vacio" 
-                           FontSize="20" 
-                           TextColor="Gray" 
-                           HorizontalOptions="Center"/>
-                    <Label Text="Anade productos desde el menu" 
-                           FontSize="16" 
-                           TextColor="Gray" 
-                           HorizontalOptions="Center"/>
+                    
+                    <!-- Descripcion -->
+                    <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                        <Label Text="Tu carrito esta vacio" 
+                               FontSize="16" 
+                               TextColor="#666666" 
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center"/>
+                        <Label Text="Anade productos desde el menu" 
+                               FontSize="16" 
+                               TextColor="#666666" 
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                    
+                    <!-- Boton para ir al menu -->
+                    <Button Text="Ver Menu"
+                            Command="{Binding GoToMenuCommand}"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            FontSize="16"
+                            FontAttributes="Bold"
+                            Padding="30,12"
+                            CornerRadius="20"
+                            Margin="0,15,0,0"
+                            HorizontalOptions="Center">
+                        <Button.Shadow>
+                            <Shadow Brush="#512BD4"
+                                    Opacity="0.3"
+                                    Radius="10"
+                                    Offset="0,4"/>
+                        </Button.Shadow>
+                    </Button>
                 </VerticalStackLayout>
             </CollectionView.EmptyView>
         </CollectionView>
 
-        <!-- Panel inferior con total y botón -->
-        <Frame Grid.Row="1" 
-               BackgroundColor="#512BD4" 
-               CornerRadius="15" 
-               Padding="20" 
-               Margin="10" 
-               HasShadow="True">
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+        <!-- Panel inferior SIN deformacion -->
+        <Grid Grid.Row="1" 
+              BackgroundColor="White"
+              Padding="20,15,20,20"
+              RowDefinitions="Auto,Auto"
+              RowSpacing="12">
+            <Grid.Shadow>
+                <Shadow Brush="Black"
+                        Opacity="0.1"
+                        Radius="15"
+                        Offset="0,-3"/>
+            </Grid.Shadow>
+            
+            <!-- Frame del total -->
+            <Frame Grid.Row="0"
+                   Padding="20,15"
+                   CornerRadius="15"
+                   HasShadow="False"
+                   BorderColor="Transparent"
+                   Margin="0">
+                <Frame.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#512BD4" Offset="0.0"/>
+                        <GradientStop Color="#7B52D9" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Frame.Background>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
+                    <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                        <Label Text="Total a pagar"
+                               FontSize="12"
+                               TextColor="White"
+                               Opacity="0.85"/>
+                        <Label Text="{Binding Total, StringFormat='{0:C}'}" 
+                               FontSize="26" 
+                               TextColor="White" 
+                               FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Frame Grid.Column="1"
+                           Padding="10,6"
+                           CornerRadius="10"
+                           BackgroundColor="#FFFFFF25"
+                           HasShadow="False"
+                           BorderColor="Transparent"
+                           VerticalOptions="Center">
+                        <Label Text="{Binding Items.Count, StringFormat='{0} items'}"
+                               FontSize="12"
+                               TextColor="White"
+                               FontAttributes="Bold"/>
+                    </Frame>
+                </Grid>
+            </Frame>
 
-                <Label Grid.Column="0" Grid.Row="0"
-                       Text="Total:" 
-                       FontSize="20" 
-                       TextColor="White" 
-                       FontAttributes="Bold"/>
-
-                <Label Grid.Column="1" Grid.Row="0"
-                       Text="{Binding Total, StringFormat='{0:C}'}" 
-                       FontSize="24" 
-                       TextColor="White" 
-                       FontAttributes="Bold"/>
-
-                <Button Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
-                        Text="Finalizar Pedido"
-                        Command="{Binding FinalizarPedidoCommand}"
-                        BackgroundColor="White"
-                        TextColor="#512BD4"
-                        FontSize="18"
-                        HeightRequest="50"
-                        CornerRadius="10"
-                        Margin="0,10,0,0"/>
-            </Grid>
-        </Frame>
+            <!-- Boton finalizar SIN deformacion -->
+            <Button Grid.Row="1"
+                    Text="Finalizar Pedido"
+                    Command="{Binding FinalizarPedidoCommand}"
+                    BackgroundColor="#FF5722"
+                    TextColor="White"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    HeightRequest="52"
+                    CornerRadius="15"
+                    BorderWidth="0">
+                <Button.Shadow>
+                    <Shadow Brush="#FF5722"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="0,3"/>
+                </Button.Shadow>
+            </Button>
+        </Grid>
     </Grid>
 </ContentPage>

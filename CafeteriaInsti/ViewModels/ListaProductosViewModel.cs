@@ -11,6 +11,7 @@ namespace CafeteriaInsti.ViewModels
     public partial class ListaProductosViewModel : BaseViewModel
     {
         private readonly ProductoService _productoService;
+        private readonly FavoritosService _favoritosService;
         private List<Producto> _todosLosProductos;
 
         [ObservableProperty]
@@ -22,8 +23,41 @@ namespace CafeteriaInsti.ViewModels
         [ObservableProperty]
         private string _categoriaSeleccionada = "Todas";
 
+        [ObservableProperty]
+        private decimal _precioMinimo = 0;
+
+        [ObservableProperty]
+        private decimal _precioMaximo = 100;
+
+        [ObservableProperty]
+        private bool _soloOfertas = false;
+
+        [ObservableProperty]
+        private bool _soloDisponibles = false;
+
+        [ObservableProperty]
+        private string _ordenSeleccionado = "Ninguno";
+
+        [ObservableProperty]
+        private bool _mostrarFiltrosAvanzados = false;
+
         // ✅ Método que se ejecuta automáticamente cuando cambia CategoriaSeleccionada
         partial void OnCategoriaSeleccionadaChanged(string value)
+        {
+            AplicarFiltros();
+        }
+
+        partial void OnSoloOfertasChanged(bool value)
+        {
+            AplicarFiltros();
+        }
+
+        partial void OnSoloDisponiblesChanged(bool value)
+        {
+            AplicarFiltros();
+        }
+
+        partial void OnOrdenSeleccionadoChanged(string value)
         {
             AplicarFiltros();
         }
@@ -37,12 +71,35 @@ namespace CafeteriaInsti.ViewModels
             "Snacks"
         };
 
-        public ListaProductosViewModel(ProductoService productoService)
+        public List<string> OpcionesOrden { get; } = new List<string>
         {
-            Title = "Menú de la Cafetería";
+            "Ninguno",
+            "Precio Ascendente",
+            "Precio Descendente",
+            "Nombre A-Z",
+            "Nombre Z-A"
+        };
+
+        public ListaProductosViewModel(ProductoService productoService, FavoritosService favoritosService)
+        {
+            Title = "Menu de la Cafeteria";
             _productoService = productoService;
+            _favoritosService = favoritosService;
             _productos = new ObservableCollection<Producto>();
             _todosLosProductos = new List<Producto>();
+            
+            // Suscribirse a cambios en favoritos para refrescar UI
+            _favoritosService.FavoritoToggled += (s, e) =>
+            {
+                // Forzar actualización de la UI
+                var temp = Productos.ToList();
+                Productos.Clear();
+                foreach (var p in temp)
+                {
+                    Productos.Add(p);
+                }
+            };
+            
             CargarProductosInicial();
         }
 
@@ -102,47 +159,57 @@ namespace CafeteriaInsti.ViewModels
         private void AplicarFiltros()
         {
             System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros INICIO ===");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] CategoriaSeleccionada: '{CategoriaSeleccionada}'");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] TextoBusqueda: '{TextoBusqueda}'");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Total productos: {_todosLosProductos.Count}");
 
             var productosFiltrados = _todosLosProductos.AsEnumerable();
 
             // Filtrar por categoría
             if (CategoriaSeleccionada != "Todas")
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] Filtrando por categoría: {CategoriaSeleccionada}");
-                
-                // Mostrar todas las categorías disponibles
-                foreach (var p in _todosLosProductos)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG]   Producto: {p.Nombre} | Categoría: '{p.Categoria}' | Coincide: {p.Categoria == CategoriaSeleccionada}");
-                }
-                
                 productosFiltrados = productosFiltrados.Where(p => p.Categoria == CategoriaSeleccionada);
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos después de filtrar por categoría: {productosFiltrados.Count()}");
             }
 
-            // Filtrar por búsqueda
+            // Filtrar por búsqueda (nombre, descripción, ingredientes)
             if (!string.IsNullOrWhiteSpace(TextoBusqueda))
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] Filtrando por búsqueda: {TextoBusqueda}");
                 productosFiltrados = productosFiltrados.Where(p =>
                     p.Nombre.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
-                    p.Descripcion.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase));
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos después de filtrar por búsqueda: {productosFiltrados.Count()}");
+                    p.Descripcion.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                    p.Ingredientes.Any(i => i.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)) ||
+                    p.Alergenos.Any(a => a.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase)));
             }
 
-            Productos.Clear();
-            var listaFinal = productosFiltrados.ToList();
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos finales a mostrar: {listaFinal.Count}");
-            
-            foreach (var producto in listaFinal)
+            // Filtrar por precio
+            productosFiltrados = productosFiltrados.Where(p => p.Precio >= _precioMinimo && p.Precio <= _precioMaximo);
+
+            // Filtrar solo ofertas
+            if (_soloOfertas)
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG]   Agregando: {producto.Nombre}");
+                productosFiltrados = productosFiltrados.Where(p => p.TieneDescuento);
+            }
+
+            // Filtrar solo disponibles
+            if (_soloDisponibles)
+            {
+                productosFiltrados = productosFiltrados.Where(p => p.Disponible);
+            }
+
+            // Ordenar
+            productosFiltrados = _ordenSeleccionado switch
+            {
+                "Precio Ascendente" => productosFiltrados.OrderBy(p => p.Precio),
+                "Precio Descendente" => productosFiltrados.OrderByDescending(p => p.Precio),
+                "Nombre A-Z" => productosFiltrados.OrderBy(p => p.Nombre),
+                "Nombre Z-A" => productosFiltrados.OrderByDescending(p => p.Nombre),
+                _ => productosFiltrados
+            };
+
+            Productos.Clear();
+            foreach (var producto in productosFiltrados)
+            {
                 Productos.Add(producto);
             }
             
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos filtrados: {Productos.Count}");
             System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros FIN ===");
         }
 
@@ -161,9 +228,56 @@ namespace CafeteriaInsti.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ERROR] Navegación falló: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Navegacion fallo: {ex.Message}");
                 await Shell.Current.DisplayAlertAsync("Error", $"No se pudo navegar: {ex.Message}", "OK");
             }
+        }
+
+        [RelayCommand]
+        private void ToggleFavorito(Producto producto)
+        {
+            if (producto == null) return;
+            
+            _favoritosService.ToggleFavorito(producto.Id);
+            
+            // Forzar actualización de la UI
+            OnPropertyChanged(nameof(Productos));
+            
+            System.Diagnostics.Debug.WriteLine($"[INFO] Favorito toggled para: {producto.Nombre}");
+        }
+
+        // ✅ NUEVO: Verificar si es favorito
+        public bool IsFavorito(int productoId)
+        {
+            return _favoritosService.IsFavorito(productoId);
+        }
+
+        // ✅ NUEVO: Aplicar filtros de precio
+        [RelayCommand]
+        private void AplicarFiltroPrecio()
+        {
+            AplicarFiltros();
+        }
+
+        // ✅ NUEVO: Restablecer filtros
+        [RelayCommand]
+        private void RestablecerFiltros()
+        {
+            TextoBusqueda = string.Empty;
+            CategoriaSeleccionada = "Todas";
+            PrecioMinimo = 0;
+            PrecioMaximo = 100;
+            SoloOfertas = false;
+            SoloDisponibles = false;
+            OrdenSeleccionado = "Ninguno";
+            AplicarFiltros();
+        }
+
+        // ✅ NUEVO: Toggle filtros avanzados
+        [RelayCommand]
+        private void ToggleFiltrosAvanzados()
+        {
+            MostrarFiltrosAvanzados = !MostrarFiltrosAvanzados;
         }
     }
 }

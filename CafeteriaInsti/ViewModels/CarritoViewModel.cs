@@ -221,5 +221,20 @@ namespace CafeteriaInsti.ViewModels
             
             System.Diagnostics.Debug.WriteLine($"[INFO] Total calculado: {Total:C}");
         }
+
+        // ✅ NUEVO: Comando para navegar al menú desde carrito vacío
+        [RelayCommand]
+        private async Task GoToMenu()
+        {
+            try
+            {
+                // Navegar a la pestaña del menú (ListaProductosPage)
+                await Shell.Current.GoToAsync("//ListaProductosPage");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Error al navegar al menu: {ex.Message}");
+            }
+        }
     }
 }

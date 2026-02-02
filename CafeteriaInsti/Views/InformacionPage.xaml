@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:DataType="viewModels:InformacionViewModel"
+             x:Class="CafeteriaInsti.Views.InformacionPage"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            
+            <!-- Header -->
+            <Label Text="{Binding NombreCafeteria}"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="#512BD4"/>
+
+            <!-- Horarios -->
+            <Frame BorderColor="#512BD4"
+                   CornerRadius="15"
+                   Padding="20"
+                   HasShadow="True">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Horarios"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"/>
+                    
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                        <Label Grid.Row="0" Grid.Column="0" Text="Lunes - Viernes:" FontSize="16"/>
+                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding HorarioLunesViernes}" FontSize="16" FontAttributes="Bold"/>
+                        
+                        <Label Grid.Row="1" Grid.Column="0" Text="Sabado:" FontSize="16"/>
+                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding HorarioSabado}" FontSize="16" FontAttributes="Bold"/>
+                        
+                        <Label Grid.Row="2" Grid.Column="0" Text="Domingo:" FontSize="16"/>
+                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding HorarioDomingo}" FontSize="16" FontAttributes="Bold" TextColor="Red"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Contacto -->
+            <Frame BorderColor="#512BD4"
+                   CornerRadius="15"
+                   Padding="20"
+                   HasShadow="True">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Contacto"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"/>
+                    
+                    <!-- Telefono -->
+                    <Frame BackgroundColor="#F5F5F5"
+                           CornerRadius="10"
+                           Padding="15"
+                           HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding LlamarTelefonoCommand}"/>
+                        </Frame.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="15">
+                            <Label Text="Telefono:"
+                                   FontSize="16"
+                                   VerticalOptions="Center"/>
+                            <Label Text="{Binding Telefono}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="#512BD4"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </Frame>
+
+                    <!-- Email -->
+                    <Frame BackgroundColor="#F5F5F5"
+                           CornerRadius="10"
+                           Padding="15"
+                           HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding EnviarEmailCommand}"/>
+                        </Frame.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="15">
+                            <Label Text="Email:"
+                                   FontSize="16"
+                                   VerticalOptions="Center"/>
+                            <Label Text="{Binding Email}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="#512BD4"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Ubicacion -->
+            <Frame BorderColor="#512BD4"
+                   CornerRadius="15"
+                   Padding="20"
+                   HasShadow="True">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Ubicacion"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"/>
+                    
+                    <Label Text="{Binding Direccion}"
+                           FontSize="16"
+                           HorizontalTextAlignment="Center"/>
+
+                    <Button Text="Abrir en Mapa"
+                            Command="{Binding AbrirMapaCommand}"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            HeightRequest="50"
+                            CornerRadius="10"
+                            Margin="0,10,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Informacion adicional -->
+            <Frame BorderColor="#512BD4"
+                   CornerRadius="15"
+                   Padding="20"
+                   HasShadow="True">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Sobre nosotros"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"/>
+                    
+                    <Label Text="Bienvenido a la cafeteria del instituto. Ofrecemos una amplia variedad de productos frescos y de calidad para toda la comunidad educativa."
+                           FontSize="14"
+                           TextColor="Gray"
+                           HorizontalTextAlignment="Center"/>
+                    
+                    <Label Text="Aceptamos pagos en efectivo y tarjeta."
+                           FontSize="14"
+                           TextColor="Gray"
+                           HorizontalTextAlignment="Center"
+                           Margin="0,10,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

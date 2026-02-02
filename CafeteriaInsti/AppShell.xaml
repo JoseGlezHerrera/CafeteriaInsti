@@ -6,25 +6,60 @@
        Title="Cafetería Insti">
 
     <TabBar>
-        <ShellContent Title="Menú"
-                      Icon="home.png"
+        <ShellContent Title="Menu"
                       ContentTemplate="{DataTemplate views:ListaProductosPage}"
-                      Route="ListaProductosPage" />
+                      Route="ListaProductosPage">
+            <ShellContent.Icon>
+                <FontImageSource Glyph="☰" 
+                                FontFamily="OpenSansRegular"
+                                Size="24"
+                                Color="#512BD4"/>
+            </ShellContent.Icon>
+        </ShellContent>
 
         <ShellContent Title="Favoritos"
-                      Icon="heart.png"
                       ContentTemplate="{DataTemplate views:FavoritosPage}"
-                      Route="FavoritosPage" />
+                      Route="FavoritosPage">
+            <ShellContent.Icon>
+                <FontImageSource Glyph="♥" 
+                                FontFamily="OpenSansRegular"
+                                Size="24"
+                                Color="#E91E63"/>
+            </ShellContent.Icon>
+        </ShellContent>
 
         <ShellContent Title="Carrito"
-                      Icon="cart.png"
                       ContentTemplate="{DataTemplate views:CarritoPage}"
-                      Route="CarritoPage" />
+                      Route="CarritoPage">
+            <ShellContent.Icon>
+                <FontImageSource Glyph="🛒" 
+                                FontFamily="OpenSansRegular"
+                                Size="24"
+                                Color="#512BD4"/>
+            </ShellContent.Icon>
+        </ShellContent>
 
         <ShellContent Title="Pedidos"
-                      Icon="list.png"
                       ContentTemplate="{DataTemplate views:HistorialPedidosPage}"
-                      Route="HistorialPedidosPage" />
+                      Route="HistorialPedidosPage">
+            <ShellContent.Icon>
+                <FontImageSource Glyph="📋" 
+                                FontFamily="OpenSansRegular"
+                                Size="24"
+                                Color="#512BD4"/>
+            </ShellContent.Icon>
+        </ShellContent>
+
+        <ShellContent Title="Info"
+                      ContentTemplate="{DataTemplate views:InformacionPage}"
+                      Route="InformacionPage">
+            <ShellContent.Icon>
+                <FontImageSource Glyph="ℹ" 
+                                FontFamily="OpenSansRegular"
+                                Size="24"
+                                Color="#512BD4"/>
+            </ShellContent.Icon>
+        </ShellContent>
     </TabBar>
 
 </Shell>
