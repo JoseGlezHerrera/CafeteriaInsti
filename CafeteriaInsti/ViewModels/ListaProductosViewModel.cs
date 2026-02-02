@@ -22,11 +22,17 @@ namespace CafeteriaInsti.ViewModels
         [ObservableProperty]
         private string _categoriaSeleccionada = "Todas";
 
+        // ✅ Método que se ejecuta automáticamente cuando cambia CategoriaSeleccionada
+        partial void OnCategoriaSeleccionadaChanged(string value)
+        {
+            AplicarFiltros();
+        }
+
         public List<string> Categorias { get; } = new List<string>
         {
             "Todas",
             "Bebidas Calientes",
-            "Bebidas Frías",
+            "Bebidas Frias",
             "Postres",
             "Snacks"
         };
@@ -83,29 +89,61 @@ namespace CafeteriaInsti.ViewModels
             AplicarFiltros();
         }
 
+        [RelayCommand]
+        private void SeleccionarCategoria(string categoria)
+        {
+            if (!string.IsNullOrEmpty(categoria))
+            {
+                CategoriaSeleccionada = categoria;
+                System.Diagnostics.Debug.WriteLine($"[INFO] Categoría seleccionada: {categoria}");
+            }
+        }
+
         private void AplicarFiltros()
         {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros INICIO ===");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] CategoriaSeleccionada: '{CategoriaSeleccionada}'");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] TextoBusqueda: '{TextoBusqueda}'");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Total productos: {_todosLosProductos.Count}");
+
             var productosFiltrados = _todosLosProductos.AsEnumerable();
 
             // Filtrar por categoría
             if (CategoriaSeleccionada != "Todas")
             {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Filtrando por categoría: {CategoriaSeleccionada}");
+                
+                // Mostrar todas las categorías disponibles
+                foreach (var p in _todosLosProductos)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG]   Producto: {p.Nombre} | Categoría: '{p.Categoria}' | Coincide: {p.Categoria == CategoriaSeleccionada}");
+                }
+                
                 productosFiltrados = productosFiltrados.Where(p => p.Categoria == CategoriaSeleccionada);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos después de filtrar por categoría: {productosFiltrados.Count()}");
             }
 
             // Filtrar por búsqueda
             if (!string.IsNullOrWhiteSpace(TextoBusqueda))
             {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Filtrando por búsqueda: {TextoBusqueda}");
                 productosFiltrados = productosFiltrados.Where(p =>
                     p.Nombre.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
                     p.Descripcion.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase));
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos después de filtrar por búsqueda: {productosFiltrados.Count()}");
             }
 
             Productos.Clear();
-            foreach (var producto in productosFiltrados)
+            var listaFinal = productosFiltrados.ToList();
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Productos finales a mostrar: {listaFinal.Count}");
+            
+            foreach (var producto in listaFinal)
             {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG]   Agregando: {producto.Nombre}");
                 Productos.Add(producto);
             }
+            
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] === AplicarFiltros FIN ===");
         }
 
         [RelayCommand]

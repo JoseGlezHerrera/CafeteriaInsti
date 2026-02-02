@@ -21,11 +21,18 @@ namespace CafeteriaInsti.ViewModels
         {
             Title = "Mi Carrito";
             _carritoService = carritoService;
+            
+            // ✅ CORREGIDO: Usar directamente la colección del servicio (no crear copia)
             _items = _carritoService.Items;
+            
             CalcularTotal();
 
-            // ✅ CORREGIDO: Suscribirse a cambios en la colección
-            _items.CollectionChanged += (s, e) => CalcularTotal();
+            // ✅ Suscribirse a cambios en la colección para recalcular el total automáticamente
+            _carritoService.Items.CollectionChanged += (s, e) => 
+            {
+                System.Diagnostics.Debug.WriteLine($"[INFO] CarritoService.Items cambió - Count: {_carritoService.Items.Count}");
+                CalcularTotal();
+            };
         }
 
         [RelayCommand]
@@ -108,14 +115,27 @@ namespace CafeteriaInsti.ViewModels
                     return;
                 }
 
+                // ✅ NUEVO: Pedir confirmación antes de finalizar el pedido
+                var cantidadItems = Items.Sum(i => i.Cantidad);
+                var totalPedido = Total;
+                var confirmar = await Shell.Current.DisplayAlert(
+                    "Confirmar Pedido",
+                    $"¿Confirmas tu pedido?\n\n• {cantidadItems} artículo(s)\n• Total: {totalPedido:C}\n\n¿Deseas continuar?",
+                    "Sí, Confirmar",
+                    "No, Revisar");
+
+                if (!confirmar)
+                {
+                    // Usuario canceló, se queda en el carrito para revisar
+                    return;
+                }
+
 #if ANDROID || IOS
                 HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
 #endif
 
                 // Generar número de pedido único
                 var numeroPedido = $"CF{DateTime.Now:yyyyMMddHHmmss}";
-                var cantidadItems = Items.Sum(i => i.Cantidad);
-                var totalPedido = Total;
 
                 // Limpiamos el carrito
                 _carritoService.LimpiarCarrito();
@@ -140,6 +160,23 @@ namespace CafeteriaInsti.ViewModels
         private void CalcularTotal()
         {
             Total = _carritoService.GetTotal();
+        }
+
+        // ✅ NUEVO: Método público para actualizar/refrescar el carrito
+        public void ActualizarCarrito()
+        {
+            System.Diagnostics.Debug.WriteLine($"[INFO] ActualizarCarrito llamado");
+            System.Diagnostics.Debug.WriteLine($"[INFO] Items en servicio: {_carritoService.Items.Count}");
+            System.Diagnostics.Debug.WriteLine($"[INFO] Items en ViewModel: {Items.Count}");
+            
+            // Como _items apunta directamente a _carritoService.Items, 
+            // solo necesitamos recalcular el total y notificar cambios
+            CalcularTotal();
+            
+            // Forzar actualización de la UI notificando cambio en la propiedad Items
+            OnPropertyChanged(nameof(Items));
+            
+            System.Diagnostics.Debug.WriteLine($"[INFO] Total calculado: {Total:C}");
         }
     }
 }

@@ -16,17 +16,21 @@ namespace CafeteriaInsti.Services
 
         public void AnadirAlCarrito(Producto producto)
         {
+            System.Diagnostics.Debug.WriteLine($"[INFO] AnadirAlCarrito - Producto: {producto.Nombre}");
+            
             var itemExistente = Items.FirstOrDefault(i => i.Producto.Id == producto.Id);
 
             if (itemExistente != null)
             {
                 // Si el producto ya está en el carrito, aumentamos la cantidad
                 itemExistente.Cantidad++;
+                System.Diagnostics.Debug.WriteLine($"[INFO] Producto existente - Nueva cantidad: {itemExistente.Cantidad}");
             }
             else
             {
                 // Si no, lo añadimos como un nuevo item
                 Items.Add(new ItemCarrito { Producto = producto, Cantidad = 1 });
+                System.Diagnostics.Debug.WriteLine($"[INFO] Producto nuevo agregado - Total items: {Items.Count}");
             }
         }
 
@@ -61,7 +65,9 @@ namespace CafeteriaInsti.Services
 
         public void LimpiarCarrito()
         {
+            System.Diagnostics.Debug.WriteLine($"[INFO] LimpiarCarrito llamado - Items antes: {Items.Count}");
             Items.Clear();
+            System.Diagnostics.Debug.WriteLine($"[INFO] LimpiarCarrito completado - Items después: {Items.Count}");
         }
     }
 }

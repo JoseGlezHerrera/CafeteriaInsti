@@ -28,10 +28,10 @@ namespace CafeteriaInsti.Services
                 new Producto { Id = 2, Nombre = "Café con Leche", Descripcion = "Café con leche cremosa", Precio = 1.80m, UrlImagen = "https://i.ibb.co/02sP6fC/zumo.png", Categoria = "Bebidas Calientes" },
                 new Producto { Id = 3, Nombre = "Chocolate Caliente", Descripcion = "Chocolate con leche y nata", Precio = 2.00m, UrlImagen = "https://i.ibb.co/02sP6fC/zumo.png", Categoria = "Bebidas Calientes" },
                 
-                // Bebidas Frías
-                new Producto { Id = 4, Nombre = "Refresco Cola", Descripcion = "Lata de refresco de cola 33cl", Precio = 1.20m, UrlImagen = "https://i.ibb.co/3p8h8yF/cola.png", Categoria = "Bebidas Frías" },
-                new Producto { Id = 5, Nombre = "Agua Mineral", Descripcion = "Botella de agua 50cl", Precio = 1.00m, UrlImagen = "https://i.ibb.co/h9t0q4Z/agua.png", Categoria = "Bebidas Frías" },
-                new Producto { Id = 6, Nombre = "Zumo de Naranja", Descripcion = "Zumo de naranja natural recién exprimido", Precio = 2.00m, UrlImagen = "https://i.ibb.co/02sP6fC/zumo.png", Categoria = "Bebidas Frías" },
+                // Bebidas Frias
+                new Producto { Id = 4, Nombre = "Refresco Cola", Descripcion = "Lata de refresco de cola 33cl", Precio = 1.20m, UrlImagen = "https://i.ibb.co/3p8h8yF/cola.png", Categoria = "Bebidas Frias" },
+                new Producto { Id = 5, Nombre = "Agua Mineral", Descripcion = "Botella de agua 50cl", Precio = 1.00m, UrlImagen = "https://i.ibb.co/h9t0q4Z/agua.png", Categoria = "Bebidas Frias" },
+                new Producto { Id = 6, Nombre = "Zumo de Naranja", Descripcion = "Zumo de naranja natural recien exprimido", Precio = 2.00m, UrlImagen = "https://i.ibb.co/02sP6fC/zumo.png", Categoria = "Bebidas Frias" },
                 
                 // Postres
                 new Producto { Id = 7, Nombre = "Napolitana de Chocolate", Descripcion = "Hojaldre con crema de chocolate", Precio = 1.80m, UrlImagen = "https://i.ibb.co/6yF1qK4/napolitana.png", Categoria = "Postres" },

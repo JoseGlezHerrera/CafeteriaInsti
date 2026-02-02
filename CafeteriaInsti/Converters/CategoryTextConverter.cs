@@ -12,13 +12,13 @@ namespace CafeteriaInsti.Converters
                 return category switch
                 {
                     "Bebidas Calientes" => "?",
-                    "Bebidas Frías" => "??",
+                    "Bebidas Frias" => "??",
                     "Postres" => "??",
                     "Snacks" => "??",
-                    _ => "??"
+                    _ => "???"
                 };
             }
-            return "??";
+            return "???";
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -12,7 +12,7 @@ namespace CafeteriaInsti.Converters
                 return category switch
                 {
                     "Bebidas Calientes" => Color.FromArgb("#FFF3E0"),
-                    "Bebidas Frías" => Color.FromArgb("#E3F2FD"),
+                    "Bebidas Frias" => Color.FromArgb("#E3F2FD"),
                     "Postres" => Color.FromArgb("#FCE4EC"),
                     "Snacks" => Color.FromArgb("#F1F8E9"),
                     _ => Color.FromArgb("#F5F5F5")
