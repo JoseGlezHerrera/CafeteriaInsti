@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             x:DataType="viewModels:FavoritosViewModel"
+             x:Class="CafeteriaInsti.Views.FavoritosPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="*,Auto">
+        
+        <!-- Lista de favoritos -->
+        <CollectionView Grid.Row="0" 
+                        ItemsSource="{Binding ProductosFavoritos}"
+                        SelectionMode="None"
+                        Margin="10">
+            
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" 
+                                Span="2" 
+                                HorizontalItemSpacing="10" 
+                                VerticalItemSpacing="10"/>
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Producto">
+                    <Frame Padding="10" 
+                           CornerRadius="15" 
+                           HasShadow="True"
+                           BackgroundColor="White">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FavoritosViewModel}}, Path=GoToDetailsCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Frame.GestureRecognizers>
+
+                        <Grid RowDefinitions="150,Auto,Auto,Auto,Auto" Padding="5">
+                            
+                            <!-- Imagen del producto -->
+                            <Image Grid.Row="0" 
+                                   Source="{Binding UrlImagen}"
+                                   Aspect="AspectFill"
+                                   HeightRequest="150"
+                                   HorizontalOptions="Center"/>
+
+                            <!-- Boton quitar de favoritos -->
+                            <Button Grid.Row="0" 
+                                    Text="X"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FavoritosViewModel}}, Path=QuitarDeFavoritosCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#E91E63"
+                                    TextColor="White"
+                                    FontSize="20"
+                                    FontAttributes="Bold"
+                                    WidthRequest="40"
+                                    HeightRequest="40"
+                                    CornerRadius="20"
+                                    Padding="0"
+                                    HorizontalOptions="End"
+                                    VerticalOptions="Start"
+                                    Margin="5"/>
+
+                            <!-- Nombre del producto -->
+                            <Label Grid.Row="1" 
+                                   Text="{Binding Nombre}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   LineBreakMode="TailTruncation"
+                                   MaxLines="2"
+                                   Margin="0,10,0,5"
+                                   HorizontalTextAlignment="Center"/>
+
+                            <!-- Categoría -->
+                            <Label Grid.Row="2" 
+                                   Text="{Binding Categoria}"
+                                   FontSize="12"
+                                   TextColor="Gray"
+                                   Margin="0,0,0,5"
+                                   HorizontalTextAlignment="Center"/>
+
+                            <!-- Precio -->
+                            <Label Grid.Row="3" 
+                                   Text="{Binding Precio, StringFormat='{0:C}'}"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="#512BD4"
+                                   HorizontalTextAlignment="Center"
+                                   Margin="0,5,0,5"/>
+
+                            <!-- Valoracion -->
+                            <HorizontalStackLayout Grid.Row="4" 
+                                                  HorizontalOptions="Center"
+                                                  Spacing="5">
+                                <Label Text="*" FontSize="18" TextColor="#FFC107" FontAttributes="Bold"/>
+                                <Label Text="{Binding Valoracion, StringFormat='{0:0.0}'}" 
+                                       FontSize="12"
+                                       TextColor="Gray"/>
+                                <Label Text="{Binding NumeroValoraciones, StringFormat='({0})'}" 
+                                       FontSize="12"
+                                       TextColor="Gray"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Vista vacia -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="20">
+                    <Label Text="Favoritos" 
+                           FontSize="40" 
+                           FontAttributes="Bold"
+                           TextColor="Gray"
+                           HorizontalOptions="Center"/>
+                    <Label Text="Sin favoritos" 
+                           FontSize="20" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Marca productos como favoritos para encontrarlos rapidamente" 
+                           FontSize="16" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           Margin="20,0"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Botón limpiar favoritos -->
+        <Button Grid.Row="1"
+                Text="Limpiar Favoritos"
+                Command="{Binding LimpiarFavoritosCommand}"
+                IsVisible="{Binding HayFavoritos}"
+                BackgroundColor="#D32F2F"
+                TextColor="White"
+                Margin="10"
+                HeightRequest="50"
+                CornerRadius="15"/>
+    </Grid>
+</ContentPage>

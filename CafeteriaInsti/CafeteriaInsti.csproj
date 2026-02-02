@@ -74,6 +74,12 @@
   <MauiXaml Update="Views\ConfirmacionPedidoPage.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
+  <MauiXaml Update="Views\FavoritosPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\HistorialPedidosPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
   <MauiXaml Update="Views\ListaProductosPage.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>

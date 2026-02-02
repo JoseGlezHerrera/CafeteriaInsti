@@ -11,11 +11,22 @@
                       ContentTemplate="{DataTemplate views:ListaProductosPage}"
                       Route="ListaProductosPage" />
 
+        <ShellContent Title="Favoritos"
+                      Icon="heart.png"
+                      ContentTemplate="{DataTemplate views:FavoritosPage}"
+                      Route="FavoritosPage" />
+
         <ShellContent Title="Carrito"
                       Icon="cart.png"
                       ContentTemplate="{DataTemplate views:CarritoPage}"
                       Route="CarritoPage" />
+
+        <ShellContent Title="Pedidos"
+                      Icon="list.png"
+                      ContentTemplate="{DataTemplate views:HistorialPedidosPage}"
+                      Route="HistorialPedidosPage" />
     </TabBar>
 
 </Shell>
+
 

@@ -115,13 +115,18 @@ namespace CafeteriaInsti.ViewModels
                     return;
                 }
 
-                // ✅ NUEVO: Pedir confirmación antes de finalizar el pedido
+                // Calcular datos del pedido
                 var cantidadItems = Items.Sum(i => i.Cantidad);
                 var totalPedido = Total;
+                
+                // Pedir confirmación antes de finalizar el pedido
                 var confirmar = await Shell.Current.DisplayAlert(
                     "Confirmar Pedido",
-                    $"¿Confirmas tu pedido?\n\n• {cantidadItems} artículo(s)\n• Total: {totalPedido:C}\n\n¿Deseas continuar?",
-                    "Sí, Confirmar",
+                    $"Confirmas tu pedido?\n\n" +
+                    $"• {cantidadItems} articulo(s)\n" +
+                    $"• Total: {totalPedido:C}\n\n" +
+                    $"Deseas continuar?",
+                    "Si, Confirmar",
                     "No, Revisar");
 
                 if (!confirmar)
@@ -140,40 +145,58 @@ namespace CafeteriaInsti.ViewModels
                 System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Generando pedido: {numeroPedido}");
                 System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Total: {totalPedido:C}, Cantidad: {cantidadItems}");
 
+                // ✅ SOLUCION: Copiar items a una lista temporal para pasarlos al ViewModel de confirmación
+                var itemsDelCarrito = Items.Select(item => new ItemCarrito
+                {
+                    Producto = item.Producto,
+                    Cantidad = item.Cantidad
+                }).ToList();
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Items copiados a lista temporal: {itemsDelCarrito.Count}");
+                
+                // Guardar en variable estática temporal
+                ConfirmacionPedidoViewModel.ItemsTemporales = itemsDelCarrito;
+
+                // También serializar por si acaso
+                var itemsJson = System.Text.Json.JsonSerializer.Serialize(itemsDelCarrito);
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - JSON length: {itemsJson.Length}");
+
                 // Preparar los parámetros de navegación
                 var navigationParameter = new Dictionary<string, object>
                 {
                     { "NumeroPedido", numeroPedido },
                     { "TotalString", totalPedido.ToString() },
                     { "CantidadItemsString", cantidadItems.ToString() },
+                    { "ItemsJson", itemsJson },
                     { "Timestamp", DateTime.Now.Ticks.ToString() }
                 };
 
-                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Navegando con parámetros:");
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Navegando con parametros:");
                 System.Diagnostics.Debug.WriteLine($"  - NumeroPedido: {numeroPedido}");
                 System.Diagnostics.Debug.WriteLine($"  - Total: {totalPedido}");
                 System.Diagnostics.Debug.WriteLine($"  - CantidadItems: {cantidadItems}");
+                System.Diagnostics.Debug.WriteLine($"  - Items temporales: {itemsDelCarrito.Count}");
                 
-                // SOLUCIÓN DEFINITIVA: Primero volver a la raíz para limpiar el stack de navegación
-                // Esto asegura que siempre se crea una instancia nueva de ConfirmacionPedidoPage
+                // ✅ SOLUCIÓN: Volver a la raíz para limpiar el stack de navegación
                 await Shell.Current.GoToAsync("//ListaProductosPage");
                 
                 System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Volvimos a la raíz");
                 
-                // Limpiar el carrito ANTES de navegar a la confirmación
-                _carritoService.LimpiarCarrito();
-                
-                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Carrito limpiado, navegando a confirmación");
-                
-                // Ahora navegar a la página de confirmación con una instancia completamente nueva
+                // ✅ IMPORTANTE: Navegar PRIMERO a la confirmación (con el carrito lleno)
+                // para que el ViewModel pueda capturar los items
                 await Shell.Current.GoToAsync("ConfirmacionPedidoPage", navigationParameter);
                 
-                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Proceso completado");
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Navegación completada");
+                
+                // ✅ DESPUÉS limpiar el carrito (ya se guardó el pedido con los items)
+                _carritoService.LimpiarCarrito();
+                
+                System.Diagnostics.Debug.WriteLine($"[INFO] FinalizarPedido - Carrito limpiado, proceso completado");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ERROR] Finalizar pedido: {ex.Message}");
-                await Shell.Current.DisplayAlertAsync("Error", "Hubo un problema al procesar tu pedido. Inténtalo de nuevo.", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", "Hubo un problema al procesar tu pedido. Intentalo de nuevo.", "OK");
             }
         }
 

@@ -18,7 +18,7 @@
 
     <Grid RowDefinitions="Auto,Auto,*">
         
-        <!-- Barra de búsqueda -->
+        <!-- Barra de bï¿½squeda -->
         <Frame Grid.Row="0" 
                BackgroundColor="White" 
                Padding="15" 
@@ -31,41 +31,41 @@
                        HeightRequest="45"/>
         </Frame>
 
-        <!-- Filtros de categoría -->
+        <!-- Filtros de categoria -->
         <ScrollView Grid.Row="1" 
                     Orientation="Horizontal" 
                     Margin="10,10,10,5"
                     HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="10" Padding="5">
-                <Button Text="? Bebidas Calientes" 
+                <Button Text="Bebidas Calientes" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Bebidas Calientes"
                         BackgroundColor="#FFF3E0"
                         TextColor="#D84315"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Bebidas Frias" 
+                <Button Text="Bebidas Frias" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Bebidas Frias"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1976D2"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Postres" 
+                <Button Text="Postres" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Postres"
                         BackgroundColor="#FCE4EC"
                         TextColor="#C2185B"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Snacks" 
+                <Button Text="Snacks" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Snacks"
                         BackgroundColor="#F1F8E9"
                         TextColor="#689F38"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="??? Todas" 
+                <Button Text="Todas" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Todas"
                         BackgroundColor="#F5F5F5"
@@ -111,7 +111,7 @@
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"/>
 
-                            <!-- Categoría con emoji -->
+                            <!-- Categoria con texto -->
                             <Frame Grid.Row="0" 
                                    BackgroundColor="White"
                                    Padding="8,4"
@@ -121,7 +121,9 @@
                                    VerticalOptions="Start"
                                    Margin="5">
                                 <Label Text="{Binding Categoria, Converter={StaticResource CategoryTextConverter}}" 
-                                       FontSize="20"/>
+                                       FontSize="10"
+                                       FontAttributes="Bold"
+                                       TextColor="#512BD4"/>
                             </Frame>
 
                             <!-- Nombre del producto -->
@@ -135,7 +137,7 @@
                                    HorizontalOptions="Center"
                                    HorizontalTextAlignment="Center"/>
 
-                            <!-- Descripción -->
+                            <!-- Descripciï¿½n -->
                             <Label Grid.Row="2" 
                                    Text="{Binding Descripcion}"
                                    FontSize="12"
@@ -174,7 +176,7 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
 
-            <!-- Vista vacía -->
+            <!-- Vista vacï¿½a -->
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" 
                                     VerticalOptions="Center"
@@ -187,7 +189,7 @@
                            FontSize="20" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"/>
-                    <Label Text="Intenta con otra búsqueda o categoría" 
+                    <Label Text="Intenta con otra bï¿½squeda o categorï¿½a" 
                            FontSize="16" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"

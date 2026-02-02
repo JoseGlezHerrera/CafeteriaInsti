@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             xmlns:models="clr-namespace:CafeteriaInsti.Models"
+             x:DataType="viewModels:HistorialPedidosViewModel"
+             x:Class="CafeteriaInsti.Views.HistorialPedidosPage"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="*,Auto">
+        
+        <!-- Lista de pedidos -->
+        <CollectionView Grid.Row="0" 
+                        ItemsSource="{Binding Pedidos}"
+                        SelectionMode="None"
+                        Margin="10">
+            
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Pedido">
+                    <Frame Padding="15" 
+                           Margin="0,5" 
+                           CornerRadius="15" 
+                           HasShadow="True"
+                           BackgroundColor="White">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:HistorialPedidosViewModel}}, Path=VerDetallePedidoCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Frame.GestureRecognizers>
+
+                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                            
+                            <!-- Numero de pedido y fecha -->
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="5">
+                                <Label Text="{Binding NumeroPedido, StringFormat='Pedido #{0}'}" 
+                                       FontSize="18" 
+                                       FontAttributes="Bold"/>
+                                <Label Text="{Binding FechaPedido, StringFormat='{0:dd/MM/yyyy HH:mm}'}" 
+                                       FontSize="14" 
+                                       TextColor="Gray"/>
+                            </VerticalStackLayout>
+
+                            <!-- Detalles del pedido -->
+                            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="0,10,0,0">
+                                <Label Grid.Column="0" 
+                                       Text="{Binding CantidadItems, StringFormat='{0} articulos'}" 
+                                       FontSize="14"
+                                       TextColor="Gray"/>
+                                <Label Grid.Column="1" 
+                                       Text="{Binding Total, StringFormat='{0:C}'}" 
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       TextColor="#512BD4"/>
+                            </Grid>
+
+                            <!-- Boton ver detalles -->
+                            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Text="Ver Detalles"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:HistorialPedidosViewModel}}, Path=VerDetallePedidoCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#512BD4"
+                                    TextColor="White"
+                                    CornerRadius="10"
+                                    Margin="0,10,0,0"
+                                    HeightRequest="40"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Vista vacia -->
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" 
+                                    VerticalOptions="Center"
+                                    Spacing="20">
+                    <Label Text="??" 
+                           FontSize="80" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="No hay pedidos aun" 
+                           FontSize="20" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="Tus pedidos anteriores apareceran aqui" 
+                           FontSize="16" 
+                           TextColor="Gray" 
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Botón limpiar historial -->
+        <Button Grid.Row="1"
+                Text="Limpiar Historial"
+                Command="{Binding LimpiarHistorialCommand}"
+                IsVisible="{Binding HayPedidos}"
+                BackgroundColor="#D32F2F"
+                TextColor="White"
+                Margin="10"
+                HeightRequest="50"
+                CornerRadius="15"/>
+    </Grid>
+</ContentPage>

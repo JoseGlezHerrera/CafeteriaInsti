@@ -26,15 +26,17 @@
                                        TextColor="Gray" />
                             </VerticalStackLayout>
 
-                            <!-- Botón eliminar -->
+                            <!-- Boton eliminar -->
                             <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                    Text="🗑️"
+                                    Text="X"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:CarritoViewModel}}, Path=EliminarItemCommand}"
                                     CommandParameter="{Binding Producto.Id}"
                                     WidthRequest="50" 
                                     HeightRequest="50"
                                     BackgroundColor="Red"
                                     TextColor="White"
+                                    FontSize="20"
+                                    FontAttributes="Bold"
                                     CornerRadius="25"
                                     VerticalOptions="Center" />
 
@@ -85,14 +87,16 @@
                 <VerticalStackLayout HorizontalOptions="Center" 
                                     VerticalOptions="Center"
                                     Spacing="20">
-                    <Label Text="🛒" 
-                           FontSize="80" 
+                    <Label Text="Carrito vacio" 
+                           FontSize="40" 
+                           FontAttributes="Bold"
+                           TextColor="Gray"
                            HorizontalOptions="Center"/>
-                    <Label Text="Tu carrito está vacío" 
+                    <Label Text="Tu carrito esta vacio" 
                            FontSize="20" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"/>
-                    <Label Text="Añade productos desde el menú" 
+                    <Label Text="Anade productos desde el menu" 
                            FontSize="16" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"/>

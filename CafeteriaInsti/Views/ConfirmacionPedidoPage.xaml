@@ -14,26 +14,26 @@
                             VerticalOptions="Center"
                             Spacing="30">
             
-            <!-- Icono de éxito -->
-            <Label Text="✓" 
-                   FontSize="120" 
+            <!-- Icono de exito -->
+            <Label Text="OK" 
+                   FontSize="60" 
                    TextColor="#28a745"
                    FontAttributes="Bold"
                    HorizontalOptions="Center"/>
 
-            <Label Text="¡Pedido Realizado!" 
+            <Label Text="Pedido Realizado" 
                    FontSize="32" 
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center"/>
 
-            <!-- N�mero de pedido -->
+            <!-- Numero de pedido -->
             <Frame BackgroundColor="#F0F0F0" 
                    CornerRadius="15" 
                    Padding="20"
                    HasShadow="False">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="N�mero de Pedido" 
+                    <Label Text="Numero de Pedido" 
                            FontSize="16" 
                            TextColor="Gray"
                            HorizontalOptions="Center"/>
@@ -50,7 +50,7 @@
                    CornerRadius="15" 
                    Padding="20"
                    HasShadow="True">
-                <Grid RowDefinitions="Auto,Auto,Auto" 
+                <Grid RowDefinitions="Auto,Auto" 
                       ColumnDefinitions="*,Auto"
                       RowSpacing="15">
                     
@@ -64,28 +64,14 @@
                            TextColor="#512BD4"/>
 
                     <Label Grid.Row="1" Grid.Column="0"
-                           Text="Art�culos:" 
+                           Text="Articulos:" 
                            FontSize="18"/>
                     <Label Grid.Row="1" Grid.Column="1"
                            Text="{Binding CantidadItems}" 
                            FontSize="18"
                            FontAttributes="Bold"/>
-
-                    <Label Grid.Row="2" Grid.Column="0"
-                           Text="Hora estimada:" 
-                           FontSize="18"/>
-                    <Label Grid.Row="2" Grid.Column="1"
-                           Text="{Binding HoraEstimada, StringFormat='{0:HH:mm}'}" 
-                           FontSize="18"
-                           FontAttributes="Bold"/>
                 </Grid>
             </Frame>
-
-            <Label Text="Recibir�s una notificaci�n cuando tu pedido est� listo" 
-                   FontSize="14" 
-                   TextColor="Gray"
-                   HorizontalOptions="Center"
-                   HorizontalTextAlignment="Center"/>
 
         </VerticalStackLayout>
 
@@ -103,7 +89,7 @@
                     FontAttributes="Bold"
                     FontSize="16"/>
 
-            <Button Text="Volver al Men�"
+            <Button Text="Volver al Menu"
                     Command="{Binding VolverAlMenuCommand}"
                     BackgroundColor="#512BD4"
                     TextColor="White"

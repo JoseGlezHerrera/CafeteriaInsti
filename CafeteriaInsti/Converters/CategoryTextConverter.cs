@@ -9,16 +9,17 @@ namespace CafeteriaInsti.Converters
         {
             if (value is string category)
             {
+                // ? Devolver las primeras letras de cada categoria en lugar de emojis
                 return category switch
                 {
-                    "Bebidas Calientes" => "?",
-                    "Bebidas Frias" => "??",
-                    "Postres" => "??",
-                    "Snacks" => "??",
-                    _ => "???"
+                    "Bebidas Calientes" => "HOT",
+                    "Bebidas Frias" => "COLD",
+                    "Postres" => "POST",
+                    "Snacks" => "SNK",
+                    _ => "---"
                 };
             }
-            return "???";
+            return "---";
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -27,3 +28,4 @@ namespace CafeteriaInsti.Converters
         }
     }
 }
+

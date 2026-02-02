@@ -108,7 +108,7 @@
                    CornerRadius="10"
                    Padding="20"
                    Margin="0,30,0,0">
-                <Label Text="⚠️ Producto no disponible"
+                <Label Text="Producto no disponible"
                        TextColor="Red"
                        FontAttributes="Bold"
                        FontSize="18"

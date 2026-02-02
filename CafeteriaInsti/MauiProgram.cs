@@ -4,6 +4,7 @@ using CafeteriaInsti.Services;
 using CafeteriaInsti.ViewModels;
 using CafeteriaInsti.Views;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace CafeteriaInsti;
 
@@ -11,6 +12,11 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        // ✅ CONFIGURAR CULTURA ESPAÑOLA (Euro €)
+        var cultureInfo = new CultureInfo("es-ES");
+        CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+        CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+        
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -29,6 +35,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ProductoService>();
         builder.Services.AddSingleton<CarritoService>();
         builder.Services.AddSingleton<FavoritosService>();
+        builder.Services.AddSingleton<PedidoService>(); // ✅ NUEVO
 
         // --- REGISTRO DE VIEWMODELS ---
         // Registramos los ViewModels como Transient para que se cree una nueva instancia cada vez que navegamos a la página
@@ -36,6 +43,8 @@ public static class MauiProgram
         builder.Services.AddTransient<DetalleProductoViewModel>();
         builder.Services.AddTransient<CarritoViewModel>();
         builder.Services.AddTransient<ConfirmacionPedidoViewModel>();
+        builder.Services.AddTransient<HistorialPedidosViewModel>(); // ✅ NUEVO
+        builder.Services.AddTransient<FavoritosViewModel>(); // ✅ NUEVO
 
         // --- REGISTRO DE PÁGINAS (VIEWS) ---
         // Registramos las páginas para que la inyección de dependencias pueda inyectar los ViewModels en sus constructores
@@ -43,6 +52,8 @@ public static class MauiProgram
         builder.Services.AddTransient<DetalleProductoPage>();
         builder.Services.AddTransient<CarritoPage>();
         builder.Services.AddTransient<ConfirmacionPedidoPage>();
+        builder.Services.AddTransient<HistorialPedidosPage>(); // ✅ NUEVO
+        builder.Services.AddTransient<FavoritosPage>(); // ✅ NUEVO
 
         return builder.Build();
     }
