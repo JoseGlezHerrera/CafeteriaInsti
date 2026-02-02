@@ -11,6 +11,7 @@ namespace CafeteriaInsti.ViewModels
     public partial class ListaProductosViewModel : BaseViewModel
     {
         private readonly ProductoService _productoService;
+        private readonly SessionService _sessionService;
         private List<Producto> _todosLosProductos;
 
         [ObservableProperty]
@@ -21,6 +22,9 @@ namespace CafeteriaInsti.ViewModels
 
         [ObservableProperty]
         private string _categoriaSeleccionada = "Todas";
+
+        [ObservableProperty]
+        private string _usuarioActual = string.Empty;
 
         // ✅ Método que se ejecuta automáticamente cuando cambia CategoriaSeleccionada
         partial void OnCategoriaSeleccionadaChanged(string value)
@@ -37,12 +41,20 @@ namespace CafeteriaInsti.ViewModels
             "Snacks"
         };
 
-        public ListaProductosViewModel(ProductoService productoService)
+        public ListaProductosViewModel(ProductoService productoService, SessionService sessionService)
         {
             Title = "Menú de la Cafetería";
             _productoService = productoService;
+            _sessionService = sessionService;
             _productos = new ObservableCollection<Producto>();
             _todosLosProductos = new List<Producto>();
+
+            // Establecer nombre del usuario actual
+            if (_sessionService.IsLoggedIn)
+            {
+                UsuarioActual = _sessionService.CurrentUser?.FullName ?? "Usuario";
+            }
+
             CargarProductosInicial();
         }
 
@@ -163,6 +175,50 @@ namespace CafeteriaInsti.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[ERROR] Navegación falló: {ex.Message}");
                 await Shell.Current.DisplayAlertAsync("Error", $"No se pudo navegar: {ex.Message}", "OK");
+            }
+        }
+
+        [RelayCommand]
+        private async Task Logout()
+        {
+            try
+            {
+                // Confirmar logout
+                bool confirmado = await Application.Current.MainPage.DisplayAlert(
+                    "Cerrar sesión",
+                    $"¿Estás seguro de que quieres cerrar sesión, {UsuarioActual}?",
+                    "Sí", "No");
+
+                if (confirmado)
+                {
+                    // Limpiar sesión
+                    _sessionService.ClearSession();
+
+                    // Volver a LoginPage
+                    if (Shell.Current is AppShell appShell)
+                    {
+                        await appShell.ShowLoginPage();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Error en logout: {ex.Message}");
+                await Application.Current.MainPage.DisplayAlert("Error", "Error al cerrar sesión", "OK");
+            }
+        }
+
+        [RelayCommand]
+        private async Task EditProfile()
+        {
+            try
+            {
+                await Shell.Current.GoToAsync(nameof(EditProfilePage), animate: false);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Error al editar perfil: {ex.Message}");
+                await Application.Current.MainPage.DisplayAlert("Error", "Error al abrir edición de perfil", "OK");
             }
         }
     }

@@ -74,7 +74,22 @@
   <MauiXaml Update="Views\ConfirmacionPedidoPage.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
+  <MauiXaml Update="Views\EditProfilePage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
   <MauiXaml Update="Views\ListaProductosPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\ListaProductosPage_NEW.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\LoginPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\RegisterPage.xaml">
+    <Generator>MSBuild:Compile</Generator>
+  </MauiXaml>
+  <MauiXaml Update="Views\RegisterPage_NEW.xaml">
     <Generator>MSBuild:Compile</Generator>
   </MauiXaml>
 </ItemGroup>

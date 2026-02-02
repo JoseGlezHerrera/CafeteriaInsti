@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:Class="CafeteriaInsti.Views.EditProfilePage"
+             x:DataType="viewModels:EditProfileViewModel"
+             Shell.NavBarIsVisible="False"
+             Title="Editar Perfil">
+
+    <Grid RowDefinitions="Auto,*">
+        <HorizontalStackLayout Grid.Row="0"
+                               Padding="15,10"
+                               Spacing="10"
+                               BackgroundColor="#512BD4">
+            <Label Text="✏️ Editar Perfil"
+                   TextColor="White"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   HorizontalOptions="StartAndExpand"/>
+        </HorizontalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="20" Padding="30,20">
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Nombre Completo:" FontSize="14" FontAttributes="Bold" TextColor="#512BD4"/>
+                    <Frame BackgroundColor="White" Padding="5" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Entry Placeholder="Tu nombre completo" Text="{Binding fullName}" HeightRequest="50" Margin="10,0"/>
+                    </Frame>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Correo Electrónico:" FontSize="14" FontAttributes="Bold" TextColor="#512BD4"/>
+                    <Frame BackgroundColor="White" Padding="5" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Entry Placeholder="correo@example.com" Text="{Binding email}" Keyboard="Email" HeightRequest="50" Margin="10,0"/>
+                    </Frame>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Contraseña:" FontSize="14" FontAttributes="Bold" TextColor="#512BD4"/>
+                    <Frame BackgroundColor="White" Padding="5" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Entry Placeholder="Tu contraseña" Text="{Binding password}" IsPassword="True" HeightRequest="50" Margin="10,0"/>
+                    </Frame>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Confirmar Contraseña:" FontSize="14" FontAttributes="Bold" TextColor="#512BD4"/>
+                    <Frame BackgroundColor="White" Padding="5" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Entry Placeholder="Confirma tu contraseña" Text="{Binding confirmPassword}" IsPassword="True" HeightRequest="50" Margin="10,0"/>
+                    </Frame>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Turno:" FontSize="14" FontAttributes="Bold" TextColor="#512BD4"/>
+                    <Frame BackgroundColor="White" Padding="10" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Picker SelectedItem="{Binding turno}" TextColor="Black" Title="Selecciona tu turno">
+                            <Picker.Items>
+                                <x:String>Mañana</x:String>
+                                <x:String>Tarde</x:String>
+                            </Picker.Items>
+                        </Picker>
+                    </Frame>
+                </VerticalStackLayout>
+
+                <Frame BackgroundColor="#E8F5E9" Padding="15" CornerRadius="15" BorderColor="#4CAF50">
+                    <Label Text="ℹ️ Los cambios se guardarán en tu perfil. Asegúrate de que todos los datos sean correctos." FontSize="12" TextColor="#2E7D32" LineBreakMode="WordWrap"/>
+                </Frame>
+
+                <HorizontalStackLayout Spacing="10" Margin="0,10,0,20">
+                    <Button Text="Cancelar" Command="{Binding CancelCommand}" BackgroundColor="#E0E0E0" TextColor="#424242" HeightRequest="50" CornerRadius="15" FontAttributes="Bold" FontSize="14" HorizontalOptions="FillAndExpand"/>
+                    <Button Text="Guardar Cambios" Command="{Binding SaveChangesCommand}" BackgroundColor="#512BD4" TextColor="White" HeightRequest="50" CornerRadius="15" FontAttributes="Bold" FontSize="14" HorizontalOptions="FillAndExpand"/>
+                </HorizontalStackLayout>
+
+                <ActivityIndicator IsRunning="{Binding isBusy}" IsVisible="{Binding isBusy}" Color="#512BD4" Margin="0,10,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

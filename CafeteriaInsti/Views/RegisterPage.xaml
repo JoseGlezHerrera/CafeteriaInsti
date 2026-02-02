@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:Class="CafeteriaInsti.Views.RegisterPage"
+             x:DataType="viewModels:RegisterViewModel"
+             Shell.NavBarIsVisible="False"
+             Title="Registrarse">
+
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="20" 
+                                 Padding="30" 
+                                 VerticalOptions="Center">
+
+                <VerticalStackLayout Spacing="10" Margin="0,0,0,20">
+                    <Label Text="👤" 
+                           FontSize="80" 
+                           HorizontalOptions="Center"/>
+
+                    <Label Text="Crear Cuenta" 
+                           FontSize="32" 
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+
+                    <Label Text="Únete a Cafetería Insti" 
+                           FontSize="16" 
+                           TextColor="Gray"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+                <!-- Nombre completo -->
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Nombre completo"
+                           Text="{Binding FullName}"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <!-- Correo electrónico -->
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Correo electrónico"
+                           Text="{Binding Email}"
+                           Keyboard="Email"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <!-- Contraseña -->
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Contraseña"
+                           Text="{Binding Password}"
+                           IsPassword="True"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <!-- Confirmar contraseña -->
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Confirmar contraseña"
+                           Text="{Binding ConfirmPassword}"
+                           IsPassword="True"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <!-- Seleccionar turno -->
+                <Label Text="Turno:" 
+                       FontSize="14" 
+                       FontAttributes="Bold"
+                       TextColor="#512BD4"
+                       Margin="0,5,0,0"/>
+                
+                <Frame BackgroundColor="White" 
+                       Padding="10" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent"
+                       Margin="0,0,0,10">
+                    <Picker SelectedItem="{Binding Turno}"
+                            TextColor="Black"
+                            Title="Selecciona tu turno">
+                        <Picker.Items>
+                            <x:String>Mañana</x:String>
+                            <x:String>Tarde</x:String>
+                        </Picker.Items>
+                    </Picker>
+                </Frame>
+
+                <!-- Botón registrarse -->
+                <Button Text="Registrarse"
+                        Command="{Binding RegisterCommand}"
+                        BackgroundColor="#512BD4"
+                        TextColor="White"
+                        HeightRequest="60"
+                        CornerRadius="15"
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        Margin="0,10,0,0" />
+
+                <!-- Link a login -->
+                <HorizontalStackLayout Spacing="5" HorizontalOptions="Center" Margin="0,10,0,0">
+                    <Label Text="¿Ya tienes cuenta?" TextColor="Gray" FontSize="14"/>
+                    <Button Text="Inicia sesión" 
+                            Command="{Binding GoToLoginCommand}"
+                            BackgroundColor="Transparent" 
+                            TextColor="#512BD4"
+                            FontAttributes="Bold"
+                            Padding="0"/>
+                </HorizontalStackLayout>
+
+                <!-- Indicador de carga -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                  IsVisible="{Binding IsBusy}"
+                                  Color="#512BD4"
+                                  Margin="0,10,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

@@ -5,7 +5,12 @@
        x:Class="CafeteriaInsti.AppShell"
        Title="Cafetería Insti">
 
-    <TabBar>
+    <!-- Login como página principal con RegisterPage como ruta relativa -->
+    <ShellContent Route="LoginPage"
+                  ContentTemplate="{DataTemplate views:LoginPage}" />
+
+    <!-- Navegación principal después del login -->
+    <TabBar x:Name="MainTabBar" IsVisible="False">
         <ShellContent Title="Menú"
                       Icon="home.png"
                       ContentTemplate="{DataTemplate views:ListaProductosPage}"

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CafeteriaInsti.ViewModels"
+             x:Class="CafeteriaInsti.Views.LoginPage"
+             x:DataType="viewModels:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             Title="Iniciar Sesión">
+
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="25" 
+                                 Padding="30" 
+                                 VerticalOptions="Center">
+
+                <VerticalStackLayout Spacing="10" Margin="0,0,0,20">
+                    <Label Text="☕" 
+                           FontSize="100" 
+                           HorizontalOptions="Center"/>
+
+                    <Label Text="Cafetería Insti" 
+                           FontSize="32" 
+                           FontAttributes="Bold"
+                           TextColor="#512BD4"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+
+                    <Label Text="Bienvenido de nuevo" 
+                           FontSize="18" 
+                           TextColor="Gray"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Correo electrónico"
+                           Text="{Binding Email}"
+                           Keyboard="Email"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <Frame BackgroundColor="White" 
+                       Padding="5" 
+                       CornerRadius="15"
+                       HasShadow="True"
+                       BorderColor="Transparent">
+                    <Entry Placeholder="Contraseña"
+                           Text="{Binding Password}"
+                           IsPassword="True"
+                           HeightRequest="50"
+                           Margin="10,0"/>
+                </Frame>
+
+                <Label Text="¿Olvidaste tu contraseña?"
+                       TextColor="#512BD4"
+                       FontSize="14"
+                       HorizontalOptions="End">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Button Text="Iniciar Sesión"
+                        Command="{Binding LoginCommand}"
+                        BackgroundColor="#512BD4"
+                        TextColor="White"
+                        HeightRequest="60"
+                        CornerRadius="15"
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        Margin="0,10,0,0" />
+
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="Center" Margin="0,10,0,0">
+                    <Label Text="¿No tienes cuenta?" TextColor="Gray" FontSize="14"/>
+                    <Button Text="Regístrate" 
+                            Command="{Binding RegisterCommand}"
+                            BackgroundColor="Transparent" 
+                            TextColor="#512BD4"
+                            FontAttributes="Bold"/>
+                </HorizontalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

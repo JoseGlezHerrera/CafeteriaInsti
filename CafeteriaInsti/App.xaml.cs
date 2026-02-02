@@ -11,7 +11,13 @@ namespace CafeteriaInsti
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            // Obtener el servicio AppShell del contenedor de inyección de dependencias
+            var appShell = IPlatformApplication.Current?.Services.GetService<AppShell>();
+            if (appShell == null)
+            {
+                appShell = new AppShell();
+            }
+            return new Window(appShell);
         }
     }
 }

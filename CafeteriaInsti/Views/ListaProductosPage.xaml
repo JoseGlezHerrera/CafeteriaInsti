@@ -16,10 +16,44 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
         
-        <!-- Barra de b�squeda -->
-        <Frame Grid.Row="0" 
+        <!-- Encabezado con usuario y botones -->
+        <HorizontalStackLayout Grid.Row="0"
+                              Padding="15,10"
+                              Spacing="8"
+                              BackgroundColor="#512BD4">
+            <Label Text="{Binding UsuarioActual, StringFormat='👤 {0}'}"
+                   TextColor="White"
+                   FontSize="14"
+                   VerticalOptions="Center"
+                   HorizontalOptions="StartAndExpand"/>
+
+            <!-- Botón Editar Perfil -->
+            <Button Text="✏️ Editar"
+                    Command="{Binding EditProfileCommand}"
+                    BackgroundColor="#FFB300"
+                    TextColor="#333333"
+                    Padding="8,5"
+                    CornerRadius="8"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    HeightRequest="35"/>
+
+            <!-- Botón Cerrar Sesión -->
+            <Button Text="🚪 Salir"
+                    Command="{Binding LogoutCommand}"
+                    BackgroundColor="White"
+                    TextColor="#512BD4"
+                    Padding="8,5"
+                    CornerRadius="8"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    HeightRequest="35"/>
+        </HorizontalStackLayout>
+
+        <!-- Barra de búsqueda -->
+        <Frame Grid.Row="1" 
                BackgroundColor="White" 
                Padding="15" 
                Margin="10,10,10,0"
@@ -31,41 +65,41 @@
                        HeightRequest="45"/>
         </Frame>
 
-        <!-- Filtros de categor�a -->
-        <ScrollView Grid.Row="1" 
+        <!-- Filtros de categoría -->
+        <ScrollView Grid.Row="2" 
                     Orientation="Horizontal" 
                     Margin="10,10,10,5"
                     HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="10" Padding="5">
-                <Button Text="? Bebidas Calientes" 
+                <Button Text="☕ Bebidas Calientes" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Bebidas Calientes"
                         BackgroundColor="#FFF3E0"
                         TextColor="#D84315"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Bebidas Frias" 
+                <Button Text="🧊 Bebidas Frias" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Bebidas Frias"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1976D2"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Postres" 
+                <Button Text="🍰 Postres" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Postres"
                         BackgroundColor="#FCE4EC"
                         TextColor="#C2185B"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="?? Snacks" 
+                <Button Text="🍪 Snacks" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Snacks"
                         BackgroundColor="#F1F8E9"
                         TextColor="#689F38"
                         CornerRadius="20"
                         Padding="15,8"/>
-                <Button Text="??? Todas" 
+                <Button Text="🎯 Todas" 
                         Command="{Binding SeleccionarCategoriaCommand}"
                         CommandParameter="Todas"
                         BackgroundColor="#F5F5F5"
@@ -76,7 +110,7 @@
         </ScrollView>
 
         <!-- Lista de productos -->
-        <CollectionView Grid.Row="2" 
+        <CollectionView Grid.Row="3" 
                         ItemsSource="{Binding Productos}"
                         SelectionMode="None"
                         Margin="10,0,10,10">
@@ -96,7 +130,7 @@
                            BackgroundColor="{Binding Categoria, Converter={StaticResource CategoryBackgroundConverter}}">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer 
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=GoToDetailsCommand}"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ListaProductosViewModel}}, Path=GoToDetailsAsyncCommand}"
                                 CommandParameter="{Binding .}"/>
                         </Frame.GestureRecognizers>
 
@@ -111,7 +145,7 @@
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"/>
 
-                            <!-- Categor�a con emoji -->
+                            <!-- Categoría con emoji -->
                             <Frame Grid.Row="0" 
                                    BackgroundColor="White"
                                    Padding="8,4"
@@ -135,7 +169,7 @@
                                    HorizontalOptions="Center"
                                    HorizontalTextAlignment="Center"/>
 
-                            <!-- Descripci�n -->
+                            <!-- Descripción -->
                             <Label Grid.Row="2" 
                                    Text="{Binding Descripcion}"
                                    FontSize="12"
@@ -174,20 +208,20 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
 
-            <!-- Vista vac�a -->
+            <!-- Vista vacía -->
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" 
                                     VerticalOptions="Center"
                                     Spacing="20"
                                     Margin="20">
-                    <Label Text="??" 
+                    <Label Text="🔍" 
                            FontSize="80" 
                            HorizontalOptions="Center"/>
                     <Label Text="No se encontraron productos" 
                            FontSize="20" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"/>
-                    <Label Text="Intenta con otra b�squeda o categor�a" 
+                    <Label Text="Intenta con otra búsqueda o categoría" 
                            FontSize="16" 
                            TextColor="Gray" 
                            HorizontalOptions="Center"
@@ -197,7 +231,7 @@
         </CollectionView>
 
         <!-- Indicador de carga -->
-        <ActivityIndicator Grid.Row="2" 
+        <ActivityIndicator Grid.Row="3" 
                           IsRunning="{Binding IsBusy}"
                           IsVisible="{Binding IsBusy}"
                           Color="#512BD4"

@@ -29,9 +29,17 @@ public static class MauiProgram
         builder.Services.AddSingleton<ProductoService>();
         builder.Services.AddSingleton<CarritoService>();
         builder.Services.AddSingleton<FavoritosService>();
+        builder.Services.AddSingleton<UserService>();
+        builder.Services.AddSingleton<SessionService>();
+
+        // AppShell como Singleton para acceso global
+        builder.Services.AddSingleton<AppShell>();
 
         // --- REGISTRO DE VIEWMODELS ---
         // Registramos los ViewModels como Transient para que se cree una nueva instancia cada vez que navegamos a la página
+        builder.Services.AddTransient<LoginViewModel>();
+        builder.Services.AddTransient<RegisterViewModel>();
+        builder.Services.AddTransient<EditProfileViewModel>();
         builder.Services.AddTransient<ListaProductosViewModel>();
         builder.Services.AddTransient<DetalleProductoViewModel>();
         builder.Services.AddTransient<CarritoViewModel>();
@@ -39,6 +47,9 @@ public static class MauiProgram
 
         // --- REGISTRO DE PÁGINAS (VIEWS) ---
         // Registramos las páginas para que la inyección de dependencias pueda inyectar los ViewModels en sus constructores
+        builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<RegisterPage>();
+        builder.Services.AddTransient<EditProfilePage>();
         builder.Services.AddTransient<ListaProductosPage>();
         builder.Services.AddTransient<DetalleProductoPage>();
         builder.Services.AddTransient<CarritoPage>();
