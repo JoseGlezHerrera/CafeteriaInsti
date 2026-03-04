@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "CafeIES (API + Admin + MAUI)",
+    "Projects": [
+      {
+        "Path": "CafeIES.API\\CafeIES.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CafeIES.Admin\\CafeIES.Admin.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CafeIES.MAUI\\CafeIES.MAUI.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

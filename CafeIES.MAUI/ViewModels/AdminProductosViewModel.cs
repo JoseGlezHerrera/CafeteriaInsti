@@ -1,0 +1,163 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CafeIES.Shared.Models;
+using CafeIES.MAUI.Services;
+using System.Collections.ObjectModel;
+
+namespace CafeIES.MAUI.ViewModels;
+
+// ── AdminProductosViewModel ───────────────────────────────────────────────────
+
+public partial class AdminProductosViewModel : ObservableObject
+{
+    private readonly ApiService _api;
+
+    public AdminProductosViewModel(ApiService api) => _api = api;
+
+    [ObservableProperty] private bool _isLoading;
+
+    public ObservableCollection<ProductoDto> Productos { get; } = new();
+
+    [RelayCommand]
+    public async Task CargarAsync()
+    {
+        IsLoading = true;
+        var productos = await _api.GetProductosAdminAsync();
+        Productos.Clear();
+        foreach (var p in productos) Productos.Add(p);
+        IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task NuevoProductoAsync()
+        => await Shell.Current.GoToAsync("AdminEditProducto?productoId=0");
+
+    [RelayCommand]
+    private async Task EditarAsync(ProductoDto producto)
+        => await Shell.Current.GoToAsync($"AdminEditProducto?productoId={producto.Id}");
+
+    [RelayCommand]
+    private async Task ToggleActivoAsync(ProductoDto producto)
+    {
+        await _api.ToggleActivoAsync(producto.Id);
+        await CargarAsync();
+    }
+
+    [RelayCommand]
+    private async Task EliminarAsync(ProductoDto producto)
+    {
+        var ok = await Shell.Current.DisplayAlert(
+            "Eliminar producto",
+            $"¿Eliminar '{producto.Nombre}'? Esta acción no se puede deshacer.",
+            "Eliminar", "Cancelar");
+        if (!ok) return;
+        await _api.EliminarProductoAsync(producto.Id);
+        await CargarAsync();
+    }
+}
+
+// ── AdminEditProductoViewModel ────────────────────────────────────────────────
+
+public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttributable
+{
+    private readonly ApiService _api;
+
+    public AdminEditProductoViewModel(ApiService api) => _api = api;
+
+    [ObservableProperty] private int     _productoId;
+    [ObservableProperty] private bool    _isLoading;
+    [ObservableProperty] private bool    _isSaving;
+    [ObservableProperty] private string  _titulo       = "Nuevo producto";
+    [ObservableProperty] private string  _nombre       = string.Empty;
+    [ObservableProperty] private string  _descripcion  = string.Empty;
+    [ObservableProperty] private decimal _precio;
+    [ObservableProperty] private int     _stock        = -1;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
+    private string _error = string.Empty;
+
+    public bool HasError => !string.IsNullOrEmpty(Error);
+
+    [ObservableProperty]
+    private CategoriaDto? _categoriaSeleccionada;
+
+    public ObservableCollection<CategoriaDto> Categorias { get; } = new();
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("productoId", out var val) &&
+            int.TryParse(val?.ToString(), out int id))
+            ProductoId = id;
+    }
+
+    [RelayCommand]
+    public async Task CargarAsync()
+    {
+        IsLoading = true;
+        Error = string.Empty;
+
+        var cats = await _api.GetCategoriasAsync();
+        Categorias.Clear();
+        foreach (var c in cats) Categorias.Add(c);
+
+        if (ProductoId > 0)
+        {
+            Titulo = "Editar producto";
+            var lista = await _api.GetProductosAdminAsync();
+            var prod  = lista.FirstOrDefault(p => p.Id == ProductoId);
+            if (prod is not null)
+            {
+                Nombre       = prod.Nombre;
+                Descripcion  = prod.Descripcion ?? string.Empty;
+                Precio       = prod.Precio;
+                Stock        = prod.Stock;
+                CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
+            }
+        }
+        else
+        {
+            Titulo = "Nuevo producto";
+            Nombre       = string.Empty;
+            Descripcion  = string.Empty;
+            Precio       = 0;
+            Stock        = -1;
+            CategoriaSeleccionada = Categorias.FirstOrDefault();
+        }
+
+        IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task GuardarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Nombre))
+        {
+            Error = "El nombre es obligatorio.";
+            return;
+        }
+        if (CategoriaSeleccionada is null)
+        {
+            Error = "Selecciona una categoría.";
+            return;
+        }
+
+        IsSaving = true;
+        Error    = string.Empty;
+
+        var req = new CrearProductoRequest(
+            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null);
+
+        bool ok = ProductoId > 0
+            ? await _api.ActualizarProductoAsync(ProductoId, req)
+            : await _api.CrearProductoAsync(req);
+
+        IsSaving = false;
+
+        if (!ok) { Error = "Error al guardar. Inténtalo de nuevo."; return; }
+
+        await Shell.Current.GoToAsync("..");
+    }
+
+    [RelayCommand]
+    private async Task CancelarAsync() => await Shell.Current.GoToAsync("..");
+}

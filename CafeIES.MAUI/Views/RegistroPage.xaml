@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             x:Class="CafeIES.MAUI.Views.RegistroPage"
+             x:DataType="vm:RegistroViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="32,24" Spacing="0">
+
+            <!-- Header -->
+            <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,28">
+                <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                        WidthRequest="38" HeightRequest="38" Margin="0,0,12,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Label Text="←" TextColor="{StaticResource TextColor}" FontSize="18"
+                           HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding VolverCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Border>
+                <VerticalStackLayout Grid.Column="1">
+                    <Label Text="Crear cuenta" FontFamily="SyneBold" FontSize="26"
+                           TextColor="{StaticResource TextColor}"/>
+                    <Label Text="Registro de alumno" Style="{StaticResource SubtitleLabel}"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Nombre -->
+            <Label Text="NOMBRE COMPLETO" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                <Entry Style="{StaticResource InputEntry}"
+                       Text="{Binding NombreCompleto}" Placeholder="ej. Carlos García"/>
+            </Border>
+
+            <!-- Email -->
+            <Label Text="CORREO DEL CENTRO" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                <Entry Style="{StaticResource InputEntry}"
+                       Text="{Binding Email}" Placeholder="usuario@ies.edu" Keyboard="Email"/>
+            </Border>
+
+            <!-- Password -->
+            <Label Text="CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                <Entry Style="{StaticResource InputEntry}"
+                       Text="{Binding Password}" Placeholder="Mínimo 8 caracteres" IsPassword="True"/>
+            </Border>
+
+            <!-- Turno selector -->
+            <Label Text="TURNO" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,12"/>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <!-- Mañana -->
+                <Border Grid.Column="0" Padding="10,12" StrokeThickness="1.5"
+                        Stroke="{Binding TurnoMañanaSeleccionado, Converter={StaticResource BoolToAccentBorderConverter}}"
+                        BackgroundColor="{Binding TurnoMañanaSeleccionado, Converter={StaticResource BoolToAccentBgConverter}}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SeleccionarTurnoCommand}" CommandParameter="Manana"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                        <Label Text="🌅" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Mañana" FontFamily="SyneBold" FontSize="12" HorizontalOptions="Center"
+                               TextColor="{Binding TurnoMañanaSeleccionado, Converter={StaticResource BoolToAccentTextConverter}}"/>
+                    </VerticalStackLayout>
+                </Border>
+                <!-- Tarde -->
+                <Border Grid.Column="1" Padding="10,12" StrokeThickness="1.5"
+                        Stroke="{Binding TurnoTardeSeleccionado, Converter={StaticResource BoolToAccentBorderConverter}}"
+                        BackgroundColor="{Binding TurnoTardeSeleccionado, Converter={StaticResource BoolToAccentBgConverter}}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SeleccionarTurnoCommand}" CommandParameter="Tarde"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                        <Label Text="🌤️" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Tarde" FontFamily="SyneBold" FontSize="12" HorizontalOptions="Center"
+                               TextColor="{Binding TurnoTardeSeleccionado, Converter={StaticResource BoolToAccentTextConverter}}"/>
+                    </VerticalStackLayout>
+                </Border>
+                <!-- Noche -->
+                <Border Grid.Column="2" Padding="10,12" StrokeThickness="1.5"
+                        Stroke="{Binding TurnoNocheSeleccionado, Converter={StaticResource BoolToAccentBorderConverter}}"
+                        BackgroundColor="{Binding TurnoNocheSeleccionado, Converter={StaticResource BoolToAccentBgConverter}}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SeleccionarTurnoCommand}" CommandParameter="Noche"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                        <Label Text="🌙" FontSize="20" HorizontalOptions="Center"/>
+                        <Label Text="Noche" FontFamily="SyneBold" FontSize="12" HorizontalOptions="Center"
+                               TextColor="{Binding TurnoNocheSeleccionado, Converter={StaticResource BoolToAccentTextConverter}}"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Error -->
+            <Border BackgroundColor="#26e05252" StrokeThickness="1" Stroke="#40e05252"
+                    Padding="14,10" Margin="0,16,0,0" IsVisible="{Binding HayError}">
+                <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource RedColor}"
+                       FontFamily="DMSans" FontSize="13"/>
+            </Border>
+
+            <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
+                               Margin="0,12" IsVisible="{Binding IsLoading}"/>
+
+            <!-- Botón registrar -->
+            <Button Text="Registrarme →" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding RegistrarCommand}" Margin="0,28,0,0"/>
+
+                    </VerticalStackLayout>
+                </ScrollView>
+            </ContentPage>

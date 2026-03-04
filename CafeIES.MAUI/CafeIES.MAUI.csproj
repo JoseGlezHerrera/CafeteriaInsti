@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-windows10.0.19041.0</TargetFrameworks>
+		<RootNamespace>CafeIES.MAUI</RootNamespace>
+		<ApplicationId>es.cafeies.app</ApplicationId>
+		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
+		<!-- Permite ejecutar sin despliegue MSIX en Windows -->
+		<WindowsPackageType>None</WindowsPackageType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="9.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="9.0.120" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CafeIES.Shared\CafeIES.Shared.csproj" />
+	</ItemGroup>
+
+	<!-- Fonts: explicit declaration ensures they are bundled on all targets -->
+	<ItemGroup>
+		<MauiFont Include="Resources\Fonts\Syne-Bold.ttf" />
+		<MauiFont Include="Resources\Fonts\Syne-Regular.ttf" />
+		<MauiFont Include="Resources\Fonts\DMSans-Regular.ttf" />
+		<MauiFont Include="Resources\Fonts\DMSans-Medium.ttf" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="CafeIES.MAUI.Views.AdminEditProductoPage"
+             x:DataType="vm:AdminEditProductoViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ContentPage.Resources>
+        <toolkit:BoolToObjectConverter x:Key="IsSavingToText"
+                                       TrueObject="Guardando..."
+                                       FalseObject="Guardar producto"/>
+    </ContentPage.Resources>
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}"
+              Padding="16,14" ColumnDefinitions="Auto,*">
+            <Button Grid.Column="0"
+                    Text="Volver"
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" Padding="12,0"
+                    Command="{Binding CancelarCommand}"/>
+            <Label Grid.Column="1"
+                   Text="{Binding Titulo}"
+                   FontFamily="SyneBold" FontSize="20"
+                   TextColor="{StaticResource TextColor}"
+                   Margin="12,0,0,0" VerticalOptions="Center"/>
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="24,20" Spacing="18">
+
+                <!-- Nombre -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Nombre"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                        <Entry Style="{StaticResource InputEntry}"
+                               Text="{Binding Nombre}"
+                               Placeholder="ej. Bocadillo Mixto"
+                               Margin="4,0"/>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Descripcion -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Descripcion (opcional)"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                        <Entry Style="{StaticResource InputEntry}"
+                               Text="{Binding Descripcion}"
+                               Placeholder="Breve descripcion"
+                               Margin="4,0"/>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Precio y Stock -->
+                <Grid ColumnDefinitions="*,16,*">
+                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                        <Label Text="Precio (EUR)"
+                               FontFamily="SyneBold" FontSize="13"
+                               TextColor="{StaticResource MutedColor}"/>
+                        <Border BackgroundColor="{StaticResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <Entry Style="{StaticResource InputEntry}"
+                                   Text="{Binding Precio}"
+                                   Keyboard="Numeric" Placeholder="0.00"
+                                   Margin="4,0"/>
+                        </Border>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="2" Spacing="6">
+                        <Label Text="Stock (-1 = ilimitado)"
+                               FontFamily="SyneBold" FontSize="13"
+                               TextColor="{StaticResource MutedColor}"/>
+                        <Border BackgroundColor="{StaticResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <Entry Style="{StaticResource InputEntry}"
+                                   Text="{Binding Stock}"
+                                   Keyboard="Numeric" Placeholder="-1"
+                                   Margin="4,0"/>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Categoria -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Categoria"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                        <Picker ItemsSource="{Binding Categorias}"
+                                SelectedItem="{Binding CategoriaSeleccionada}"
+                                ItemDisplayBinding="{Binding Nombre}"
+                                TextColor="{StaticResource TextColor}"
+                                TitleColor="{StaticResource MutedColor}"
+                                Title="Seleccionar categoria"
+                                BackgroundColor="Transparent"
+                                Margin="8,4"/>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Mensaje de error -->
+                <Border BackgroundColor="#1ae05252"
+                        StrokeThickness="1" Stroke="#40e05252"
+                        Padding="14,10"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Label Text="{Binding Error}"
+                           FontFamily="DMSans" FontSize="13"
+                           TextColor="#e05252"/>
+                </Border>
+
+                <!-- Boton guardar -->
+                <Button Style="{StaticResource PrimaryButton}"
+                        Text="{Binding IsSaving, Converter={StaticResource IsSavingToText}}"
+                        Command="{Binding GuardarCommand}"
+                        IsEnabled="{Binding IsSaving, Converter={StaticResource InvertBoolConverter}}"
+                        Margin="0,8,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             x:Class="CafeIES.MAUI.Views.PedidosPage"
+             x:DataType="vm:PedidosViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="24,16">
+            <Label Text="Mis pedidos" FontFamily="SyneBold" FontSize="22"
+                   TextColor="{StaticResource TextColor}"/>
+        </Grid>
+
+        <RefreshView Grid.Row="1" Command="{Binding CargarCommand}"
+                     IsRefreshing="{Binding IsLoading}"
+                     RefreshColor="{StaticResource AccentColor}">
+            <CollectionView ItemsSource="{Binding Pedidos}" Margin="24,16">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                         Spacing="12" Margin="0,80">
+                        <Label Text="📋" FontSize="60" HorizontalOptions="Center"/>
+                        <Label Text="Sin pedidos aún" FontFamily="SyneBold" FontSize="18"
+                               TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                        <Label Text="Tus pedidos aparecerán aquí" Style="{StaticResource SubtitleLabel}"
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PedidoDto">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PedidosViewModel}}, Path=VerDetallePedidoCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+
+                                <!-- Fila 1: Número + estado -->
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
+                                           TextColor="{StaticResource AccentColor}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="#"/>
+                                                <Span Text="{Binding NumeroPedido, StringFormat='{0:D3}'}"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                    <!-- Pill de estado -->
+                                    <Border Grid.Column="1" Padding="10,4"
+                                            BackgroundColor="{Binding Estado, Converter={StaticResource EstadoPedidoBgConverter}}"
+                                            StrokeThickness="1"
+                                            Stroke="{Binding Estado, Converter={StaticResource EstadoPedidoBorderConverter}}">
+                                        <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                        <Label Text="{Binding Estado, Converter={StaticResource EstadoPedidoLabelConverter}}"
+                                               FontFamily="SyneBold" FontSize="11"
+                                               TextColor="{Binding Estado, Converter={StaticResource EstadoPedidoTextConverter}}"/>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Fila 2: Items del pedido -->
+                                <Label Grid.Row="1" Style="{StaticResource SubtitleLabel}" FontSize="13"
+                                       Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}"
+                                       LineBreakMode="TailTruncation"/>
+
+                                <!-- Fila 3: Fecha + total -->
+                                <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding FechaCreacion, StringFormat='{0:dd/MM/yyyy HH:mm}'}"
+                                           Style="{StaticResource CaptionLabel}"/>
+                                    <Label Grid.Column="1" FontFamily="SyneBold" FontSize="15"
+                                           TextColor="{StaticResource TextColor}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                                <Span Text="€"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </Grid>
+
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

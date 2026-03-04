@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             x:Class="CafeIES.MAUI.Views.CarritoPage"
+             x:DataType="vm:CarritoViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="24,14,24,16">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Mi carrito" FontFamily="SyneBold"
+                       FontSize="22" TextColor="{StaticResource TextColor}"/>
+                <Label Text="{Binding TotalItems, StringFormat='{0} art&#237;culos'}"
+                       Style="{StaticResource CaptionLabel}"
+                       IsVisible="{Binding CarritoVacio, Converter={StaticResource InvertBoolConverter}}"/>
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- Carrito vacío -->
+        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" HorizontalOptions="Center"
+                             IsVisible="{Binding CarritoVacio}" Spacing="12">
+            <Label Text="🛒" FontSize="60" HorizontalOptions="Center"/>
+            <Label Text="Tu carrito está vacío" FontFamily="SyneBold" FontSize="18"
+                   TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+            <Label Text="Añade algo desde la carta" Style="{StaticResource SubtitleLabel}"
+                   HorizontalOptions="Center"/>
+        </VerticalStackLayout>
+
+        <!-- Lista de items -->
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Items}" Margin="0,12,0,8"
+                        IsVisible="{Binding CarritoVacio, Converter={StaticResource InvertBoolConverter}}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ItemCarrito">
+                    <Border Style="{StaticResource Card}" Margin="16,0,16,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+
+                            <!-- Emoji icono -->
+                            <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
+                                    WidthRequest="52" HeightRequest="52">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14"/>
+                                </Border.StrokeShape>
+                                <Label Text="🍽" FontSize="26"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+
+                            <!-- Nombre y precio -->
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                <Label Text="{Binding Nombre}" FontFamily="SyneBold"
+                                       FontSize="14" TextColor="{StaticResource TextColor}"/>
+                                <Label FontFamily="DMSans" FontSize="13" TextColor="{StaticResource MutedColor}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Precio, StringFormat='{0:F2}'}"/>
+                                            <Span Text="€ c/u"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </VerticalStackLayout>
+
+                            <!-- Control cantidad -->
+                            <Border Grid.Column="2" BackgroundColor="{StaticResource Surface2Color}"
+                                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                                    Padding="10,8" VerticalOptions="Center">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14"/>
+                                </Border.StrokeShape>
+                                <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                                    <Label Grid.Column="0" Text="-" FontFamily="SyneBold" FontSize="20"
+                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <Label Grid.Column="1" Text="{Binding Cantidad}" FontFamily="SyneBold"
+                                           FontSize="15" TextColor="{StaticResource TextColor}"
+                                           VerticalOptions="Center" MinimumWidthRequest="24"
+                                           HorizontalOptions="Center"/>
+                                    <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="20"
+                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </Grid>
+                            </Border>
+
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Footer: Resumen + Pago -->
+        <VerticalStackLayout Grid.Row="2" BackgroundColor="{StaticResource SurfaceColor}"
+                             Padding="24,16,24,20" Spacing="0"
+                             IsVisible="{Binding CarritoVacio, Converter={StaticResource InvertBoolConverter}}">
+
+            <!-- Título resumen -->
+            <Label Text="Resumen del pedido" FontFamily="SyneBold" FontSize="12"
+                   TextColor="{StaticResource MutedColor}" Margin="0,0,0,10"/>
+
+            <!-- Resumen -->
+            <Border BackgroundColor="{StaticResource Surface2Color}"
+                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                    Padding="18,16" Margin="0,0,0,12">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding TotalItems, StringFormat='{0} artículo(s)'}"
+                           Style="{StaticResource CaptionLabel}"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Text="Subtotal" Style="{StaticResource SubtitleLabel}"/>
+                        <Label Grid.Column="1" FontFamily="DMSans" FontSize="14"
+                               TextColor="{StaticResource TextColor}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                    <Span Text=" €"/>
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Grid>
+                    <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderColor}"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Text="Total" FontFamily="SyneBold"
+                               FontSize="20" TextColor="{StaticResource TextColor}"/>
+                        <Label Grid.Column="1" FontFamily="SyneBold" FontSize="20"
+                               TextColor="{StaticResource AccentColor}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                    <Span Text=" €"/>
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Notas opcionales -->
+            <Border BackgroundColor="{StaticResource Surface2Color}"
+                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                    Padding="14,10" Margin="0,0,0,14">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="14"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Notas para la cocina" FontFamily="SyneBold" FontSize="12"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Editor Placeholder="Sin lechuga, extra picante..."
+                            PlaceholderColor="{StaticResource MutedColor}"
+                            TextColor="{StaticResource TextColor}"
+                            BackgroundColor="Transparent"
+                            Text="{Binding Notas}"
+                            HeightRequest="50" AutoSize="TextChanges"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Botón pagar -->
+            <Button Text="{Binding Total, StringFormat='Pagar {0:F2} €'}"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding ConfirmarPedidoCommand}"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}"/>
+
+            <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
+                               Margin="0,8" IsVisible="{Binding IsLoading}"/>
+
+        </VerticalStackLayout>
+
+    </Grid>
+</ContentPage>

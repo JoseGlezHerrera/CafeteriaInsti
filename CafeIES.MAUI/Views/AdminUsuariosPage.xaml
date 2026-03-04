@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="CafeIES.MAUI.Views.AdminUsuariosPage"
+             x:DataType="vm:AdminUsuariosViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
+            <Label Text="Usuarios" FontFamily="SyneBold" FontSize="22"
+                   TextColor="{StaticResource TextColor}"/>
+        </Grid>
+
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsLoading}"
+                     Command="{Binding CargarCommand}">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,12" Spacing="16">
+
+                    <!-- Pendientes de validacion -->
+                    <VerticalStackLayout IsVisible="{Binding HayPendientes}" Spacing="10">
+                        <Grid ColumnDefinitions="3,*" ColumnSpacing="10" HeightRequest="26">
+                            <BoxView Grid.Column="0" Color="#f5a623" CornerRadius="2"/>
+                            <Label Grid.Column="1" Text="Pendientes de validacion"
+                                   FontFamily="SyneBold" FontSize="16"
+                                   TextColor="#f5a623" VerticalOptions="Center"/>
+                        </Grid>
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pendientes}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="dto:UsuarioDto">
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
+                                            <Label Grid.Row="0" Grid.Column="0"
+                                                   Text="{Binding NombreCompleto}"
+                                                   FontFamily="SyneBold" FontSize="14"
+                                                   TextColor="{StaticResource TextColor}"/>
+                                            <Label Grid.Row="1" Grid.Column="0"
+                                                   Text="{Binding Email}"
+                                                   FontFamily="DMSans" FontSize="12"
+                                                   TextColor="{StaticResource MutedColor}"/>
+                                            <HorizontalStackLayout Grid.Row="0" Grid.RowSpan="2"
+                                                                   Grid.Column="1" Spacing="6"
+                                                                   VerticalOptions="Center">
+                                                <Button Text="Aprobar"
+                                                        FontFamily="SyneBold" FontSize="12"
+                                                        BackgroundColor="#264caf82" TextColor="#4caf82"
+                                                        CornerRadius="10" HeightRequest="34" Padding="14,0"
+                                                        CommandParameter="{Binding .}"
+                                                        Clicked="OnAprobarClicked"/>
+                                                <Button Text="Rechazar"
+                                                        FontFamily="SyneBold" FontSize="12"
+                                                        BackgroundColor="#26e05252" TextColor="#e05252"
+                                                        CornerRadius="10" HeightRequest="34" Padding="14,0"
+                                                        CommandParameter="{Binding .}"
+                                                        Clicked="OnRechazarClicked"/>
+                                            </HorizontalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <!-- Todos los usuarios -->
+                    <Grid ColumnDefinitions="3,*" ColumnSpacing="10" Margin="0,8,0,0" HeightRequest="26">
+                        <BoxView Grid.Column="0" Color="{StaticResource MutedColor}" CornerRadius="2"/>
+                        <Label Grid.Column="1" Text="Todos los usuarios"
+                               FontFamily="SyneBold" FontSize="16"
+                               TextColor="{StaticResource MutedColor}" VerticalOptions="Center"/>
+                    </Grid>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Todos}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="dto:UsuarioDto">
+                                <Border Style="{StaticResource Card}" Margin="0,0,0,8"
+                                        Stroke="{Binding Estado, Converter={StaticResource EstadoCuentaBorderConverter}}">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding NombreCompleto}"
+                                               FontFamily="SyneBold" FontSize="14"
+                                               TextColor="{StaticResource TextColor}"/>
+                                        <Label Grid.Row="1" Grid.Column="0"
+                                               Text="{Binding Email}"
+                                               FontFamily="DMSans" FontSize="12"
+                                               TextColor="{StaticResource MutedColor}"/>
+                                        <Label Grid.Row="2" Grid.Column="0"
+                                               Text="{Binding Rol, Converter={StaticResource RolTextoConverter}}"
+                                               FontFamily="DMSans" FontSize="11"
+                                               TextColor="{StaticResource MutedColor}"/>
+                                        <VerticalStackLayout Grid.Row="0" Grid.RowSpan="3"
+                                                             Grid.Column="1" Spacing="6"
+                                                             VerticalOptions="Center">
+                                            <!-- Estado badge -->
+                                            <Border BackgroundColor="{Binding Estado, Converter={StaticResource EstadoCuentaBgConverter}}"
+                                                    Padding="10,4" StrokeThickness="0" HorizontalOptions="End">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                                <Label Text="{Binding Estado, Converter={StaticResource EstadoCuentaTextoConverter}}"
+                                                       FontFamily="SyneBold" FontSize="10"
+                                                       TextColor="{Binding Estado, Converter={StaticResource EstadoCuentaTextColorConverter}}"/>
+                                            </Border>
+                                            <!-- Suspender: solo cuando Activa -->
+                                            <Button Text="Suspender"
+                                                    FontFamily="SyneBold" FontSize="11"
+                                                    BackgroundColor="#26e05252" TextColor="#e05252"
+                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                                    IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Activa}"
+                                                    CommandParameter="{Binding .}"
+                                                    Clicked="OnSuspenderClicked"/>
+                                            <!-- Reactivar: solo cuando Suspendida -->
+                                            <Button Text="Reactivar"
+                                                    FontFamily="SyneBold" FontSize="11"
+                                                    BackgroundColor="#264caf82" TextColor="#4caf82"
+                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                                    IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Suspendida}"
+                                                    CommandParameter="{Binding .}"
+                                                    Clicked="OnReactivarClicked"/>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:CafeIES.MAUI.Views"
+       x:Class="CafeIES.MAUI.AppShell"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.NavBarIsVisible="False"
+       Shell.TabBarBackgroundColor="#1a1916"
+       Shell.TabBarForegroundColor="#f5a623"
+       Shell.TabBarUnselectedColor="#7a7468"
+       Shell.TabBarTitleColor="#f5a623">
+
+    <!-- Ruta de auth (sin tab bar) -->
+    <ShellContent Route="Login" ContentTemplate="{DataTemplate views:LoginPage}" Shell.NavBarIsVisible="False"/>
+
+    <!-- Panel de administración -->
+    <TabBar Route="Admin">
+        <Tab Title="Pedidos" Icon="icon_orders.png" Route="AdminPedidos">
+            <ShellContent ContentTemplate="{DataTemplate views:AdminPedidosPage}"/>
+        </Tab>
+        <Tab Title="Productos" Icon="icon_home.png" Route="AdminProductos">
+            <ShellContent ContentTemplate="{DataTemplate views:AdminProductosPage}"/>
+        </Tab>
+        <Tab Title="Usuarios" Icon="icon_profile.png" Route="AdminUsuarios">
+            <ShellContent ContentTemplate="{DataTemplate views:AdminUsuariosPage}"/>
+        </Tab>
+        <Tab Title="Perfil" Icon="icon_cart.png" Route="AdminPerfil">
+            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
+        </Tab>
+    </TabBar>
+
+    <!-- App principal con Tab Bar -->
+    <TabBar Route="Main">
+        <Tab Title="Inicio" Icon="icon_home.png" Route="Inicio">
+            <ShellContent ContentTemplate="{DataTemplate views:HomePage}"/>
+        </Tab>
+        <Tab Title="Carrito" Icon="icon_cart.png" Route="Carrito">
+            <ShellContent ContentTemplate="{DataTemplate views:CarritoPage}"/>
+        </Tab>
+        <Tab Title="Pedidos" Icon="icon_orders.png" Route="Pedidos">
+            <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}"/>
+        </Tab>
+        <Tab Title="Perfil" Icon="icon_profile.png" Route="Perfil">
+            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
+        </Tab>
+    </TabBar>
+
+    <!-- Rutas de navegación extra -->
+    <Shell.Resources>
+        <ResourceDictionary>
+            <!-- Colores globales -->
+            <Color x:Key="BgColor">#0f0e0c</Color>
+            <Color x:Key="SurfaceColor">#1a1916</Color>
+            <Color x:Key="Surface2Color">#232119</Color>
+            <Color x:Key="AccentColor">#f5a623</Color>
+            <Color x:Key="Accent2Color">#e8834a</Color>
+            <Color x:Key="GreenColor">#4caf82</Color>
+            <Color x:Key="RedColor">#e05252</Color>
+            <Color x:Key="TextColor">#f2ede6</Color>
+            <Color x:Key="MutedColor">#7a7468</Color>
+            <Color x:Key="BorderColor">#2e2b26</Color>
+            <Color x:Key="CardColor">#1e1c18</Color>
+        </ResourceDictionary>
+    </Shell.Resources>
+</Shell>

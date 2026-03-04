@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ═══════════════════════════════════════════════
+         PALETA DE COLORES  (dark & warm, igual que el prototipo)
+    ═══════════════════════════════════════════════ -->
+
+    <!-- Fondos -->
+    <Color x:Key="BgColor">#0F0E0C</Color>
+    <Color x:Key="SurfaceColor">#1A1916</Color>
+    <Color x:Key="Surface2Color">#232119</Color>
+    <Color x:Key="CardColor">#1E1C18</Color>
+    <Color x:Key="BorderColor">#2E2B26</Color>
+
+    <!-- Texto -->
+    <Color x:Key="TextColor">#F2EDE6</Color>
+    <Color x:Key="MutedColor">#7A7468</Color>
+
+    <!-- Acento principal: ámbar/naranja -->
+    <Color x:Key="AccentColor">#F5A623</Color>
+    <Color x:Key="Accent2Color">#E8834A</Color>
+
+    <!-- Semánticos -->
+    <Color x:Key="GreenColor">#4CAF82</Color>
+    <Color x:Key="RedColor">#E05252</Color>
+
+    <!-- Degradados -->
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#F5A623" Offset="0"/>
+        <GradientStop Color="#E8834A" Offset="1"/>
+    </LinearGradientBrush>
+
+
+    <!-- ═══════════════════════════════════════════════
+         ESTILOS BASE
+    ═══════════════════════════════════════════════ -->
+
+    <!-- Página base -->
+    <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{StaticResource BgColor}"/>
+    </Style>
+
+    <!-- Labels -->
+    <Style x:Key="H1" TargetType="Label">
+        <Setter Property="FontFamily"  Value="SyneBold"/>
+        <Setter Property="FontSize"    Value="28"/>
+        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+    </Style>
+
+    <Style x:Key="H2" TargetType="Label">
+        <Setter Property="FontFamily"  Value="SyneBold"/>
+        <Setter Property="FontSize"    Value="20"/>
+        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+    </Style>
+
+    <Style x:Key="H3" TargetType="Label">
+        <Setter Property="FontFamily"  Value="SyneBold"/>
+        <Setter Property="FontSize"    Value="16"/>
+        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+    </Style>
+
+    <Style x:Key="Body" TargetType="Label">
+        <Setter Property="FontFamily"  Value="DMSans"/>
+        <Setter Property="FontSize"    Value="14"/>
+        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+    </Style>
+
+    <Style x:Key="Caption" TargetType="Label">
+        <Setter Property="FontFamily"  Value="DMSans"/>
+        <Setter Property="FontSize"    Value="12"/>
+        <Setter Property="TextColor"   Value="{StaticResource MutedColor}"/>
+    </Style>
+
+    <Style x:Key="AccentLabel" TargetType="Label">
+        <Setter Property="FontFamily"  Value="SyneBold"/>
+        <Setter Property="TextColor"   Value="{StaticResource AccentColor}"/>
+    </Style>
+
+    <!-- Entries / inputs -->
+    <Style x:Key="InputStyle" TargetType="Entry">
+        <Setter Property="FontFamily"       Value="DMSans"/>
+        <Setter Property="FontSize"         Value="15"/>
+        <Setter Property="TextColor"        Value="{StaticResource TextColor}"/>
+        <Setter Property="PlaceholderColor" Value="{StaticResource MutedColor}"/>
+        <Setter Property="BackgroundColor"  Value="Transparent"/>
+        <Setter Property="HeightRequest"    Value="50"/>
+    </Style>
+
+    <!-- Input container (borde + fondo) -->
+    <Style x:Key="InputBox" TargetType="Border">
+        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="StrokeThickness"  Value="1.5"/>
+        <Setter Property="Stroke"          Value="{StaticResource BorderColor}"/>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="14"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Padding"         Value="16,4"/>
+    </Style>
+
+    <!-- Botón primario (ámbar) -->
+    <Style x:Key="BtnPrimary" TargetType="Button">
+        <Setter Property="FontFamily"       Value="SyneBold"/>
+        <Setter Property="FontSize"         Value="15"/>
+        <Setter Property="TextColor"        Value="#0F0E0C"/>
+        <Setter Property="BackgroundColor"  Value="{StaticResource AccentColor}"/>
+        <Setter Property="CornerRadius"     Value="16"/>
+        <Setter Property="HeightRequest"    Value="54"/>
+        <Setter Property="Padding"          Value="0"/>
+    </Style>
+
+    <!-- Botón outline -->
+    <Style x:Key="BtnOutline" TargetType="Button">
+        <Setter Property="FontFamily"       Value="SyneBold"/>
+        <Setter Property="FontSize"         Value="14"/>
+        <Setter Property="TextColor"        Value="{StaticResource AccentColor}"/>
+        <Setter Property="BackgroundColor"  Value="Transparent"/>
+        <Setter Property="BorderColor"      Value="{StaticResource AccentColor}"/>
+        <Setter Property="BorderWidth"      Value="1.5"/>
+        <Setter Property="CornerRadius"     Value="16"/>
+        <Setter Property="HeightRequest"    Value="50"/>
+    </Style>
+
+    <!-- Card -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="BackgroundColor"  Value="{StaticResource CardColor}"/>
+        <Setter Property="StrokeThickness"  Value="1"/>
+        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="20"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Surface card (más claro) -->
+    <Style x:Key="SurfaceCard" TargetType="Border">
+        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="StrokeThickness"  Value="1"/>
+        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="16"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Chip de categoría inactivo -->
+    <Style x:Key="CategoryChip" TargetType="Border">
+        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="StrokeThickness"  Value="1.5"/>
+        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="50"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Padding"          Value="18,10"/>
+    </Style>
+
+    <!-- Chip de categoría activo -->
+    <Style x:Key="CategoryChipActive" TargetType="Border">
+        <Setter Property="BackgroundColor"  Value="{StaticResource AccentColor}"/>
+        <Setter Property="StrokeThickness"  Value="0"/>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="50"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Padding"          Value="18,10"/>
+    </Style>
+
+</ResourceDictionary>

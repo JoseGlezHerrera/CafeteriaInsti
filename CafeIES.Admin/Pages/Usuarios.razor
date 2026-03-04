@@ -1,0 +1,190 @@
+@page "/usuarios"
+@inject AdminApiService Api
+
+<PageTitle>Usuarios · CaféIES Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Usuarios</h1>
+</div>
+
+<!-- Alumnos pendientes de validación -->
+@if (_pendientes.Any())
+{
+    <div class="alert-section">
+        <div class="alert-section-title">
+            <span>⚠️ Alumnos pendientes de validar</span>
+            <span class="badge-red">@_pendientes.Count</span>
+        </div>
+        <div class="pending-list">
+            @foreach (var u in _pendientes)
+            {
+                <div class="pending-card">
+                    <div class="pending-avatar">👤</div>
+                    <div class="pending-info">
+                        <div class="pending-name">@u.NombreCompleto</div>
+                        <div class="pending-email">@u.Email · @GetTurnoEmoji(u.Turno) @u.Turno</div>
+                    </div>
+                    <div class="pending-actions">
+                        <button class="btn-approve" @onclick="() => ValidarAlumno(u.Id, true)">
+                            ✓ Aprobar
+                        </button>
+                        <button class="btn-reject" @onclick="() => ValidarAlumno(u.Id, false)">
+                            ✕ Rechazar
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Tabla todos los usuarios -->
+<div class="section">
+    <div class="section-header">
+        <h2>Todos los usuarios</h2>
+        <div class="filters-inline">
+            <input class="search-input" placeholder="Buscar..." @bind="_busqueda" @bind:event="oninput"/>
+            <select class="filter-select-sm" @bind="_rolFiltro">
+                <option value="">Todos los roles</option>
+                <option value="Alumno">🎓 Alumno</option>
+                <option value="Profesor">👨‍🏫 Profesor</option>
+                <option value="Personal">🏢 Personal</option>
+                <option value="Admin">👑 Admin</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Turno</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in UsuariosFiltrados)
+                {
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar-sm">👤</div>
+                                <div>
+                                    <div class="user-name">@u.NombreCompleto</div>
+                                    <div class="user-email">@u.Email</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge role--@u.Rol.ToString().ToLower()">@GetRolTexto(u.Rol)</span></td>
+                        <td>
+                            @if (u.Turno.HasValue)
+                            {
+                                <span>@GetTurnoEmoji(u.Turno) @u.Turno</span>
+                            }
+                            else
+                            {
+                                <span class="muted">Sin restricción</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="status-pill @GetEstadoClass(u.Estado)">
+                                @GetEstadoTexto(u.Estado)
+                            </span>
+                        </td>
+                        <td>
+                            @if (u.Rol != RolUsuario.Admin && u.Estado == EstadoCuenta.Activa)
+                            {
+                                <button class="btn-icon btn-icon--danger" title="Suspender"
+                                        @onclick="() => Suspender(u.Id)">🔒</button>
+                            }
+                            @if (u.Estado == EstadoCuenta.Suspendida || u.Estado == EstadoCuenta.Rechazada)
+                            {
+                                <button class="btn-icon btn-icon--success" title="Reactivar cuenta"
+                                        @onclick="() => Reactivar(u.Id)">✅</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<UsuarioDto> _todos      = new();
+    private List<UsuarioDto> _pendientes = new();
+    private string _busqueda  = string.Empty;
+    private string _rolFiltro = string.Empty;
+
+    private IEnumerable<UsuarioDto> UsuariosFiltrados =>
+        _todos
+            .Where(u => u.Estado != EstadoCuenta.PendienteValidacion)
+            .Where(u => string.IsNullOrEmpty(_busqueda) ||
+                        u.NombreCompleto.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+                        u.Email.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+            .Where(u => string.IsNullOrEmpty(_rolFiltro) || u.Rol.ToString() == _rolFiltro);
+
+    protected override async Task OnInitializedAsync() => await Recargar();
+
+    private async Task Recargar()
+    {
+        _todos      = await Api.GetTodosUsuariosAsync();
+        _pendientes = _todos.Where(u => u.Estado == EstadoCuenta.PendienteValidacion).ToList();
+    }
+
+    private async Task ValidarAlumno(int id, bool aprobar)
+    {
+        await Api.ValidarAlumnoAsync(id, aprobar);
+        await Recargar();
+    }
+
+    private async Task Suspender(int id)
+    {
+        await Api.SuspenderUsuarioAsync(id);
+        await Recargar();
+    }
+
+    private async Task Reactivar(int id)
+    {
+        await Api.ReactivarUsuarioAsync(id);
+        await Recargar();
+    }
+
+    private static string GetTurnoEmoji(Turno? t) => t switch
+    {
+        Turno.Manana => "🌅",
+        Turno.Tarde  => "🌤️",
+        Turno.Noche  => "🌙",
+        _            => ""
+    };
+
+    private static string GetRolTexto(RolUsuario r) => r switch
+    {
+        RolUsuario.Alumno   => "🎓 Alumno",
+        RolUsuario.Profesor => "👨‍🏫 Profesor",
+        RolUsuario.Personal => "🏢 Personal",
+        RolUsuario.Admin    => "👑 Admin",
+        _                   => r.ToString()
+    };
+
+    private static string GetEstadoTexto(EstadoCuenta e) => e switch
+    {
+        EstadoCuenta.Activa              => "Activa",
+        EstadoCuenta.PendienteValidacion => "Pendiente",
+        EstadoCuenta.Suspendida          => "Suspendida",
+        EstadoCuenta.Rechazada           => "Rechazada",
+        _                                => e.ToString()
+    };
+
+    private static string GetEstadoClass(EstadoCuenta e) => e switch
+    {
+        EstadoCuenta.Activa              => "pill--on",
+        EstadoCuenta.PendienteValidacion => "pill--warning",
+        EstadoCuenta.Suspendida          => "pill--off",
+        EstadoCuenta.Rechazada           => "pill--off",
+        _                                => ""
+    };
+}

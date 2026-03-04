@@ -1,0 +1,284 @@
+@page "/productos"
+@inject AdminApiService Api
+@inject IJSRuntime JS
+
+<PageTitle>Productos · CaféIES Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Productos</h1>
+    <button class="btn-primary" @onclick="AbrirNuevoProducto">+ Nuevo producto</button>
+</div>
+
+<!-- Filtros -->
+<div class="filters-bar">
+    <input class="search-input" placeholder="🔍 Buscar producto..." @bind="_busqueda" @bind:event="oninput"/>
+    <select class="filter-select" @bind="_categoriaFiltro">
+        <option value="">Todas las categorías</option>
+        @foreach (var cat in _categorias)
+        {
+            <option value="@cat.Nombre">@cat.Emoji @cat.Nombre</option>
+        }
+    </select>
+    <label class="filter-check">
+        <input type="checkbox" @bind="_mostrarOcultos"/> Mostrar ocultos
+    </label>
+</div>
+
+<!-- Tabla de productos -->
+<div class="table-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var prod in ProductosFiltrados)
+            {
+                <tr class="@(!prod.Activo ? "row--hidden" : "")">
+                    <td>
+                        <div class="prod-name-cell">
+                            <span class="prod-emoji">@prod.CategoriaEmoji</span>
+                            <div>
+                                <div class="prod-name">@prod.Nombre</div>
+                                <div class="prod-desc">@prod.Descripcion</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="cat-badge">@prod.CategoriaNombre</span></td>
+                    <td class="price-cell">@prod.Precio.ToString("F2")€</td>
+                    <td>
+                        <div class="stock-cell">
+                            @if (prod.Stock == -1)
+                            {
+                                <span class="stock-pill stock--unlimited">∞</span>
+                            }
+                            else
+                            {
+                                <div class="stock-bar-wrap">
+                                    <div class="stock-bar-bg">
+                                        <div class="stock-bar-fill @GetStockClass(prod.Stock)"
+                                             style="width: @GetStockPercent(prod.Stock)%"></div>
+                                    </div>
+                                    <span class="stock-num @(prod.Stock <= 5 ? "stock-num--low" : "")">
+                                        @prod.Stock
+                                    </span>
+                                </div>
+                                <!-- Input edición rápida de stock -->
+                                <input type="number" class="stock-quick-edit"
+                                       min="0" value="@prod.Stock"
+                                       @onchange="e => ActualizarStock(prod.Id, int.Parse(e.Value!.ToString()!))"
+                                       title="Editar stock"/>
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-pill @(prod.Activo ? "pill--on" : "pill--off")">
+                            @(prod.Activo ? "Activo" : "Oculto")
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-icon" title="Editar"
+                                    @onclick="() => AbrirEditar(prod)">✏️</button>
+                            <button class="btn-icon" title="@(prod.Activo ? "Ocultar" : "Activar")"
+                                    @onclick="() => ToggleActivo(prod.Id)">
+                                @(prod.Activo ? "👁" : "🔒")
+                            </button>
+                            <button class="btn-icon btn-icon--danger" title="Eliminar"
+                                    @onclick="() => ConfirmarEliminar(prod.Id)">🗑</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Nuevo/Editar Producto -->
+@if (_mostrarModal)
+{
+    <div class="modal-overlay" @onclick="CerrarModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@(_editandoId.HasValue ? "Editar producto" : "Nuevo producto")</h3>
+                <button class="modal-close" @onclick="CerrarModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input class="form-input" @bind="_form.Nombre" placeholder="ej. Bocadillo Mixto"/>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input class="form-input" @bind="_form.Descripcion" placeholder="Breve descripción"/>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio (€)</label>
+                        <input class="form-input" type="number" step="0.10" min="0"
+                               @bind="_form.Precio"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock (-1 = ilimitado)</label>
+                        <input class="form-input" type="number" min="-1"
+                               @bind="_form.Stock"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    @if (_categorias.Count == 0)
+                    {
+                        <p style="color:var(--accent);font-size:13px;margin-top:4px">⚠️ Crea al menos una categoría antes de añadir productos.</p>
+                    }
+                    else
+                    {
+                        <select class="form-input" @bind="_form.CategoriaId">
+                            @foreach (var cat in _categorias)
+                            {
+                                <option value="@cat.Id">@cat.Emoji @cat.Nombre</option>
+                            }
+                        </select>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_errorModal))
+                {
+                    <p style="color:var(--red);font-size:13px;margin-top:8px">⚠️ @_errorModal</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CerrarModal">Cancelar</button>
+                <button class="btn-primary" @onclick="GuardarProducto" disabled="@_guardando">
+                    @(_guardando ? "Guardando..." : "Guardar")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProductoDto>  _productos  = new();
+    private List<CategoriaDto> _categorias = new();
+    private string  _busqueda        = string.Empty;
+    private string  _categoriaFiltro = string.Empty;
+    private bool    _mostrarOcultos  = false;
+    private bool    _mostrarModal    = false;
+    private bool    _guardando       = false;
+    private int?    _editandoId;
+    private string  _errorModal      = string.Empty;
+
+    private ProductoForm _form = new();
+
+    private IEnumerable<ProductoDto> ProductosFiltrados =>
+        _productos
+            .Where(p => _mostrarOcultos || p.Activo)
+            .Where(p => string.IsNullOrEmpty(_busqueda) ||
+                        p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+            .Where(p => string.IsNullOrEmpty(_categoriaFiltro) || p.CategoriaNombre == _categoriaFiltro);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categorias = await Api.GetCategoriasAsync();
+        _productos  = await Api.GetProductosAsync();
+    }
+
+    private void AbrirNuevoProducto()
+    {
+        _editandoId   = null;
+        _form         = new ProductoForm { CategoriaId = _categorias.FirstOrDefault()?.Id ?? 1 };
+        _errorModal   = string.Empty;
+        _mostrarModal = true;
+    }
+
+    private void AbrirEditar(ProductoDto p)
+    {
+        _editandoId = p.Id;
+        _form = new ProductoForm
+        {
+            Nombre      = p.Nombre,
+            Descripcion = p.Descripcion,
+            Precio      = p.Precio,
+            Stock       = p.Stock,
+            CategoriaId = p.CategoriaId
+        };
+        _errorModal   = string.Empty;
+        _mostrarModal = true;
+    }
+
+    private async Task GuardarProducto()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Nombre))
+        {
+            _errorModal = "El nombre es obligatorio.";
+            return;
+        }
+        if (_categorias.Count == 0)
+        {
+            _errorModal = "Crea al menos una categoría antes de añadir productos.";
+            return;
+        }
+
+        _guardando  = true;
+        _errorModal = string.Empty;
+
+        var req = new CrearProductoRequest(_form.Nombre, _form.Descripcion,
+            _form.Precio, _form.Stock, _form.CategoriaId, null);
+
+        bool ok = _editandoId.HasValue
+            ? await Api.ActualizarProductoAsync(_editandoId.Value, req)
+            : await Api.CrearProductoAsync(req);
+
+        _guardando = false;
+
+        if (!ok) { _errorModal = "Error al guardar. Comprueba los datos e inténtalo de nuevo."; return; }
+
+        _productos    = await Api.GetProductosAsync();
+        _mostrarModal = false;
+    }
+
+    private async Task ActualizarStock(int id, int nuevoStock)
+    {
+        await Api.ActualizarStockAsync(id, nuevoStock);
+        _productos = await Api.GetProductosAsync();
+    }
+
+    private async Task ToggleActivo(int id)
+    {
+        await Api.ToggleActivoAsync(id);
+        _productos = await Api.GetProductosAsync();
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "¿Eliminar este producto? Esta acción no se puede deshacer."))
+            return;
+        await Api.EliminarProductoAsync(id);
+        _productos = await Api.GetProductosAsync();
+    }
+
+    private void CerrarModal() => _mostrarModal = false;
+
+    private static string GetStockClass(int stock) => stock switch
+    {
+        0      => "fill--empty",
+        <= 5   => "fill--low",
+        <= 15  => "fill--mid",
+        _      => "fill--high"
+    };
+
+    private static int GetStockPercent(int stock) => Math.Min(100, stock * 5);
+
+    private class ProductoForm
+    {
+        public string  Nombre      { get; set; } = string.Empty;
+        public string  Descripcion { get; set; } = string.Empty;
+        public decimal Precio      { get; set; }
+        public int     Stock       { get; set; } = -1;
+        public int     CategoriaId { get; set; }
+    }
+}

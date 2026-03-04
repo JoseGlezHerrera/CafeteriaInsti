@@ -1,0 +1,128 @@
+@page "/"
+@inject AdminApiService Api
+@inject NavigationManager Nav
+
+<PageTitle>Dashboard · CaféIES Admin</PageTitle>
+
+@if (!_cargado)
+{
+    <div class="loading-wrap">
+        <div class="spinner"></div>
+        <p>Cargando...</p>
+    </div>
+}
+else if (_dashboard is null)
+{
+    <p class="error-msg">Error al cargar el dashboard.</p>
+}
+else
+{
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <span class="page-sub">Hoy, @DateTime.Now.ToString("dddd d MMMM")</span>
+    </div>
+
+    <!-- ── Stats ──────────────────────────────────────────────────────────── -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">PEDIDOS HOY</div>
+            <div class="stat-value">@_dashboard.PedidosHoy</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">INGRESOS HOY</div>
+            <div class="stat-value">@_dashboard.IngresosHoy.ToString("F2")€</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">PRODUCTOS ACTIVOS</div>
+            <div class="stat-value">@_dashboard.ProductosActivos</div>
+            @if (_dashboard.ProductosStockBajo > 0)
+            {
+                <div class="stat-warning">⚠️ @_dashboard.ProductosStockBajo con stock bajo</div>
+            }
+        </div>
+        <div class="stat-card @(_dashboard.AlumnosPendientes > 0 ? "stat-card--alert" : "")">
+            <div class="stat-label">ALUMNOS PENDIENTES</div>
+            <div class="stat-value">@_dashboard.AlumnosPendientes</div>
+            @if (_dashboard.AlumnosPendientes > 0)
+            {
+                <a href="/usuarios" class="stat-link">Revisar →</a>
+            }
+        </div>
+    </div>
+
+    <!-- ── Pedidos en curso (tiempo real) ────────────────────────────────── -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Pedidos en curso</h2>
+            <span class="live-badge">● EN VIVO</span>
+        </div>
+
+        @if (!_dashboard.PedidosEnCurso.Any())
+        {
+            <div class="empty-state">
+                <span class="empty-icon">✅</span>
+                <p>Sin pedidos pendientes ahora mismo</p>
+            </div>
+        }
+        else
+        {
+            <div class="orders-live-grid">
+                @foreach (var pedido in _dashboard.PedidosEnCurso)
+                {
+                    <div class="order-live-card @GetEstadoClass(pedido.Estado)">
+                        <div class="order-num">#@pedido.NumeroPedido.ToString("D3")</div>
+                        <div class="order-info">
+                            <div class="order-user">@pedido.UsuarioNombre</div>
+                            <div class="order-items">
+                                @string.Join(", ", pedido.Lineas.Select(l => $"{l.ProductoNombre} ×{l.Cantidad}"))
+                            </div>
+                            <div class="order-time">@pedido.FechaCreacion.ToString("HH:mm")</div>
+                        </div>
+                        <div class="order-actions">
+                            @if (pedido.Estado == EstadoPedido.Pendiente)
+                            {
+                                <button class="btn-status btn-prep"
+                                        @onclick="() => CambiarEstado(pedido.Id, EstadoPedido.EnPreparacion)">
+                                    En preparación
+                                </button>
+                            }
+                            else if (pedido.Estado == EstadoPedido.EnPreparacion)
+                            {
+                                <button class="btn-status btn-ready"
+                                        @onclick="() => CambiarEstado(pedido.Id, EstadoPedido.Listo)">
+                                    ✓ Listo
+                                </button>
+                            }
+                        </div>
+                        <div class="order-status-dot"></div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private DashboardDto? _dashboard;
+    private bool _cargado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dashboard = await Api.GetDashboardAsync();
+        _cargado   = true;
+    }
+
+    private async Task CambiarEstado(int pedidoId, EstadoPedido nuevoEstado)
+    {
+        await Api.CambiarEstadoPedidoAsync(pedidoId, nuevoEstado);
+        _dashboard = await Api.GetDashboardAsync();
+    }
+
+    private static string GetEstadoClass(EstadoPedido estado) => estado switch
+    {
+        EstadoPedido.Pendiente     => "order--new",
+        EstadoPedido.EnPreparacion => "order--prep",
+        EstadoPedido.Listo         => "order--ready",
+        _ => ""
+    };
+}

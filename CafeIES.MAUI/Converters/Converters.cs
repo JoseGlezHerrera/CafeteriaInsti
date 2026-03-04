@@ -1,0 +1,343 @@
+using System.Globalization;
+using CafeIES.Shared.Models;
+
+namespace CafeIES.MAUI.Converters;
+
+// ── Bool helpers ──────────────────────────────────────────────────────────────
+
+public class InvertBoolConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : value;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : value;
+}
+
+public class IntToBoolConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int i && i > 0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Bool → Accent (para turno selector en RegistroPage) ──────────────────────
+
+public class BoolToAccentBorderConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true
+            ? Color.FromArgb("#f5a623")
+            : Color.FromArgb("#2e2b26");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class BoolToAccentBgConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true
+            ? Color.FromArgb("#1af5a623")
+            : Color.FromArgb("#232119");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class BoolToAccentTextConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true
+            ? Color.FromArgb("#f5a623")
+            : Color.FromArgb("#7a7468");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Categoría activa (recibe CategoriaDto, siempre inactiva; selección visual via chips) ─
+
+public class CategoriaActivaBorderConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Color.FromArgb("#2e2b26");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class CategoriaActivaBgConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Color.FromArgb("#232119");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Stock level converters ───────────────────────────────────────────────────
+
+public class StockLevelBorderConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value?.ToString() switch
+        {
+            "agotado" => Color.FromArgb("#e05252"),
+            "bajo"    => Color.FromArgb("#e8834a"),
+            _         => Color.FromArgb("#4caf82")
+        };
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class StockLevelTextConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value?.ToString() switch
+        {
+            "agotado" => Color.FromArgb("#e05252"),
+            "bajo"    => Color.FromArgb("#e8834a"),
+            _         => Color.FromArgb("#4caf82")
+        };
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class StockLevelEmojiConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value?.ToString() switch
+        {
+            "agotado" => "⛔",
+            "bajo"    => "⚠️",
+            _         => "✓"
+        };
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class StockDisplayConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int stock
+            ? stock == -1 ? "∞" : stock.ToString()
+            : "—";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Estado pedido converters (PedidosPage) ───────────────────────────────────
+
+public class EstadoPedidoBgConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoPedido e ? e switch
+        {
+            EstadoPedido.Pendiente     => Color.FromArgb("#1af5a623"),
+            EstadoPedido.EnPreparacion => Color.FromArgb("#1ae8834a"),
+            EstadoPedido.Listo         => Color.FromArgb("#1a4caf82"),
+            EstadoPedido.Entregado     => Color.FromArgb("#1a4caf82"),
+            EstadoPedido.Cancelado     => Color.FromArgb("#1ae05252"),
+            _ => Colors.Transparent
+        } : Colors.Transparent;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class EstadoPedidoBorderConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoPedido e ? e switch
+        {
+            EstadoPedido.Pendiente     => Color.FromArgb("#40f5a623"),
+            EstadoPedido.EnPreparacion => Color.FromArgb("#40e8834a"),
+            EstadoPedido.Listo         => Color.FromArgb("#404caf82"),
+            EstadoPedido.Entregado     => Color.FromArgb("#404caf82"),
+            EstadoPedido.Cancelado     => Color.FromArgb("#40e05252"),
+            _ => Colors.Transparent
+        } : Colors.Transparent;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class EstadoPedidoLabelConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoPedido e ? e switch
+        {
+            EstadoPedido.Pendiente     => "🧾 Pendiente",
+            EstadoPedido.EnPreparacion => "👨‍🍳 Preparando",
+            EstadoPedido.Listo         => "🔔 Listo",
+            EstadoPedido.Entregado     => "✅ Entregado",
+            EstadoPedido.Cancelado     => "❌ Cancelado",
+            _ => ""
+        } : "";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class EstadoPedidoTextConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoPedido e ? e switch
+        {
+            EstadoPedido.Pendiente     => Color.FromArgb("#f5a623"),
+            EstadoPedido.EnPreparacion => Color.FromArgb("#e8834a"),
+            EstadoPedido.Listo         => Color.FromArgb("#4caf82"),
+            EstadoPedido.Entregado     => Color.FromArgb("#4caf82"),
+            EstadoPedido.Cancelado     => Color.FromArgb("#e05252"),
+            _ => Color.FromArgb("#7a7468")
+        } : Color.FromArgb("#7a7468");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Líneas resumen (lista → string como "2× Bocadillo, 1× Café") ────────────
+
+public class LineasResumenConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not IEnumerable<LineaPedidoDto> lineas) return "";
+        return string.Join(", ", lineas.Select(l => $"{l.Cantidad}× {l.ProductoNombre}"));
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: estado pedido es igual a parámetro ─────────────────────────────────
+
+public class EstadoEsConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value?.ToString() == parameter?.ToString();
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: estado cuenta ──────────────────────────────────────────────────────
+
+public class EstadoCuentaTextoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoCuenta e ? e switch
+        {
+            EstadoCuenta.Activa              => "Activa",
+            EstadoCuenta.PendienteValidacion => "Pendiente",
+            EstadoCuenta.Suspendida          => "Suspendida",
+            EstadoCuenta.Rechazada           => "Rechazada",
+            _                               => e.ToString()
+        } : "";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class EstadoCuentaBgConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoCuenta e ? e switch
+        {
+            EstadoCuenta.Activa              => Color.FromArgb("#1a4caf82"),
+            EstadoCuenta.PendienteValidacion => Color.FromArgb("#1af5a623"),
+            EstadoCuenta.Suspendida          => Color.FromArgb("#1ae05252"),
+            EstadoCuenta.Rechazada           => Color.FromArgb("#1ae05252"),
+            _                               => Colors.Transparent
+        } : Colors.Transparent;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class EstadoCuentaTextColorConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoCuenta e ? e switch
+        {
+            EstadoCuenta.Activa              => Color.FromArgb("#4caf82"),
+            EstadoCuenta.PendienteValidacion => Color.FromArgb("#f5a623"),
+            EstadoCuenta.Suspendida          => Color.FromArgb("#e05252"),
+            EstadoCuenta.Rechazada           => Color.FromArgb("#e05252"),
+            _                               => Color.FromArgb("#7a7468")
+        } : Color.FromArgb("#7a7468");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: estado cuenta - borde ────────────────────────────────────────────
+
+public class EstadoCuentaBorderConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoCuenta e && e == EstadoCuenta.Suspendida
+            ? Color.FromArgb("#50e05252")
+            : Color.FromArgb("#2e2b26");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: rol usuario ────────────────────────────────────────────────────────
+
+public class RolTextoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is RolUsuario r ? r switch
+        {
+            RolUsuario.Alumno   => "🎓 Alumno",
+            RolUsuario.Profesor => "👨‍🏫 Profesor",
+            RolUsuario.Personal => "🏢 Personal",
+            RolUsuario.Admin    => "👑 Admin",
+            _                  => r.ToString()
+        } : "";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: producto activo ────────────────────────────────────────────────────
+
+public class ActivoTextoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? (b ? "Activo" : "Oculto") : "";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class ActivoBgConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b
+            ? (b ? Color.FromArgb("#1a4caf82") : Color.FromArgb("#1a7a7468"))
+            : Colors.Transparent;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class ActivoTextColorConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b
+            ? (b ? Color.FromArgb("#4caf82") : Color.FromArgb("#7a7468"))
+            : Color.FromArgb("#7a7468");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

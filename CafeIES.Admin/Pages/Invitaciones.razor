@@ -1,0 +1,178 @@
+@page "/invitaciones"
+@inject AdminApiService Api
+@inject IJSRuntime JS
+
+<PageTitle>Invitaciones · CaféIES Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Invitaciones</h1>
+    <p class="page-sub">Genera QR o enlaces para que profesores y personal se registren con el rol correcto.</p>
+</div>
+
+<div class="invite-grid">
+
+    <!-- Card Profesores -->
+    <div class="invite-card @(_invProfesor?.EsValida == true ? "invite-card--active" : "")">
+        <div class="invite-card-header">
+            <div>
+                <div class="invite-role">👨‍🏫 Profesores</div>
+                <div class="invite-desc">Acceso sin restricción horaria</div>
+            </div>
+            <span class="status-pill @(_invProfesor?.EsValida == true ? "pill--on" : "pill--off")">
+                @(_invProfesor?.EsValida == true ? "Activo" : "Inactivo")
+            </span>
+        </div>
+
+        @if (_invProfesor?.EsValida == true)
+        {
+            <div class="qr-wrap">
+                <img src="@Api.GetQrUrl(_invProfesor.Id)" class="qr-img" alt="QR Profesores"/>
+            </div>
+            <div class="invite-url">@_invProfesor.UrlInvitacion</div>
+            <div class="invite-meta">
+                Caduca: @_invProfesor.FechaExpiracion.ToString("dd/MM/yyyy") ·
+                Usos: @_invProfesor.UsosActuales@(_invProfesor.UsosMaximos.HasValue ? $"/{_invProfesor.UsosMaximos}" : "")
+            </div>
+            <div class="invite-actions">
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invProfesor.UrlInvitacion)">
+                    📋 Copiar enlace
+                </button>
+                <button class="btn-icon btn-icon--danger"
+                        @onclick="() => RevocarInvitacion(_invProfesor.Id)">
+                    🗑 Revocar
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="invite-empty">
+                <span class="invite-lock">🔒</span>
+                <p>Sin enlace activo</p>
+            </div>
+            <button class="btn-primary btn-full"
+                    @onclick="() => GenerarInvitacion(TipoInvitacion.Profesor)">
+                ✨ Generar QR
+            </button>
+        }
+    </div>
+
+    <!-- Card Personal -->
+    <div class="invite-card @(_invPersonal?.EsValida == true ? "invite-card--active" : "")">
+        <div class="invite-card-header">
+            <div>
+                <div class="invite-role">🏢 Personal</div>
+                <div class="invite-desc">Acceso sin restricción horaria</div>
+            </div>
+            <span class="status-pill @(_invPersonal?.EsValida == true ? "pill--on" : "pill--off")">
+                @(_invPersonal?.EsValida == true ? "Activo" : "Inactivo")
+            </span>
+        </div>
+
+        @if (_invPersonal?.EsValida == true)
+        {
+            <div class="qr-wrap">
+                <img src="@Api.GetQrUrl(_invPersonal.Id)" class="qr-img" alt="QR Personal"/>
+            </div>
+            <div class="invite-url">@_invPersonal.UrlInvitacion</div>
+            <div class="invite-meta">
+                Caduca: @_invPersonal.FechaExpiracion.ToString("dd/MM/yyyy") ·
+                Usos: @_invPersonal.UsosActuales@(_invPersonal.UsosMaximos.HasValue ? $"/{_invPersonal.UsosMaximos}" : "")
+            </div>
+            <div class="invite-actions">
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invPersonal.UrlInvitacion)">
+                    📋 Copiar enlace
+                </button>
+                <button class="btn-icon btn-icon--danger"
+                        @onclick="() => RevocarInvitacion(_invPersonal.Id)">
+                    🗑 Revocar
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="invite-empty">
+                <span class="invite-lock">🔒</span>
+                <p>Sin enlace activo</p>
+            </div>
+            <button class="btn-primary btn-full"
+                    @onclick="() => GenerarInvitacion(TipoInvitacion.Personal)">
+                ✨ Generar QR
+            </button>
+        }
+    </div>
+
+</div>
+
+<!-- Opciones de generación -->
+@if (_mostrarOpcionesGen)
+{
+    <div class="modal-overlay" @onclick="() => _mostrarOpcionesGen = false">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>Generar invitación · @_tipoGenerando</h3>
+                <button class="modal-close" @onclick="() => _mostrarOpcionesGen = false">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Validez (días)</label>
+                    <input class="form-input" type="number" min="1" max="365" @bind="_diasValidez"/>
+                </div>
+                <div class="form-group">
+                    <label>Máximo de usos (vacío = ilimitado)</label>
+                    <input class="form-input" type="number" min="1" @bind="_usosMaximos" placeholder="Ilimitado"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="() => _mostrarOpcionesGen = false">Cancelar</button>
+                <button class="btn-primary" @onclick="ConfirmarGeneracion">Generar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<InvitacionDto> _invitaciones = new();
+    private InvitacionDto?     _invProfesor;
+    private InvitacionDto?     _invPersonal;
+    private bool               _mostrarOpcionesGen;
+    private TipoInvitacion     _tipoGenerando;
+    private int                _diasValidez  = 7;
+    private int?               _usosMaximos;
+
+    protected override async Task OnInitializedAsync() => await Recargar();
+
+    private async Task Recargar()
+    {
+        _invitaciones = await Api.GetInvitacionesAsync();
+        _invProfesor  = _invitaciones.FirstOrDefault(i => i.Tipo == TipoInvitacion.Profesor && i.EsValida);
+        _invPersonal  = _invitaciones.FirstOrDefault(i => i.Tipo == TipoInvitacion.Personal && i.EsValida);
+    }
+
+    private void GenerarInvitacion(TipoInvitacion tipo)
+    {
+        _tipoGenerando      = tipo;
+        _diasValidez        = 7;
+        _usosMaximos        = null;
+        _mostrarOpcionesGen = true;
+    }
+
+    private async Task ConfirmarGeneracion()
+    {
+        _mostrarOpcionesGen = false;
+        await Api.CrearInvitacionAsync(new CrearInvitacionRequest(
+            _tipoGenerando, _usosMaximos, _diasValidez));
+        await Recargar();
+    }
+
+    private async Task RevocarInvitacion(int id)
+    {
+        await Api.RevocarInvitacionAsync(id);
+        await Recargar();
+    }
+
+    private async Task CopiarUrl(string url)
+    {
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); }
+        catch { }
+    }
+}

@@ -1,0 +1,135 @@
+@page "/horarios"
+@inject AdminApiService Api
+
+<PageTitle>Horarios · CaféIES Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Franjas horarias</h1>
+    <p class="page-sub">Configura cuándo puede pedir cada turno. Los cambios son inmediatos.</p>
+</div>
+
+@foreach (var turno in new[] { Turno.Manana, Turno.Tarde, Turno.Noche })
+{
+    var franjasTurno = _franjas.Where(f => f.Turno == turno).OrderBy(f => f.HoraInicio).ToList();
+    <div class="turno-section">
+        <div class="turno-header">
+            <span class="turno-emoji">@GetTurnoEmoji(turno)</span>
+            <h2>Turno @turno</h2>
+            <button class="btn-sm" @onclick="() => AbrirNuevaFranja(turno)">+ Añadir franja</button>
+        </div>
+        @if (!franjasTurno.Any())
+        {
+            <div class="empty-mini">Sin franjas configuradas — este turno no podrá pedir.</div>
+        }
+        else
+        {
+            <div class="franjas-list">
+                @foreach (var f in franjasTurno)
+                {
+                    var activa = EsFranjaActiva(f);
+                    <div class="franja-card @(!f.Activa ? "franja-card--off" : "") @(activa ? "franja-card--live" : "")">
+                        @if (activa)
+                        {
+                            <span class="live-dot">●</span>
+                        }
+                        <div class="franja-desc">@f.Descripcion</div>
+                        <div class="franja-horario">@f.HoraInicio — @f.HoraFin</div>
+                        <span class="status-pill @(f.Activa ? "pill--on" : "pill--off") franja-status">
+                            @(f.Activa ? "Activa" : "Desactivada")
+                        </span>
+                        <button class="btn-icon btn-icon--danger franja-del"
+                                @onclick="() => EliminarFranja(f.Id)">
+                            🗑
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@if (_mostrarModal)
+{
+    <div class="modal-overlay" @onclick="CerrarModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>Nueva franja · @GetTurnoEmoji(_turnoModal) Turno @_turnoModal</h3>
+                <button class="modal-close" @onclick="CerrarModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input class="form-input" @bind="_fDesc" placeholder="ej. Recreo" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Hora inicio (HH:mm)</label>
+                        <input class="form-input" type="text" placeholder="08:00" @bind="_fInicio" />
+                    </div>
+                    <div class="form-group">
+                        <label>Hora fin (HH:mm)</label>
+                        <input class="form-input" type="text" placeholder="09:00" @bind="_fFin" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CerrarModal">Cancelar</button>
+                <button class="btn-primary" @onclick="GuardarFranja">Guardar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<FranjaHorariaDto> _franjas = new();
+    private bool _mostrarModal;
+    private Turno _turnoModal;
+    private string _fDesc = string.Empty;
+    private string _fInicio = "08:00";
+    private string _fFin = "09:00";
+
+    protected override async Task OnInitializedAsync()
+        => _franjas = await Api.GetHorariosAsync();
+
+    private void AbrirNuevaFranja(Turno turno)
+    {
+        _turnoModal = turno; _fDesc = string.Empty;
+        _fInicio = "08:00"; _fFin = "09:00";
+        _mostrarModal = true;
+    }
+
+    private async Task GuardarFranja()
+    {
+        if (string.IsNullOrWhiteSpace(_fDesc)) return;
+        await Api.CrearFranjaAsync(new UpsertFranjaRequest(_turnoModal, _fDesc, _fInicio, _fFin));
+        _franjas = await Api.GetHorariosAsync();
+        _mostrarModal = false;
+    }
+
+    private async Task EliminarFranja(int id)
+    {
+        await Api.EliminarFranjaAsync(id);
+        _franjas = await Api.GetHorariosAsync();
+    }
+
+    private void CerrarModal() => _mostrarModal = false;
+
+    private static bool EsFranjaActiva(FranjaHorariaDto f)
+    {
+        if (!f.Activa) return false;
+        try
+        {
+            var ahora = TimeOnly.FromDateTime(DateTime.Now);
+            return ahora >= TimeOnly.Parse(f.HoraInicio) && ahora <= TimeOnly.Parse(f.HoraFin);
+        }
+        catch { return false; }
+    }
+
+    private static string GetTurnoEmoji(Turno t) => t switch
+    {
+        Turno.Manana => "🌅",
+        Turno.Tarde => "🌤️",
+        Turno.Noche => "🌙",
+        _ => ""
+    };
+}

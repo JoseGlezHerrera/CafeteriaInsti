@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             x:Class="CafeIES.MAUI.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ScrollView>
+        <Grid RowDefinitions="*, Auto" MinimumHeightRequest="700" Padding="32">
+
+            <!-- Círculos decorativos de fondo -->
+            <AbsoluteLayout Grid.RowSpan="2" InputTransparent="True">
+                <Ellipse Fill="#26f5a623" WidthRequest="350" HeightRequest="350"
+                         AbsoluteLayout.LayoutBounds="-80,-80,350,350"/>
+                <Ellipse Fill="#1ae8834a" WidthRequest="280" HeightRequest="280"
+                         AbsoluteLayout.LayoutBounds="200,500,280,280"/>
+            </AbsoluteLayout>
+
+            <!-- Contenido principal -->
+            <VerticalStackLayout Grid.Row="0" VerticalOptions="Center" Spacing="0">
+
+                <!-- Logo -->
+                <Label FontFamily="SyneBold" FontSize="42" TextColor="{StaticResource TextColor}"
+                       Margin="0,0,0,4">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Café"/>
+                            <Span Text="IES" TextColor="{StaticResource AccentColor}"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <Label Text="Pide sin esperas, paga sin efectivo"
+                       Style="{StaticResource SubtitleLabel}" Margin="0,0,0,48"/>
+
+                <!-- Email -->
+                <Label Text="USUARIO / EMAIL" FontFamily="SyneBold" FontSize="11"
+                       TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
+                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Entry Style="{StaticResource InputEntry}"
+                           Text="{Binding Email}"
+                           Placeholder="usuario@ies.edu"
+                           Keyboard="Email"/>
+                </Border>
+
+                <!-- Password -->
+                <Label Text="CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
+                       TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Entry Style="{StaticResource InputEntry}"
+                           Text="{Binding Password}"
+                           Placeholder="••••••••"
+                           IsPassword="True"/>
+                </Border>
+
+                <!-- Error -->
+                <Border BackgroundColor="#26e05252" StrokeThickness="1" Stroke="#40e05252"
+                        Padding="14,10" Margin="0,16,0,0"
+                        IsVisible="{Binding HayError}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource RedColor}"
+                           FontFamily="DMSans" FontSize="13"/>
+                </Border>
+
+                <!-- Loading indicator -->
+                <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
+                                   Margin="0,12" IsVisible="{Binding IsLoading}"/>
+
+                <!-- Botón login -->
+                <Button Text="Entrar →" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding LoginCommand}" Margin="0,24,0,0"/>
+
+                <!-- Separador -->
+                <Grid ColumnDefinitions="*,Auto,*" Margin="0,24">
+                    <BoxView Grid.Column="0" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center"/>
+                    <Label Grid.Column="1" Text="¿Primera vez?" TextColor="{StaticResource MutedColor}"
+                           FontSize="12" Margin="12,0"/>
+                    <BoxView Grid.Column="2" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center"/>
+                </Grid>
+
+                <!-- Botón registro -->
+                <Button Text="Crear cuenta →" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding IrARegistroCommand}"/>
+
+                <Label Text="¿Problemas? Contacta con secretaría"
+                       TextColor="{StaticResource MutedColor}" FontSize="12"
+                       HorizontalOptions="Center" Margin="0,20,0,0"/>
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+</ContentPage>

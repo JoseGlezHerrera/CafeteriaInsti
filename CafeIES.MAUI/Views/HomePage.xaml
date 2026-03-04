@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             x:Class="CafeIES.MAUI.Views.HomePage"
+             x:DataType="vm:HomeViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ── Header fijo ─────────────────────────────────────────────────── -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}"
+              Padding="24,16" ColumnDefinitions="*,Auto">
+
+            <VerticalStackLayout Grid.Column="0">
+                <Label Text="¿Qué quieres hoy?" FontFamily="SyneBold"
+                       FontSize="22" TextColor="{StaticResource TextColor}"/>
+            </VerticalStackLayout>
+
+            <!-- Botón carrito con badge -->
+            <Grid Grid.Column="1" WidthRequest="44" HeightRequest="44">
+                <Border BackgroundColor="{StaticResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                        WidthRequest="44" HeightRequest="44">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrAlCarritoCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Label Text="🛒" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center"/>
+                </Border>
+                <!-- Badge -->
+                <Border BackgroundColor="{StaticResource AccentColor}"
+                        WidthRequest="18" HeightRequest="18"
+                        HorizontalOptions="End" VerticalOptions="Start"
+                        IsVisible="{Binding ItemsEnCarrito, Converter={StaticResource IntToBoolConverter}}">
+                    <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                    <Label Text="{Binding CarritoBadge}" FontFamily="SyneBold" FontSize="9"
+                           TextColor="#0f0e0c" HorizontalOptions="Center" VerticalOptions="Center"/>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ── Contenido scrollable ────────────────────────────────────────── -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Banner bloqueo horario -->
+                <Border Margin="24,16,24,0" Padding="16,14"
+                        BackgroundColor="#1fe8834a" StrokeThickness="1" Stroke="#40e8834a"
+                        IsVisible="{Binding MostrarBannerBloqueo}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label Grid.Column="0" Text="⏳" FontSize="18" Margin="0,0,10,0" VerticalOptions="Start"/>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Pedidos no disponibles ahora"
+                                   FontFamily="SyneBold" FontSize="13" TextColor="#e8834a"/>
+                            <Label Text="{Binding ProximaFranja}"
+                                   FontFamily="DMSans" FontSize="12" TextColor="#e8834a"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- Buscador -->
+                <Border Margin="24,16,24,0" Padding="14,12"
+                        BackgroundColor="{StaticResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label Grid.Column="0" Text="🔍" FontSize="16" Margin="0,0,10,0"/>
+                        <Entry Grid.Column="1" Placeholder="Buscar bocadillo, bebida..."
+                               PlaceholderColor="{StaticResource MutedColor}"
+                               TextColor="{StaticResource TextColor}"
+                               BackgroundColor="Transparent"
+                               Text="{Binding Busqueda}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Categorías (scroll horizontal) -->
+                <Label Text="Categorías" FontFamily="SyneBold" FontSize="16"
+                       TextColor="{StaticResource TextColor}" Margin="24,20,24,12"/>
+
+                <CollectionView ItemsSource="{Binding Categorias}"
+                                ItemsLayout="HorizontalList"
+                                HeightRequest="44"
+                                Margin="24,0">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="dto:CategoriaDto">
+                            <Border Margin="0,0,10,0" Padding="14,10" StrokeThickness="1.5"
+                                    Stroke="{Binding ., Converter={StaticResource CategoriaActivaBorderConverter}}"
+                                    BackgroundColor="{Binding ., Converter={StaticResource CategoriaActivaBgConverter}}">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SeleccionarCategoriaCommand}"
+                                                          CommandParameter="{Binding Nombre}"/>
+                                </Border.GestureRecognizers>
+                                <Label FontFamily="SyneBold" FontSize="13">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Emoji}"/>
+                                            <Span Text=" "/>
+                                            <Span Text="{Binding Nombre}"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Grid de productos -->
+                <Label Text="Disponibles hoy" FontFamily="SyneBold" FontSize="16"
+                       TextColor="{StaticResource TextColor}" Margin="24,20,24,12"/>
+
+                <!-- Loading -->
+                <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
+                                   Margin="0,20" IsVisible="{Binding IsLoading}" HeightRequest="40"/>
+
+                <!-- Productos en grid 2 columnas -->
+                <CollectionView ItemsSource="{Binding ProductosFiltrados}"
+                                IsVisible="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}"
+                                Margin="24,0,24,24">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="12" VerticalItemSpacing="12"/>
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="dto:ProductoDto">
+                            <Border Style="{StaticResource Card}" Padding="0">
+                                <Grid RowDefinitions="110,Auto">
+
+                                    <!-- Imagen / Emoji -->
+                                    <Grid Grid.Row="0" BackgroundColor="{StaticResource Surface2Color}">
+                                        <Label Text="{Binding CategoriaEmoji}" FontSize="44"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <!-- Stock badge -->
+                                        <Border HorizontalOptions="End" VerticalOptions="Start"
+                                                Margin="8" Padding="6,3"
+                                                BackgroundColor="#CC0f0e0c" StrokeThickness="1"
+                                                Stroke="{Binding NivelStock, Converter={StaticResource StockLevelBorderConverter}}">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                            <Label FontFamily="SyneBold" FontSize="10"
+                                                   TextColor="{Binding NivelStock, Converter={StaticResource StockLevelTextConverter}}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding NivelStock, Converter={StaticResource StockLevelEmojiConverter}}"/>
+                                                        <Span Text=" "/>
+                                                        <Span Text="{Binding Stock, Converter={StaticResource StockDisplayConverter}}"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Info -->
+                                    <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
+                                        <Label Text="{Binding Nombre}" FontFamily="SyneBold"
+                                               FontSize="14" TextColor="{StaticResource TextColor}"
+                                               LineBreakMode="TailTruncation"/>
+                                        <Label Text="{Binding Descripcion}" Style="{StaticResource CaptionLabel}"
+                                               LineBreakMode="TailTruncation"/>
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                                            <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
+                                                   TextColor="{StaticResource AccentColor}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding Precio, StringFormat='{0:F2}'}"/>
+                                                        <Span Text="€"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <!-- Botón + -->
+                                            <Border Grid.Column="1" BackgroundColor="{StaticResource AccentColor}"
+                                                    WidthRequest="30" HeightRequest="30">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="9"/></Border.StrokeShape>
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=AnadirAlCarritoCommand}"
+                                                        CommandParameter="{Binding .}"/>
+                                                </Border.GestureRecognizers>
+                                                <Label Text="+" FontFamily="SyneBold" FontSize="20"
+                                                       TextColor="#0f0e0c" HorizontalOptions="Center"
+                                                       VerticalOptions="Center"/>
+                                            </Border>
+                                        </Grid>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
