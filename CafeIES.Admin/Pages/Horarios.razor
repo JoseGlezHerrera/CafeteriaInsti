@@ -38,7 +38,7 @@
                             @(f.Activa ? "Activa" : "Desactivada")
                         </span>
                         <button class="btn-icon btn-icon--danger franja-del"
-                                @onclick="() => EliminarFranja(f.Id)">
+                                @onclick="() => ConfirmarEliminarFranja(f.Id, f.Descripcion)">
                             🗑
                         </button>
                     </div>
@@ -71,10 +71,33 @@
                         <input class="form-input" type="text" placeholder="09:00" @bind="_fFin" />
                     </div>
                 </div>
+                @if (!string.IsNullOrEmpty(_fError))
+                {
+                    <p style="color:var(--red);font-size:13px;margin-top:8px">⚠️ @_fError</p>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" @onclick="CerrarModal">Cancelar</button>
                 <button class="btn-primary" @onclick="GuardarFranja">Guardar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmarEliminar)
+{
+    <div class="modal-overlay" @onclick="CancelarEliminarFranja">
+        <div class="modal" @onclick:stopPropagation="true" style="max-width:420px">
+            <div class="modal-header">
+                <h3>Eliminar franja</h3>
+                <button class="modal-close" @onclick="CancelarEliminarFranja">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Eliminar la franja <strong>@_eliminarDesc</strong>? Los alumnos de este turno podrían perder acceso a pedidos.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CancelarEliminarFranja">Cancelar</button>
+                <button class="btn-primary" style="background:var(--red)" @onclick="EliminarFranjaConfirmada">Eliminar</button>
             </div>
         </div>
     </div>
@@ -87,6 +110,11 @@
     private string _fDesc = string.Empty;
     private string _fInicio = "08:00";
     private string _fFin = "09:00";
+    private string _fError = string.Empty;
+
+    private bool   _confirmarEliminar;
+    private int    _eliminarId;
+    private string _eliminarDesc = string.Empty;
 
     protected override async Task OnInitializedAsync()
         => _franjas = await Api.GetHorariosAsync();
@@ -95,15 +123,45 @@
     {
         _turnoModal = turno; _fDesc = string.Empty;
         _fInicio = "08:00"; _fFin = "09:00";
+        _fError = string.Empty;
         _mostrarModal = true;
     }
 
     private async Task GuardarFranja()
     {
-        if (string.IsNullOrWhiteSpace(_fDesc)) return;
+        if (string.IsNullOrWhiteSpace(_fDesc)) { _fError = "La descripción es obligatoria."; return; }
+        if (string.Compare(_fInicio, _fFin, StringComparison.Ordinal) >= 0)
+        {
+            _fError = "La hora de inicio debe ser anterior a la hora de fin.";
+            return;
+        }
+        _fError = string.Empty;
         await Api.CrearFranjaAsync(new UpsertFranjaRequest(_turnoModal, _fDesc, _fInicio, _fFin));
         _franjas = await Api.GetHorariosAsync();
         _mostrarModal = false;
+    }
+
+    private void ConfirmarEliminarFranja(int id, string desc)
+    {
+        _eliminarId   = id;
+        _eliminarDesc = desc;
+        _confirmarEliminar = true;
+    }
+
+    private void CancelarEliminarFranja()
+    {
+        _confirmarEliminar = false;
+        _eliminarId   = 0;
+        _eliminarDesc = string.Empty;
+    }
+
+    private async Task EliminarFranjaConfirmada()
+    {
+        _confirmarEliminar = false;
+        await Api.EliminarFranjaAsync(_eliminarId);
+        _franjas = await Api.GetHorariosAsync();
+        _eliminarId   = 0;
+        _eliminarDesc = string.Empty;
     }
 
     private async Task EliminarFranja(int id)

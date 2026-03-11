@@ -24,7 +24,7 @@
         <Tab Title="Usuarios" Icon="icon_profile.png" Route="AdminUsuarios">
             <ShellContent ContentTemplate="{DataTemplate views:AdminUsuariosPage}"/>
         </Tab>
-        <Tab Title="Perfil" Icon="icon_cart.png" Route="AdminPerfil">
+        <Tab Title="Perfil" Icon="icon_profile.png" Route="AdminPerfil">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
         </Tab>
     </TabBar>
@@ -46,20 +46,4 @@
     </TabBar>
 
     <!-- Rutas de navegación extra -->
-    <Shell.Resources>
-        <ResourceDictionary>
-            <!-- Colores globales -->
-            <Color x:Key="BgColor">#0f0e0c</Color>
-            <Color x:Key="SurfaceColor">#1a1916</Color>
-            <Color x:Key="Surface2Color">#232119</Color>
-            <Color x:Key="AccentColor">#f5a623</Color>
-            <Color x:Key="Accent2Color">#e8834a</Color>
-            <Color x:Key="GreenColor">#4caf82</Color>
-            <Color x:Key="RedColor">#e05252</Color>
-            <Color x:Key="TextColor">#f2ede6</Color>
-            <Color x:Key="MutedColor">#7a7468</Color>
-            <Color x:Key="BorderColor">#2e2b26</Color>
-            <Color x:Key="CardColor">#1e1c18</Color>
-        </ResourceDictionary>
-    </Shell.Resources>
 </Shell>

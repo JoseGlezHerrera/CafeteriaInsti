@@ -9,19 +9,23 @@ public partial class App : Application
         // Captura de excepciones no controladas — escribir a archivo para diagnóstico
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
-            var msg = e.ExceptionObject?.ToString() ?? "Unknown";
-            var path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                "cafeies_crash.txt");
-            File.AppendAllText(path, $"[{DateTime.Now}] UNHANDLED:\n{msg}\n\n");
+            try
+            {
+                var msg = e.ExceptionObject?.ToString() ?? "Unknown";
+                var path = Path.Combine(FileSystem.AppDataDirectory, "cafeies_crash.txt");
+                File.AppendAllText(path, $"[{DateTime.Now}] UNHANDLED:\n{msg}\n\n");
+            }
+            catch { /* no propagar */ }
         };
 
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            var path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                "cafeies_crash.txt");
-            File.AppendAllText(path, $"[{DateTime.Now}] TASK:\n{e.Exception}\n\n");
+            try
+            {
+                var path = Path.Combine(FileSystem.AppDataDirectory, "cafeies_crash.txt");
+                File.AppendAllText(path, $"[{DateTime.Now}] TASK:\n{e.Exception}\n\n");
+            }
+            catch { /* no propagar */ }
             e.SetObserved();
         };
     }

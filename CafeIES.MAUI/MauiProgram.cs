@@ -30,13 +30,14 @@ public static class MauiProgram
 #else
         var apiBase = "https://localhost:50658/";
 #endif
-        builder.Services.AddHttpClient<ApiService>(client =>
+        builder.Services.AddSingleton(sp =>
         {
-            client.BaseAddress = new Uri(apiBase);
-        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            // Acepta el certificado de desarrollo local
-            ServerCertificateCustomValidationCallback = (m, c, ch, e) => true
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (m, c, ch, e) => true
+            };
+            var http = new HttpClient(handler) { BaseAddress = new Uri(apiBase) };
+            return new ApiService(http, sp.GetRequiredService<TokenService>());
         });
 
         // ── Servicios ─────────────────────────────────────────────────────────

@@ -105,7 +105,7 @@ else if (_generado)
     private async Task Cargar()
     {
         _cargando = true;
-        _pedidos  = await Api.GetPedidosAsync(_desde, _hasta);
+        _pedidos  = await Api.GetAllPedidosAsync(_desde, _hasta);
         _cargando = false;
         _generado = true;
     }

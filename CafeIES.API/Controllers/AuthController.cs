@@ -1,6 +1,7 @@
 using CafeIES.API.Data;
 using CafeIES.Shared.Models;
 using CafeIES.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,17 +30,23 @@ public class AuthController : ControllerBase
         if (usuario is null || !_auth.VerificarPassword(req.Password, usuario.PasswordHash))
             return Unauthorized(new { mensaje = "Credenciales incorrectas." });
 
-        if (usuario.Estado == EstadoCuenta.PendienteValidacion)
-            return Forbid(); // 403 → la app mostrará "pendiente de validación"
-
-        if (usuario.Estado == EstadoCuenta.Suspendida || usuario.Estado == EstadoCuenta.Rechazada)
-            return Forbid();
+        if (usuario.Estado != EstadoCuenta.Activa)
+        {
+            var motivo = usuario.Estado switch
+            {
+                EstadoCuenta.PendienteValidacion => "pendiente",
+                EstadoCuenta.Suspendida          => "suspendida",
+                EstadoCuenta.Rechazada           => "rechazada",
+                _                                => "inactiva"
+            };
+            return StatusCode(403, new { motivo });
+        }
 
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
 
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
         await _db.SaveChangesAsync();
 
         return Ok(new LoginResponse(
@@ -48,10 +55,13 @@ public class AuthController : ControllerBase
             MapUsuarioDto(usuario)));
     }
 
-    // ── POST /api/auth/registro/alumno ───────────────────────────────────────
+    // ── POST /api/auth/registro/alumno
     [HttpPost("registro/alumno")]
     public async Task<ActionResult> RegistroAlumno([FromBody] RegistroAlumnoRequest req)
     {
+        if (!req.Email.Contains('@'))
+            return BadRequest(new { mensaje = "El email no tiene un formato válido. Ejemplo: nombre@ies.edu" });
+
         if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
             return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
 
@@ -98,7 +108,7 @@ public class AuthController : ControllerBase
             Rol             = rol,
             Turno           = null,  // Sin restricción horaria
             Estado          = EstadoCuenta.Activa,
-            FechaValidacion = DateTime.UtcNow
+            FechaValidacion = DateTime.Now
         };
 
         _db.Usuarios.Add(usuario);
@@ -114,19 +124,19 @@ public class AuthController : ControllerBase
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
         await _db.SaveChangesAsync();
 
         return Ok(new LoginResponse(accessToken, refreshToken, MapUsuarioDto(usuario)));
     }
 
-    // ── POST /api/auth/refresh ───────────────────────────────────────────────
+    // ── POST /api/auth/refresh
     [HttpPost("refresh")]
     public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshRequest req)
     {
         var usuario = await _db.Usuarios
             .FirstOrDefaultAsync(u => u.RefreshToken == req.RefreshToken
-                                   && u.RefreshTokenExpiry > DateTime.UtcNow);
+                                   && u.RefreshTokenExpiry > DateTime.Now);
 
         if (usuario is null)
             return Unauthorized(new { mensaje = "Refresh token inválido o expirado." });
@@ -134,10 +144,28 @@ public class AuthController : ControllerBase
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
         await _db.SaveChangesAsync();
 
         return Ok(new LoginResponse(accessToken, refreshToken, MapUsuarioDto(usuario)));
+    }
+
+    // ── POST /api/auth/cambiar-password ──────────────────────────────────────
+    [HttpPost("cambiar-password")]
+    [Authorize]
+    public async Task<ActionResult> CambiarPassword([FromBody] CambiarPasswordRequest req)
+    {
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var usuario = await _db.Usuarios.FindAsync(userId);
+        if (usuario is null) return NotFound();
+
+        if (!_auth.VerificarPassword(req.PasswordActual, usuario.PasswordHash))
+            return BadRequest(new { mensaje = "La contraseña actual no es correcta." });
+
+        usuario.PasswordHash = _auth.HashPassword(req.NuevaPassword);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { mensaje = "Contraseña actualizada correctamente." });
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

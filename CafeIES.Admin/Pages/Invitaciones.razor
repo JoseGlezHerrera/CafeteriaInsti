@@ -38,7 +38,7 @@
                     📋 Copiar enlace
                 </button>
                 <button class="btn-icon btn-icon--danger"
-                        @onclick="() => RevocarInvitacion(_invProfesor.Id)">
+                        @onclick="() => ConfirmarRevocar(_invProfesor.Id)">
                     🗑 Revocar
                 </button>
             </div>
@@ -83,7 +83,7 @@
                     📋 Copiar enlace
                 </button>
                 <button class="btn-icon btn-icon--danger"
-                        @onclick="() => RevocarInvitacion(_invPersonal.Id)">
+                        @onclick="() => ConfirmarRevocar(_invPersonal.Id)">
                     🗑 Revocar
                 </button>
             </div>
@@ -102,6 +102,26 @@
     </div>
 
 </div>
+
+<!-- Confirmar revocación -->
+@if (_confirmarRevocar)
+{
+    <div class="modal-overlay" @onclick="CancelarRevocar">
+        <div class="modal" @onclick:stopPropagation="true" style="max-width:420px">
+            <div class="modal-header">
+                <h3>Revocar invitación</h3>
+                <button class="modal-close" @onclick="CancelarRevocar">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Revocar esta invitación? Los enlaces y QR existentes dejarán de funcionar.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CancelarRevocar">Cancelar</button>
+                <button class="btn-primary" style="background:var(--red)" @onclick="RevocarConfirmada">Revocar</button>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- Opciones de generación -->
 @if (_mostrarOpcionesGen)
@@ -168,6 +188,28 @@
     {
         await Api.RevocarInvitacionAsync(id);
         await Recargar();
+    }
+
+    private bool _confirmarRevocar;
+    private int  _revocarId;
+
+    private void ConfirmarRevocar(int id)
+    {
+        _revocarId = id;
+        _confirmarRevocar = true;
+    }
+
+    private void CancelarRevocar()
+    {
+        _confirmarRevocar = false;
+        _revocarId = 0;
+    }
+
+    private async Task RevocarConfirmada()
+    {
+        _confirmarRevocar = false;
+        await RevocarInvitacion(_revocarId);
+        _revocarId = 0;
     }
 
     private async Task CopiarUrl(string url)

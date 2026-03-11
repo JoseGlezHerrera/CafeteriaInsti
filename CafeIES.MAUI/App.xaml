@@ -28,8 +28,6 @@
             <conv:BoolToAccentBorderConverter x:Key="BoolToAccentBorderConverter"/>
             <conv:BoolToAccentBgConverter x:Key="BoolToAccentBgConverter"/>
             <conv:BoolToAccentTextConverter x:Key="BoolToAccentTextConverter"/>
-            <conv:CategoriaActivaBorderConverter x:Key="CategoriaActivaBorderConverter"/>
-            <conv:CategoriaActivaBgConverter x:Key="CategoriaActivaBgConverter"/>
             <conv:StockLevelBorderConverter x:Key="StockLevelBorderConverter"/>
             <conv:StockLevelTextConverter x:Key="StockLevelTextConverter"/>
             <conv:StockLevelEmojiConverter x:Key="StockLevelEmojiConverter"/>
@@ -40,6 +38,7 @@
             <conv:EstadoPedidoTextConverter x:Key="EstadoPedidoTextConverter"/>
             <conv:LineasResumenConverter x:Key="LineasResumenConverter"/>
             <conv:EstadoEsConverter x:Key="EstadoEsConverter"/>
+            <conv:EstadoCancelableConverter x:Key="EstadoCancelableConverter"/>
             <conv:EstadoCuentaTextoConverter x:Key="EstadoCuentaTextoConverter"/>
             <conv:EstadoCuentaBgConverter x:Key="EstadoCuentaBgConverter"/>
             <conv:EstadoCuentaTextColorConverter x:Key="EstadoCuentaTextColorConverter"/>
@@ -48,6 +47,7 @@
             <conv:ActivoTextoConverter x:Key="ActivoTextoConverter"/>
             <conv:ActivoBgConverter x:Key="ActivoBgConverter"/>
             <conv:ActivoTextColorConverter x:Key="ActivoTextColorConverter"/>
+            <conv:RolNoEsAdminConverter x:Key="RolNoEsAdminConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

@@ -43,18 +43,25 @@ public partial class LoginViewModel : ObservableObject
         HayError     = false;
         ErrorMessage = string.Empty;
 
-        var (resultado, pendiente) = await _api.LoginAsync(Email, Password);
+        var (resultado, motivo) = await _api.LoginAsync(Email, Password);
 
         IsLoading = false;
 
         if (resultado is null)
         {
             HayError     = true;
-            ErrorMessage = pendiente
-                ? "Tu cuenta está pendiente de validación por el administrador."
-                : "Usuario o contraseña incorrectos.";
+            ErrorMessage = motivo switch
+            {
+                MotivoRechazo.Pendiente  => "Tu cuenta está pendiente de validación por el administrador.",
+                MotivoRechazo.Suspendida => "Tu cuenta ha sido suspendida. Contacta con administración.",
+                MotivoRechazo.Rechazada  => "Tu solicitud de registro fue rechazada.",
+                _                        => "Email o contraseña incorrectos."
+            };
             return;
         }
+
+        // Conectar SignalR (#10)
+        _ = _api.ConectarSignalRAsync();
 
         // Navegar al TabBar según el rol
         var destino = resultado.Usuario.Rol == RolUsuario.Admin ? "//Admin" : "//Main";

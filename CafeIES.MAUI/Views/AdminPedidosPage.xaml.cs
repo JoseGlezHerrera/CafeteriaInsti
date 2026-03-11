@@ -30,4 +30,10 @@ public partial class AdminPedidosPage : ContentPage
         if (sender is Button btn && btn.CommandParameter is PedidoDto p)
             Vm.EntregarCommand.Execute(p);
     }
+
+    private void OnCancelarClicked(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter is PedidoDto p)
+            Vm.CancelarCommand.Execute(p);
+    }
 }

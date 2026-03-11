@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
 using System.Collections.ObjectModel;
@@ -11,7 +12,15 @@ public partial class DetallePedidoViewModel : ObservableObject
 {
     private readonly ApiService _api;
 
-    public DetallePedidoViewModel(ApiService api) => _api = api;
+    public DetallePedidoViewModel(ApiService api)
+    {
+        _api = api;
+        WeakReferenceMessenger.Default.Register<PedidoActualizadoMessage>(this, (r, msg) =>
+        {
+            if (msg.PedidoId == ((DetallePedidoViewModel)r).PedidoId)
+                MainThread.BeginInvokeOnMainThread(async () => await CargarAsync());
+        });
+    }
 
     [ObservableProperty] private int _pedidoId;
     [ObservableProperty] private int _numeroPedido;

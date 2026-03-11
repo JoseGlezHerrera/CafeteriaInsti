@@ -1,4 +1,5 @@
 @page "/"
+@implements IDisposable
 @inject AdminApiService Api
 @inject NavigationManager Nav
 
@@ -105,11 +106,22 @@ else
 @code {
     private DashboardDto? _dashboard;
     private bool _cargado;
+    private Timer? _timer;
 
     protected override async Task OnInitializedAsync()
     {
         _dashboard = await Api.GetDashboardAsync();
         _cargado   = true;
+
+        _timer = new Timer(async _ =>
+        {
+            try
+            {
+                _dashboard = await Api.GetDashboardAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+            catch { /* ignorar errores de red en auto-refresh */ }
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private async Task CambiarEstado(int pedidoId, EstadoPedido nuevoEstado)
@@ -125,4 +137,9 @@ else
         EstadoPedido.Listo         => "order--ready",
         _ => ""
     };
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
 }

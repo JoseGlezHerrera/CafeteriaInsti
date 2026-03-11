@@ -40,6 +40,7 @@ public partial class CarritoViewModel : ObservableObject
         var existente = Items.FirstOrDefault(i => i.ProductoId == producto.Id);
         if (existente is not null)
         {
+            if (existente.Cantidad >= 20) return;
             existente.Cantidad++;
         }
         else
@@ -59,6 +60,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void IncrementarCantidad(ItemCarrito item)
     {
+        if (item.Cantidad >= 20) return;
         item.Cantidad++;
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));

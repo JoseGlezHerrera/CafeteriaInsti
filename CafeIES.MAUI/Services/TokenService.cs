@@ -25,11 +25,13 @@ public class TokenService
         await SecureStorage.Default.SetAsync(UserKey, json);
     }
 
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     public async Task<UsuarioDto?> GetUsuarioAsync()
     {
         var json = await SecureStorage.Default.GetAsync(UserKey);
         if (string.IsNullOrEmpty(json)) return null;
-        try { return JsonSerializer.Deserialize<UsuarioDto>(json); }
+        try { return JsonSerializer.Deserialize<UsuarioDto>(json, _jsonOptions); }
         catch { return null; }
     }
 

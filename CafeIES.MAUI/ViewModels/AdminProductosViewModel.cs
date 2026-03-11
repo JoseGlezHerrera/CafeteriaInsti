@@ -47,9 +47,9 @@ public partial class AdminProductosViewModel : ObservableObject
     private async Task EliminarAsync(ProductoDto producto)
     {
         var ok = await Shell.Current.DisplayAlert(
-            "Eliminar producto",
-            $"¿Eliminar '{producto.Nombre}'? Esta acción no se puede deshacer.",
-            "Eliminar", "Cancelar");
+            "Desactivar producto",
+            $"¿Desactivar '{producto.Nombre}'? Podrás reactivarlo después.",
+            "Desactivar", "Cancelar");
         if (!ok) return;
         await _api.EliminarProductoAsync(producto.Id);
         await CargarAsync();
@@ -103,8 +103,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         if (ProductoId > 0)
         {
             Titulo = "Editar producto";
-            var lista = await _api.GetProductosAdminAsync();
-            var prod  = lista.FirstOrDefault(p => p.Id == ProductoId);
+            var prod = await _api.GetProductoByIdAsync(ProductoId);
             if (prod is not null)
             {
                 Nombre       = prod.Nombre;

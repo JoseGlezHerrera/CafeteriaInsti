@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @using CafeIES.Admin.Services
 @inject AuthAdminService Auth
 @inject AdminApiService Api
@@ -86,11 +87,25 @@
         }
 
         pendingCount = await Api.GetPendientesCountAsync();
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (!Auth.EstaAutenticado) return;
+        pendingCount = await Api.GetPendientesCountAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task CerrarSesion()
     {
         await Auth.LogoutAsync();
+        Nav.LocationChanged -= OnLocationChanged;
         Nav.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }

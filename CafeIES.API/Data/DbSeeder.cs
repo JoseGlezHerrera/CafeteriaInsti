@@ -26,8 +26,8 @@ public static class DbSeeder
             Rol            = RolUsuario.Admin,
             Turno          = null,  // Sin restricción horaria
             Estado         = EstadoCuenta.Activa,
-            FechaRegistro  = DateTime.UtcNow,
-            FechaValidacion = DateTime.UtcNow
+            FechaRegistro  = DateTime.Now,
+            FechaValidacion = DateTime.Now
         };
 
         db.Usuarios.Add(admin);

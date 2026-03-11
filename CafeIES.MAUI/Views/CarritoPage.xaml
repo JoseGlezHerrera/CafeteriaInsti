@@ -34,7 +34,23 @@
                         IsVisible="{Binding CarritoVacio, Converter={StaticResource InvertBoolConverter}}">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:ItemCarrito">
-                    <Border Style="{StaticResource Card}" Margin="16,0,16,10">
+                    <SwipeView Margin="16,0,16,10">
+                        <SwipeView.RightItems>
+                            <SwipeItems Mode="Execute">
+                                <SwipeItemView
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=EliminarItemCommand}"
+                                    CommandParameter="{Binding .}">
+                                    <Border BackgroundColor="{StaticResource RedColor}"
+                                            WidthRequest="80" HeightRequest="68"
+                                            Padding="0">
+                                        <Border.StrokeShape><RoundRectangle CornerRadius="20"/></Border.StrokeShape>
+                                        <Label Text="🗑️" FontSize="24"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                                    </Border>
+                                </SwipeItemView>
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+                        <Border Style="{StaticResource Card}">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
 
                             <!-- Emoji icono -->
@@ -94,6 +110,7 @@
 
                         </Grid>
                     </Border>
+                    </SwipeView>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

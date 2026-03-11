@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 using System.Collections.ObjectModel;
 
 namespace CafeIES.MAUI.ViewModels;
@@ -11,12 +13,17 @@ public partial class HomeViewModel : ObservableObject
     private readonly ApiService _api;
     private readonly CarritoViewModel _carrito;
 
+    // Cache local (#15) — evita recargar el catálogo cada vez
+    private List<ProductoDto>?  _cacheProductos;
+    private List<CategoriaDto>? _cacheCategorias;
+    private DateTime _cacheTimestamp = DateTime.MinValue;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
     public HomeViewModel(ApiService api, CarritoViewModel carrito)
     {
         _api = api;
         _carrito = carrito;
 
-        // Sincronizar badge con el estado real del carrito (singleton)
         ItemsEnCarrito = _carrito.TotalItems;
         _carrito.PropertyChanged += (_, e) =>
         {
@@ -36,7 +43,7 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private string _categoriaSeleccionada = "Todo";
     [ObservableProperty] private string _busqueda = string.Empty;
 
-    public ObservableCollection<CategoriaDto>  Categorias  { get; } = new();
+    public ObservableCollection<CategoriaChipItem>  Categorias  { get; } = new();
     public ObservableCollection<ProductoDto>   Productos   { get; } = new();
     public ObservableCollection<ProductoDto>   ProductosFiltrados { get; } = new();
 
@@ -53,11 +60,26 @@ public partial class HomeViewModel : ObservableObject
     {
         IsLoading = true;
 
-        var (horario, categorias, productos) = await (
-            _api.GetHorarioStatusAsync(),
-            _api.GetCategoriasAsync(),
-            _api.GetProductosAsync()
-        ).WhenAll();
+        var usarCache = _cacheProductos is not null
+                     && _cacheCategorias is not null
+                     && DateTime.Now - _cacheTimestamp < CacheDuration;
+
+        var horarioTask = _api.GetHorarioStatusAsync();
+        var categoriasTask = usarCache ? Task.FromResult(_cacheCategorias!) : _api.GetCategoriasAsync();
+        var productosTask  = usarCache ? Task.FromResult(_cacheProductos!)  : _api.GetProductosAsync();
+
+        await Task.WhenAll(horarioTask, categoriasTask, productosTask);
+
+        var horario    = horarioTask.Result;
+        var categorias = categoriasTask.Result;
+        var productos  = productosTask.Result;
+
+        if (!usarCache)
+        {
+            _cacheCategorias  = categorias;
+            _cacheProductos   = productos;
+            _cacheTimestamp   = DateTime.Now;
+        }
 
         // Estado horario
         if (horario is not null)
@@ -72,7 +94,9 @@ public partial class HomeViewModel : ObservableObject
 
         // Categorías
         Categorias.Clear();
-        foreach (var c in categorias) Categorias.Add(c);
+        Categorias.Add(new CategoriaChipItem { Nombre = "Todo", Emoji = "🍽️", IsSelected = CategoriaSeleccionada == "Todo" });
+        foreach (var c in categorias)
+            Categorias.Add(new CategoriaChipItem { Nombre = c.Nombre, Emoji = c.Emoji, IsSelected = c.Nombre == CategoriaSeleccionada });
 
         // Productos
         Productos.Clear();
@@ -87,6 +111,7 @@ public partial class HomeViewModel : ObservableObject
     private void SeleccionarCategoria(string categoria)
     {
         CategoriaSeleccionada = categoria;
+        foreach (var c in Categorias) c.IsSelected = c.Nombre == categoria;
         FiltrarProductos();
     }
 
@@ -127,9 +152,33 @@ public partial class HomeViewModel : ObservableObject
             return;
         }
 
+        if (producto.NivelStock == "agotado")
+        {
+            await Shell.Current.DisplayAlert(
+                "Producto agotado",
+                $"'{producto.Nombre}' no tiene stock disponible.",
+                "OK");
+            return;
+        }
+
         _carrito.AnadirProducto(producto);
-        // ItemsEnCarrito se actualiza por la suscripción a PropertyChanged
+
+        // Toast de confirmación — try-catch por COMException en Windows unpackaged
+        try
+        {
+            var toast = Toast.Make($"✓ {producto.Nombre} añadido", ToastDuration.Short, 14);
+            await toast.Show();
+        }
+        catch { /* Toast no disponible en esta plataforma/configuración */ }
     }
+}
+
+public partial class CategoriaChipItem : ObservableObject
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string Emoji  { get; set; } = string.Empty;
+
+    [ObservableProperty] private bool _isSelected;
 }
 
 // Helper para esperar múltiples Tasks en paralelo con tipos distintos

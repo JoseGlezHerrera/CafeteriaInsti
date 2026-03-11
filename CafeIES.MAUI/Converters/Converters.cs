@@ -58,27 +58,7 @@ public class BoolToAccentTextConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
-// ── Categoría activa (recibe CategoriaDto, siempre inactiva; selección visual via chips) ─
-
-public class CategoriaActivaBorderConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => Color.FromArgb("#2e2b26");
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-public class CategoriaActivaBgConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => Color.FromArgb("#232119");
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-// ── Stock level converters ───────────────────────────────────────────────────
+// ── Stock level converters
 
 public class StockLevelBorderConverter : IValueConverter
 {
@@ -228,6 +208,17 @@ public class EstadoEsConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+// ── Admin: pedido cancelable (Pendiente o EnPreparacion) ─────────────────────
+
+public class EstadoCancelableConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is EstadoPedido e && (e == EstadoPedido.Pendiente || e == EstadoPedido.EnPreparacion);
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Admin: estado cuenta ──────────────────────────────────────────────────────
 
 public class EstadoCuentaTextoConverter : IValueConverter
@@ -337,6 +328,17 @@ public class ActivoTextColorConverter : IValueConverter
         => value is bool b
             ? (b ? Color.FromArgb("#4caf82") : Color.FromArgb("#7a7468"))
             : Color.FromArgb("#7a7468");
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Admin: rol no es admin ────────────────────────────────────────────────────
+
+public class RolNoEsAdminConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is RolUsuario r && r != RolUsuario.Admin;
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

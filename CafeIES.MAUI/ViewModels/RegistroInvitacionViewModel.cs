@@ -54,7 +54,8 @@ public partial class RegistroInvitacionViewModel : ObservableObject
             return;
         }
 
-        // Login automático → ir a Home
+        // Conectar SignalR y navegar a Home
+        _ = _api.ConectarSignalRAsync();
         try
         {
             await Shell.Current.GoToAsync("//Main");

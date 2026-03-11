@@ -53,60 +53,66 @@ public class PedidosController : ControllerBase
         if (!horario.Puede)
             return BadRequest(new { mensaje = horario.Mensaje });
 
-        // 2. Calcular total y validar stock
-        var lineas = new List<LineaPedido>();
-        decimal total = 0;
-
-        foreach (var l in req.Lineas)
+        // Usar transacción para evitar race conditions de stock
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            var producto = await _db.Productos.FindAsync(l.ProductoId);
-            if (producto is null || !producto.Activo)
-                return BadRequest(new { mensaje = $"Producto #{l.ProductoId} no disponible." });
+            // 2. Calcular total y validar stock
+            var lineas = new List<LineaPedido>();
+            decimal total = 0;
 
-            if (producto.Stock != -1 && producto.Stock < l.Cantidad)
-                return BadRequest(new { mensaje = $"Stock insuficiente para '{producto.Nombre}'. Disponibles: {producto.Stock}." });
-
-            lineas.Add(new LineaPedido
+            foreach (var l in req.Lineas)
             {
-                ProductoId     = l.ProductoId,
-                Cantidad       = l.Cantidad,
-                PrecioUnitario = producto.Precio
-            });
-            total += producto.Precio * l.Cantidad;
+                var producto = await _db.Productos.FindAsync(l.ProductoId);
+                if (producto is null || !producto.Activo)
+                    return BadRequest(new { mensaje = $"Producto #{l.ProductoId} no disponible." });
+
+                if (producto.Stock != -1 && producto.Stock < l.Cantidad)
+                    return BadRequest(new { mensaje = $"Stock insuficiente para '{producto.Nombre}'. Disponibles: {producto.Stock}." });
+
+                // Decrementar stock inmediatamente para evitar doble lectura
+                if (producto.Stock != -1) producto.Stock -= l.Cantidad;
+
+                lineas.Add(new LineaPedido
+                {
+                    ProductoId     = l.ProductoId,
+                    Cantidad       = l.Cantidad,
+                    PrecioUnitario = producto.Precio
+                });
+                total += producto.Precio * l.Cantidad;
+            }
+
+            // 3. Número de pedido secuencial del día
+            var hoy = DateTime.Now.Date;
+            var ultimoNumero = await _db.Pedidos
+                .Where(p => p.FechaCreacion.Date == hoy)
+                .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
+
+            var pedido = new Pedido
+            {
+                UsuarioId    = userId,
+                NumeroPedido = ultimoNumero + 1,
+                MetodoPago   = req.MetodoPago,
+                Total        = total,
+                Notas        = req.Notas,
+                Lineas       = lineas
+            };
+
+            _db.Pedidos.Add(pedido);
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // 4. Notificar a la cafetería en tiempo real vía SignalR
+            var dto = await GetPedidoDtoAsync(pedido.Id);
+            await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
+
+            return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
         }
-
-        // 3. Número de pedido secuencial del día
-        var hoy = DateTime.UtcNow.Date;
-        var ultimoNumero = await _db.Pedidos
-            .Where(p => p.FechaCreacion.Date == hoy)
-            .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
-
-        var pedido = new Pedido
+        catch
         {
-            UsuarioId    = userId,
-            NumeroPedido = ultimoNumero + 1,
-            MetodoPago   = req.MetodoPago,
-            Total        = total,
-            Notas        = req.Notas,
-            Lineas       = lineas
-        };
-
-        _db.Pedidos.Add(pedido);
-
-        // 4. Decrementar stock
-        foreach (var l in req.Lineas)
-        {
-            var prod = await _db.Productos.FindAsync(l.ProductoId);
-            if (prod!.Stock != -1) prod.Stock -= l.Cantidad;
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { mensaje = "Error al procesar el pedido. Inténtalo de nuevo." });
         }
-
-        await _db.SaveChangesAsync();
-
-        // 5. Notificar a la cafetería en tiempo real vía SignalR
-        var dto = await GetPedidoDtoAsync(pedido.Id);
-        await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
-
-        return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
     }
 
     // ── GET /api/pedidos/mis-pedidos ─────────────────────────────────────────
@@ -125,21 +131,70 @@ public class PedidosController : ControllerBase
         return Ok(pedidos.Select(MapDto).ToList());
     }
 
+    // ── GET /api/pedidos/mis-stats ───────────────────────────────────────────
+    [HttpGet("mis-stats")]
+    public async Task<ActionResult<UsuarioStatsDto>> MisEstadisticas()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var query = _db.Pedidos.Where(p => p.UsuarioId == userId && p.Estado != EstadoPedido.Cancelado);
+        var totalPedidos = await query.CountAsync();
+        var totalGastado = await query.SumAsync(p => (decimal?)p.Total) ?? 0;
+        return Ok(new UsuarioStatsDto(totalPedidos, totalGastado));
+    }
+
     // ── GET /api/pedidos/{id} ────────────────────────────────────────────────
     [HttpGet("{id}")]
     public async Task<ActionResult<PedidoDto>> GetById(int id)
     {
+        var pedido = await _db.Pedidos.FirstOrDefaultAsync(p => p.Id == id);
+        if (pedido is null) return NotFound();
+
+        // Verificar propiedad: solo el dueño o Admin/Personal pueden ver el pedido
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal");
+        if (pedido.UsuarioId != userId && !esStaff)
+            return Forbid();
+
         var dto = await GetPedidoDtoAsync(id);
         return dto is null ? NotFound() : Ok(dto);
     }
+
+    // ── Transiciones de estado válidas ────────────────────────────────────────
+    private static readonly Dictionary<EstadoPedido, EstadoPedido[]> _transicionesValidas = new()
+    {
+        [EstadoPedido.Pendiente]     = [EstadoPedido.EnPreparacion, EstadoPedido.Cancelado],
+        [EstadoPedido.EnPreparacion] = [EstadoPedido.Listo, EstadoPedido.Cancelado],
+        [EstadoPedido.Listo]         = [EstadoPedido.Entregado],
+        [EstadoPedido.Entregado]     = [],
+        [EstadoPedido.Cancelado]     = []
+    };
 
     // ── PATCH /api/pedidos/{id}/estado  (Admin / Cafetería) ──────────────────
     [HttpPatch("{id}/estado")]
     [Authorize(Roles = "Admin,Personal")]
     public async Task<ActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest req)
     {
-        var pedido = await _db.Pedidos.FindAsync(id);
+        var pedido = await _db.Pedidos
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
+
+        // Validar transición de estado
+        if (!_transicionesValidas.TryGetValue(pedido.Estado, out var permitidos) ||
+            !permitidos.Contains(req.NuevoEstado))
+        {
+            return BadRequest(new { mensaje = $"No se puede cambiar de '{pedido.Estado}' a '{req.NuevoEstado}'." });
+        }
+
+        // Restaurar stock si se cancela un pedido
+        if (req.NuevoEstado == EstadoPedido.Cancelado)
+        {
+            foreach (var linea in pedido.Lineas)
+            {
+                if (linea.Producto.Stock != -1)
+                    linea.Producto.Stock += linea.Cantidad;
+            }
+        }
 
         pedido.Estado = req.NuevoEstado;
         await _db.SaveChangesAsync();

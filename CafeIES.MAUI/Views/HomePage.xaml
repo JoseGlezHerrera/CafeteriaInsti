@@ -90,24 +90,20 @@
                                 HeightRequest="44"
                                 Margin="24,0">
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="dto:CategoriaDto">
+                        <DataTemplate x:DataType="vm:CategoriaChipItem">
                             <Border Margin="0,0,10,0" Padding="14,10" StrokeThickness="1.5"
-                                    Stroke="{Binding ., Converter={StaticResource CategoriaActivaBorderConverter}}"
-                                    BackgroundColor="{Binding ., Converter={StaticResource CategoriaActivaBgConverter}}">
+                                    Stroke="{Binding IsSelected, Converter={StaticResource BoolToAccentBorderConverter}}"
+                                    BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToAccentBgConverter}}">
                                 <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SeleccionarCategoriaCommand}"
                                                           CommandParameter="{Binding Nombre}"/>
                                 </Border.GestureRecognizers>
-                                <Label FontFamily="SyneBold" FontSize="13">
-                                    <Label.FormattedText>
-                                        <FormattedString>
-                                            <Span Text="{Binding Emoji}"/>
-                                            <Span Text=" "/>
-                                            <Span Text="{Binding Nombre}"/>
-                                        </FormattedString>
-                                    </Label.FormattedText>
-                                </Label>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Label Text="{Binding Emoji}" FontSize="13"/>
+                                    <Label Text="{Binding Nombre}" FontFamily="SyneBold" FontSize="13"
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToAccentTextConverter}}"/>
+                                </HorizontalStackLayout>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
@@ -125,6 +121,16 @@
                 <CollectionView ItemsSource="{Binding ProductosFiltrados}"
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}"
                                 Margin="24,0,24,24">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                             Spacing="10" Margin="0,40">
+                            <Label Text="🔍" FontSize="44" HorizontalOptions="Center"/>
+                            <Label Text="Sin resultados" FontFamily="SyneBold" FontSize="16"
+                                   TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                            <Label Text="Prueba con otra búsqueda o categoría"
+                                   Style="{StaticResource SubtitleLabel}" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
                     <CollectionView.ItemsLayout>
                         <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="12" VerticalItemSpacing="12"/>
                     </CollectionView.ItemsLayout>

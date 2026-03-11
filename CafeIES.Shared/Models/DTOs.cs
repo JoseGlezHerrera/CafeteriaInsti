@@ -6,7 +6,7 @@ namespace CafeIES.Shared.Models;
 
 public record LoginRequest(
     [Required, EmailAddress] string Email,
-    [Required, MinLength(6)] string Password
+    [Required] string Password
 );
 
 public record LoginResponse(
@@ -111,6 +111,8 @@ public record LineaPedidoDto(
 
 public record CambiarEstadoRequest([Required] EstadoPedido NuevoEstado);
 
+public record CambiarTurnoRequest(Turno? Turno);
+
 // ── Invitaciones ──────────────────────────────────────────────────────────────
 
 public record CrearInvitacionRequest(
@@ -155,6 +157,26 @@ public record UpsertFranjaRequest(
     [Required, RegularExpression(@"^\d{2}:\d{2}$")] string HoraInicio,
     [Required, RegularExpression(@"^\d{2}:\d{2}$")] string HoraFin,
     bool Activa = true
+);
+
+// ── Cambiar contraseña ────────────────────────────────────────────────────────
+
+public record CambiarPasswordRequest(
+    [Required] string PasswordActual,
+    [Required, MinLength(8)] string NuevaPassword
+);
+
+// ── Estadísticas del usuario ─────────────────────────────────────────────────
+
+public record UsuarioStatsDto(int TotalPedidos, decimal TotalGastado);
+
+// ── Paginación ───────────────────────────────────────────────────────────────
+
+public record PaginatedResponse<T>(
+    List<T> Items,
+    int     TotalCount,
+    int     Page,
+    int     PageSize
 );
 
 // ── Dashboard Admin ───────────────────────────────────────────────────────────

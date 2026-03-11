@@ -70,4 +70,20 @@ public partial class AdminUsuariosViewModel : ObservableObject
         await _api.ReactivarUsuarioAsync(usuario.Id);
         await CargarAsync();
     }
+
+    [RelayCommand]
+    private async Task EliminarAsync(UsuarioDto usuario)
+    {
+        var ok = await Shell.Current.DisplayAlert(
+            "Eliminar usuario",
+            $"¿Eliminar a {usuario.NombreCompleto}? Esta acción es irreversible.",
+            "Eliminar", "Cancelar");
+        if (!ok) return;
+
+        var (exito, error) = await _api.EliminarUsuarioAsync(usuario.Id);
+        if (exito)
+            await CargarAsync();
+        else
+            await Shell.Current.DisplayAlert("Error", error ?? "No se pudo eliminar el usuario.", "OK");
+    }
 }

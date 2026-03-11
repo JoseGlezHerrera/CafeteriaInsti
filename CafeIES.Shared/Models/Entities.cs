@@ -30,7 +30,7 @@ public class Usuario
 
     public EstadoCuenta Estado { get; set; } = EstadoCuenta.PendienteValidacion;
 
-    public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
+    public DateTime FechaRegistro { get; set; } = DateTime.Now;
 
     public DateTime? FechaValidacion { get; set; }
 
@@ -109,9 +109,9 @@ public class Invitacion
 
     public bool Activa { get; set; } = true;
 
-    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
-    public DateTime FechaExpiracion { get; set; } = DateTime.UtcNow.AddDays(7);
+    public DateTime FechaExpiracion { get; set; } = DateTime.Now.AddDays(7);
 
     /// <summary>Cuántas veces se puede usar. Null = ilimitado mientras esté activa.</summary>
     public int? UsosMaximos { get; set; }
@@ -120,7 +120,7 @@ public class Invitacion
 
     [NotMapped]
     public bool EsValida => Activa
-                         && DateTime.UtcNow <= FechaExpiracion
+                         && DateTime.Now <= FechaExpiracion
                          && (UsosMaximos == null || UsosActuales < UsosMaximos);
 
     /// <summary>URL completa que se mostrará en el QR.</summary>
@@ -209,7 +209,7 @@ public class Pedido
     public int UsuarioId { get; set; }
     public Usuario Usuario { get; set; } = null!;
 
-    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
     public EstadoPedido Estado { get; set; } = EstadoPedido.Pendiente;
 

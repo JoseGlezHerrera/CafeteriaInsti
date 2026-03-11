@@ -105,6 +105,11 @@
                                 <button class="btn-icon btn-icon--success" title="Reactivar cuenta"
                                         @onclick="() => Reactivar(u.Id)">✅</button>
                             }
+                            @if (u.Rol != RolUsuario.Admin)
+                            {
+                                <button class="btn-icon btn-icon--danger" title="Eliminar usuario"
+                                        @onclick="() => ConfirmarEliminar(u)">🗑</button>
+                            }
                         </td>
                     </tr>
                 }
@@ -112,6 +117,30 @@
         </table>
     </div>
 </div>
+
+@if (_confirmarEliminar && _usuarioEliminar is not null)
+{
+    <div class="modal-overlay" @onclick="CancelarEliminar">
+        <div class="modal" @onclick:stopPropagation="true" style="max-width:420px">
+            <div class="modal-header">
+                <h3>Eliminar usuario</h3>
+                <button class="modal-close" @onclick="CancelarEliminar">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Eliminar a <strong>@_usuarioEliminar.NombreCompleto</strong> (@_usuarioEliminar.Email)?</p>
+                <p style="color:var(--muted);font-size:13px">Esta acción es irreversible.</p>
+                @if (!string.IsNullOrEmpty(_errorEliminar))
+                {
+                    <p style="color:var(--red);font-size:13px;margin-top:8px">⚠️ @_errorEliminar</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CancelarEliminar">Cancelar</button>
+                <button class="btn-primary" style="background:var(--red)" @onclick="EliminarUsuario">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<UsuarioDto> _todos      = new();
@@ -151,6 +180,40 @@
     {
         await Api.ReactivarUsuarioAsync(id);
         await Recargar();
+    }
+
+    private bool _confirmarEliminar;
+    private UsuarioDto? _usuarioEliminar;
+    private string _errorEliminar = string.Empty;
+
+    private void ConfirmarEliminar(UsuarioDto u)
+    {
+        _usuarioEliminar = u;
+        _confirmarEliminar = true;
+        _errorEliminar = string.Empty;
+    }
+
+    private void CancelarEliminar()
+    {
+        _confirmarEliminar = false;
+        _usuarioEliminar = null;
+        _errorEliminar = string.Empty;
+    }
+
+    private async Task EliminarUsuario()
+    {
+        if (_usuarioEliminar is null) return;
+        var (ok, error) = await Api.EliminarUsuarioAsync(_usuarioEliminar.Id);
+        if (ok)
+        {
+            _confirmarEliminar = false;
+            _usuarioEliminar = null;
+            await Recargar();
+        }
+        else
+        {
+            _errorEliminar = error ?? "Error al eliminar el usuario.";
+        }
     }
 
     private static string GetTurnoEmoji(Turno? t) => t switch

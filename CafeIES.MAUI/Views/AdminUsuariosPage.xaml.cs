@@ -36,4 +36,10 @@ public partial class AdminUsuariosPage : ContentPage
         if (sender is Button btn && btn.CommandParameter is UsuarioDto u)
             Vm.ReactivarCommand.Execute(u);
     }
+
+    private void OnEliminarClicked(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter is UsuarioDto u)
+            Vm.EliminarCommand.Execute(u);
+    }
 }

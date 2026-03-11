@@ -50,6 +50,13 @@ public partial class RegistroViewModel : ObservableObject
             return;
         }
 
+        if (!Email.Contains('@') || !Email.Contains('.'))
+        {
+            HayError     = true;
+            ErrorMessage = "Introduce un email válido.";
+            return;
+        }
+
         if (Password.Length < 8)
         {
             HayError     = true;

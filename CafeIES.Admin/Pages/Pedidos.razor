@@ -1,5 +1,6 @@
 @page "/pedidos"
 @inject AdminApiService Api
+@inject IJSRuntime JS
 
 <PageTitle>Pedidos · CaféIES Admin</PageTitle>
 
@@ -106,7 +107,7 @@ else
                                 @if (p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
                                 {
                                     <button class="btn-icon btn-icon--danger" title="Cancelar"
-                                            @onclick="() => CambiarEstado(p.Id, EstadoPedido.Cancelado)">🗑</button>
+                                            @onclick="() => ConfirmarCancelar(p.Id)">🗑</button>
                                 }
                             </div>
                         </td>
@@ -144,6 +145,13 @@ else
     {
         await Api.CambiarEstadoPedidoAsync(id, nuevoEstado);
         await Recargar();
+    }
+
+    private async Task ConfirmarCancelar(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "¿Cancelar este pedido? Se restaurará el stock."))
+            return;
+        await CambiarEstado(id, EstadoPedido.Cancelado);
     }
 
     private static string GetEstadoTexto(EstadoPedido e) => e switch

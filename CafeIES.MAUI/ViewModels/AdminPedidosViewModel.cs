@@ -68,4 +68,17 @@ public partial class AdminPedidosViewModel : ObservableObject
         await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
         await CargarAsync();
     }
+
+    [RelayCommand]
+    private async Task CancelarAsync(PedidoDto pedido)
+    {
+        var confirmar = await Shell.Current.DisplayAlert(
+            "Cancelar pedido",
+            $"¿Cancelar el pedido #{pedido.NumeroPedido:D3}? Se restaurará el stock.",
+            "Sí, cancelar", "No");
+        if (!confirmar) return;
+
+        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
+        await CargarAsync();
+    }
 }

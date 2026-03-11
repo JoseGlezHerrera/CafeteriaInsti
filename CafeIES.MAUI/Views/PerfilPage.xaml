@@ -93,13 +93,43 @@
                 </Border>
             </Grid>
 
+            <!-- Cambiar contraseña (#6) -->
+            <Button Text="🔑 Cambiar contraseña" Margin="0,8,0,0"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding ToggleCambioPasswordCommand}"/>
+
+            <Border BackgroundColor="{StaticResource Surface2Color}"
+                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                    Padding="18,16" Margin="0,10,0,0"
+                    IsVisible="{Binding MostrarCambioPassword}">
+                <Border.StrokeShape><RoundRectangle CornerRadius="18"/></Border.StrokeShape>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Cambiar contraseña" FontFamily="SyneBold" FontSize="14"
+                           TextColor="{StaticResource TextColor}"/>
+                    <Entry Placeholder="Contraseña actual" IsPassword="True"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding PasswordActual}"/>
+                    <Entry Placeholder="Nueva contraseña (mín. 8 caracteres)" IsPassword="True"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding NuevaPassword}"/>
+                    <Entry Placeholder="Confirmar nueva contraseña" IsPassword="True"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding ConfirmarPassword}"/>
+                    <Label Text="{Binding PasswordMessage}" FontFamily="DMSans" FontSize="12"
+                           TextColor="{StaticResource RedColor}"
+                           IsVisible="{Binding PasswordIsError}"/>
+                    <Button Text="Guardar contraseña" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding CambiarPasswordCommand}"/>
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Cerrar sesión -->
             <Button Text="Cerrar sesión" Margin="0,24,0,0"
                     BackgroundColor="#26e05252" TextColor="{StaticResource RedColor}"
                     FontFamily="SyneBold" FontSize="15" HeightRequest="52" CornerRadius="16"
                     Command="{Binding CerrarSesionCommand}"/>
 
-            <Label Text="CaféIES v1.0 · IES" Style="{StaticResource CaptionLabel}"
+            <Label Text="CaféIES v1.0 · IES"
                    HorizontalOptions="Center" Margin="0,24,0,16"/>
 
         </VerticalStackLayout>

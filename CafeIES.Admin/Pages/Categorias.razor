@@ -28,7 +28,7 @@
                             <button class="btn-icon" title="Editar"
                                     @onclick="() => AbrirEditar(cat)">✏️</button>
                             <button class="btn-icon btn-icon--danger" title="Eliminar"
-                                    @onclick="() => EliminarCategoria(cat.Id)">🗑</button>
+                                    @onclick="() => ConfirmarEliminarCategoria(cat)">🗑</button>
                         </div>
                     </td>
                 </tr>
@@ -36,6 +36,26 @@
         </tbody>
     </table>
 </div>
+
+@if (_confirmarEliminar && _categoriaEliminar is not null)
+{
+    <div class="modal-overlay" @onclick="CancelarEliminar">
+        <div class="modal" @onclick:stopPropagation="true" style="max-width:420px">
+            <div class="modal-header">
+                <h3>Confirmar eliminación</h3>
+                <button class="modal-close" @onclick="CancelarEliminar">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Eliminar la categoría <strong>@_categoriaEliminar.Emoji @_categoriaEliminar.Nombre</strong>?</p>
+                <p style="color:var(--muted);font-size:13px">Los productos asociados perderán su categoría.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CancelarEliminar">Cancelar</button>
+                <button class="btn-primary" style="background:var(--red)" @onclick="EliminarCategoria">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}
 
 @if (_mostrarModal)
 {
@@ -124,10 +144,28 @@
         _mostrarModal = false;
     }
 
-    private async Task EliminarCategoria(int id)
+    private bool _confirmarEliminar;
+    private CategoriaDto? _categoriaEliminar;
+
+    private void ConfirmarEliminarCategoria(CategoriaDto cat)
     {
-        await Api.EliminarCategoriaAsync(id);
+        _categoriaEliminar = cat;
+        _confirmarEliminar = true;
+    }
+
+    private void CancelarEliminar()
+    {
+        _confirmarEliminar = false;
+        _categoriaEliminar = null;
+    }
+
+    private async Task EliminarCategoria()
+    {
+        if (_categoriaEliminar is null) return;
+        await Api.EliminarCategoriaAsync(_categoriaEliminar.Id);
         _categorias = await Api.GetCategoriasAsync();
+        _confirmarEliminar = false;
+        _categoriaEliminar = null;
     }
 
     private void CerrarModal() => _mostrarModal = false;

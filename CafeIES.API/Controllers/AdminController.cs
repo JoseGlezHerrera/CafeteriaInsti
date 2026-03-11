@@ -19,7 +19,7 @@ public class AdminController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> Dashboard()
     {
-        var hoy = DateTime.UtcNow.Date;
+        var hoy = DateTime.Now.Date;
 
         var pedidosHoy    = await _db.Pedidos.CountAsync(p => p.FechaCreacion.Date == hoy);
         var ingresosHoy   = await _db.Pedidos
@@ -51,11 +51,14 @@ public class AdminController : ControllerBase
     [HttpGet("usuarios")]
     public async Task<ActionResult<List<UsuarioDto>>> GetUsuarios(
         [FromQuery] EstadoCuenta? estado,
-        [FromQuery] RolUsuario?   rol)
+        [FromQuery] RolUsuario?   rol,
+        [FromQuery] string?       busqueda)
     {
         var query = _db.Usuarios.AsQueryable();
         if (estado.HasValue) query = query.Where(u => u.Estado == estado);
         if (rol.HasValue)    query = query.Where(u => u.Rol    == rol);
+        if (!string.IsNullOrWhiteSpace(busqueda))
+            query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
         var users = await query.OrderBy(u => u.NombreCompleto).ToListAsync();
         return Ok(users.Select(MapUsuarioDto).ToList());
@@ -69,7 +72,7 @@ public class AdminController : ControllerBase
         if (user is null) return NotFound();
 
         user.Estado          = aprobar ? EstadoCuenta.Activa : EstadoCuenta.Rechazada;
-        user.FechaValidacion = DateTime.UtcNow;
+        user.FechaValidacion = DateTime.Now;
         await _db.SaveChangesAsync();
 
         return Ok(new { mensaje = aprobar ? "Cuenta aprobada." : "Cuenta rechazada." });
@@ -109,6 +112,25 @@ public class AdminController : ControllerBase
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
         user.Turno = req.Turno;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // ── DELETE /api/admin/usuarios/{id} ───────────────────────────────────────
+    [HttpDelete("usuarios/{id}")]
+    public async Task<ActionResult> EliminarUsuario(int id)
+    {
+        var user = await _db.Usuarios.FindAsync(id);
+        if (user is null) return NotFound();
+
+        if (user.Rol == RolUsuario.Admin)
+            return BadRequest(new { mensaje = "No se puede eliminar la cuenta de administrador." });
+
+        var tienePedidos = await _db.Pedidos.AnyAsync(p => p.UsuarioId == id);
+        if (tienePedidos)
+            return BadRequest(new { mensaje = "No se puede eliminar un usuario con pedidos. Suspéndelo en su lugar." });
+
+        _db.Usuarios.Remove(user);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -167,24 +189,37 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // ── GET /api/admin/pedidos  (histórico completo) ──────────────────────────
+    // ── GET /api/admin/pedidos  (histórico paginado) ──────────────────────────
     [HttpGet("pedidos")]
-    public async Task<ActionResult<List<PedidoDto>>> GetPedidos(
+    public async Task<ActionResult<PaginatedResponse<PedidoDto>>> GetPedidos(
         [FromQuery] DateTime? desde,
         [FromQuery] DateTime? hasta,
-        [FromQuery] EstadoPedido? estado)
+        [FromQuery] EstadoPedido? estado,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 30)
     {
+        pageSize = Math.Clamp(pageSize, 1, 500);
+        page = Math.Max(1, page);
+
         var query = _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario)
             .AsQueryable();
 
-        if (desde.HasValue)  query = query.Where(p => p.FechaCreacion >= desde);
-        if (hasta.HasValue)  query = query.Where(p => p.FechaCreacion <= hasta);
+        if (desde.HasValue)  query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
+        if (hasta.HasValue)  query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
         if (estado.HasValue) query = query.Where(p => p.Estado == estado);
 
-        var pedidos = await query.OrderByDescending(p => p.FechaCreacion).Take(200).ToListAsync();
-        return Ok(pedidos.Select(MapPedidoDto).ToList());
+        var totalCount = await query.CountAsync();
+        var pedidos = await query
+            .OrderByDescending(p => p.FechaCreacion)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new PaginatedResponse<PedidoDto>(
+            pedidos.Select(MapPedidoDto).ToList(),
+            totalCount, page, pageSize));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -202,5 +237,3 @@ public class AdminController : ControllerBase
         )).ToList());
 }
 
-// DTO extra solo para este endpoint
-public record CambiarTurnoRequest(Turno? Turno);

@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using CafeIES.Shared.Models;
 using Microsoft.JSInterop;
 
@@ -47,6 +48,7 @@ public class AuthAdminService
 
             await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_token",   _accessToken);
             await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_refresh",  _refreshToken);
+            await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_usuario",  JsonSerializer.Serialize(_usuario));
 
             return true;
         }
@@ -60,8 +62,14 @@ public class AuthAdminService
         _refreshToken = await _js.InvokeAsync<string?>("sessionStorage.getItem", "admin_refresh");
 
         if (!string.IsNullOrEmpty(_accessToken))
+        {
             _http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
+
+            var json = await _js.InvokeAsync<string?>("sessionStorage.getItem", "admin_usuario");
+            if (!string.IsNullOrEmpty(json))
+                _usuario = JsonSerializer.Deserialize<UsuarioDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
     }
 
     public async Task<bool> RefrescarTokenAsync()
@@ -76,11 +84,13 @@ public class AuthAdminService
 
         _accessToken  = data.AccessToken;
         _refreshToken = data.RefreshToken;
+        _usuario      = data.Usuario;
         _http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
 
         await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_token",   _accessToken);
         await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_refresh",  _refreshToken);
+        await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_usuario",  JsonSerializer.Serialize(_usuario));
         return true;
     }
 

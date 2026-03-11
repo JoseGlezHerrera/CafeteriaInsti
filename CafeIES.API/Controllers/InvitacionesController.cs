@@ -46,7 +46,7 @@ public class InvitacionesController : ControllerBase
         {
             Tipo             = req.Tipo,
             Activa           = true,
-            FechaExpiracion  = DateTime.UtcNow.AddDays(req.DiasValidez),
+            FechaExpiracion  = DateTime.Now.AddDays(req.DiasValidez),
             UsosMaximos      = req.UsosMaximos
         };
 
