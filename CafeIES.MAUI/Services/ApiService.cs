@@ -163,6 +163,77 @@ public class ApiService
         catch { return false; }
     }
 
+    // ── Pagos (Stripe) ──────────────────────────────────────────────────────────
+    public async Task<StripeConfigDto?> GetStripeConfigAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<StripeConfigDto>("api/pagos/config");
+        }
+        catch { return null; }
+    }
+
+    public async Task<PagoIntentResponse?> CrearPagoIntentAsync(CrearPagoRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/pagos/crear-intent",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<PagoIntentResponse>()
+                : null;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Confirma un PaymentIntent con tarjeta usando la API REST de Stripe directamente.
+    /// Usa la publishable key como auth (seguro para cliente).
+    /// </summary>
+    public async Task<bool> ConfirmarPagoStripeAsync(
+        string clientSecret, string publishableKey,
+        string cardNumber, string expMonth, string expYear, string cvc)
+    {
+        try
+        {
+            using var stripeHttp = new HttpClient();
+            stripeHttp.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", publishableKey);
+
+            // 1. Crear PaymentMethod
+            var pmContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["type"]                  = "card",
+                ["card[number]"]          = cardNumber,
+                ["card[exp_month]"]       = expMonth,
+                ["card[exp_year]"]        = expYear,
+                ["card[cvc]"]             = cvc
+            });
+            var pmResp = await stripeHttp.PostAsync("https://api.stripe.com/v1/payment_methods", pmContent);
+            if (!pmResp.IsSuccessStatusCode) return false;
+
+            var pmJson = await pmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+            var pmId = pmJson?["id"]?.ToString();
+            if (string.IsNullOrEmpty(pmId)) return false;
+
+            // 2. Confirmar PaymentIntent
+            var piId = clientSecret.Split("_secret_")[0];
+            var confirmContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["payment_method"] = pmId,
+                ["client_secret"]  = clientSecret
+            });
+            var confirmResp = await stripeHttp.PostAsync(
+                $"https://api.stripe.com/v1/payment_intents/{piId}/confirm", confirmContent);
+
+            if (!confirmResp.IsSuccessStatusCode) return false;
+
+            var confirmJson = await confirmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+            return confirmJson?["status"]?.ToString() == "succeeded";
+        }
+        catch { return false; }
+    }
+
     // ── Institutos ──────────────────────────────────────────────────────────────
     public async Task<List<InstitutoDto>> GetInstitutosAsync()
     {

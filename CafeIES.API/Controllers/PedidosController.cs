@@ -17,12 +17,14 @@ public class PedidosController : ControllerBase
 {
     private readonly AppDbContext    _db;
     private readonly HorarioService  _horario;
+    private readonly StripeService   _stripe;
     private readonly IHubContext<CafeteriaHub> _hub;
 
-    public PedidosController(AppDbContext db, HorarioService horario, IHubContext<CafeteriaHub> hub)
+    public PedidosController(AppDbContext db, HorarioService horario, StripeService stripe, IHubContext<CafeteriaHub> hub)
     {
         _db      = db;
         _horario = horario;
+        _stripe  = stripe;
         _hub     = hub;
     }
 
@@ -82,7 +84,17 @@ public class PedidosController : ControllerBase
                 total += producto.Precio * l.Cantidad;
             }
 
-            // 3. Número de pedido secuencial del día
+            // 3. Verificar pago con Stripe (si se proporcionó)
+            string? referenciaPago = null;
+            if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
+            {
+                var (pagado, status) = await _stripe.VerificarPagoAsync(req.StripePaymentIntentId);
+                if (!pagado)
+                    return BadRequest(new { mensaje = $"El pago no se ha completado (estado: {status}). Inténtalo de nuevo." });
+                referenciaPago = req.StripePaymentIntentId;
+            }
+
+            // 4. Número de pedido secuencial del día
             var hoy = DateTime.Now.Date;
             var ultimoNumero = await _db.Pedidos
                 .Where(p => p.FechaCreacion.Date == hoy)
@@ -90,12 +102,13 @@ public class PedidosController : ControllerBase
 
             var pedido = new Pedido
             {
-                UsuarioId    = userId,
-                NumeroPedido = ultimoNumero + 1,
-                MetodoPago   = req.MetodoPago,
-                Total        = total,
-                Notas        = req.Notas,
-                Lineas       = lineas
+                UsuarioId      = userId,
+                NumeroPedido   = ultimoNumero + 1,
+                MetodoPago     = req.MetodoPago,
+                Total          = total,
+                Notas          = req.Notas,
+                Lineas         = lineas,
+                ReferenciasPago = referenciaPago
             };
 
             _db.Pedidos.Add(pedido);

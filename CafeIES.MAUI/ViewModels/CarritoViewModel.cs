@@ -23,6 +23,16 @@ public partial class CarritoViewModel : ObservableObject
     [ObservableProperty] private string _notas = string.Empty;
     [ObservableProperty] private MetodoPago _metodoPago = MetodoPago.Tarjeta;
 
+    // ── Formulario tarjeta ────────────────────────────────────────────────────
+    [ObservableProperty] private string _cardNumber = string.Empty;
+    [ObservableProperty] private string _cardExpMonth = string.Empty;
+    [ObservableProperty] private string _cardExpYear = string.Empty;
+    [ObservableProperty] private string _cardCvc = string.Empty;
+
+    [ObservableProperty] private string _errorPago = string.Empty;
+    [ObservableProperty] private bool   _hayErrorPago;
+    [ObservableProperty] private string _estadoPago = string.Empty;
+
     public ObservableCollection<ItemCarrito> Items { get; } = new();
 
     [ObservableProperty]
@@ -89,36 +99,107 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
     }
 
-    // ── Confirmar pedido ──────────────────────────────────────────────────────
+    // ── Confirmar pedido con pago Stripe ──────────────────────────────────────
     [RelayCommand(CanExecute = nameof(PuedeConfirmar))]
     private async Task ConfirmarPedidoAsync()
     {
-        IsLoading = true;
+        HayErrorPago = false;
+        ErrorPago = string.Empty;
 
-        var request = new CrearPedidoRequest(
-            Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList(),
-            MetodoPago,
-            string.IsNullOrWhiteSpace(Notas) ? null : Notas
-        );
-
-        var pedido = await _api.CrearPedidoAsync(request);
-        IsLoading = false;
-
-        if (pedido is null)
+        // Validar datos de tarjeta
+        if (string.IsNullOrWhiteSpace(CardNumber) || CardNumber.Length < 13)
         {
-            await Shell.Current.DisplayAlert(
-                "Error",
-                "No se pudo realizar el pedido. Comprueba tu conexión o el horario.",
-                "OK");
+            HayErrorPago = true;
+            ErrorPago = "Introduce un número de tarjeta válido.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(CardExpMonth) || string.IsNullOrWhiteSpace(CardExpYear))
+        {
+            HayErrorPago = true;
+            ErrorPago = "Introduce la fecha de caducidad.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(CardCvc) || CardCvc.Length < 3)
+        {
+            HayErrorPago = true;
+            ErrorPago = "Introduce el código CVC.";
             return;
         }
 
-        // Limpiar carrito
+        IsLoading = true;
+        EstadoPago = "Procesando pago...";
+
+        // 1. Crear PaymentIntent en nuestra API
+        var pagoReq = new CrearPagoRequest(
+            Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList(),
+            string.IsNullOrWhiteSpace(Notas) ? null : Notas);
+
+        var intent = await _api.CrearPagoIntentAsync(pagoReq);
+        if (intent is null)
+        {
+            IsLoading = false;
+            EstadoPago = string.Empty;
+            HayErrorPago = true;
+            ErrorPago = "No se pudo iniciar el pago. Comprueba tu conexión o el horario.";
+            return;
+        }
+
+        // 2. Obtener publishable key
+        var config = await _api.GetStripeConfigAsync();
+        if (config is null || string.IsNullOrEmpty(config.PublishableKey))
+        {
+            IsLoading = false;
+            EstadoPago = string.Empty;
+            HayErrorPago = true;
+            ErrorPago = "Error de configuración de pago. Contacta con el administrador.";
+            return;
+        }
+
+        EstadoPago = "Confirmando con el banco...";
+
+        // 3. Confirmar pago con Stripe
+        var pagado = await _api.ConfirmarPagoStripeAsync(
+            intent.ClientSecret, config.PublishableKey,
+            CardNumber.Replace(" ", ""), CardExpMonth, CardExpYear, CardCvc);
+
+        if (!pagado)
+        {
+            IsLoading = false;
+            EstadoPago = string.Empty;
+            HayErrorPago = true;
+            ErrorPago = "El pago fue rechazado. Comprueba los datos de tu tarjeta.";
+            return;
+        }
+
+        EstadoPago = "Pago confirmado ✓ Creando pedido...";
+
+        // 4. Crear pedido en nuestra API (con la referencia de Stripe)
+        var pedidoReq = new CrearPedidoRequest(
+            Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList(),
+            MetodoPago,
+            string.IsNullOrWhiteSpace(Notas) ? null : Notas,
+            intent.PaymentIntentId);
+
+        var pedido = await _api.CrearPedidoAsync(pedidoReq);
+        IsLoading = false;
+        EstadoPago = string.Empty;
+
+        if (pedido is null)
+        {
+            HayErrorPago = true;
+            ErrorPago = "El pago se procesó pero hubo un error al crear el pedido. Contacta con el administrador.";
+            return;
+        }
+
+        // 5. Limpiar carrito y navegar
         Items.Clear();
         TotalItems = 0;
         OnPropertyChanged(nameof(Total));
+        CardNumber = string.Empty;
+        CardExpMonth = string.Empty;
+        CardExpYear = string.Empty;
+        CardCvc = string.Empty;
 
-        // Navegar a confirmación — total con cultura invariante para evitar problemas con coma decimal
         var totalStr = pedido.Total.ToString("F2", CultureInfo.InvariantCulture);
         await Shell.Current.GoToAsync($"ConfirmacionPedido?numeroPedido={pedido.NumeroPedido}&total={totalStr}");
     }

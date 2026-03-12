@@ -88,7 +88,8 @@ public record ActualizarStockRequest([Required] int NuevoStock);
 public record CrearPedidoRequest(
     [Required, MinLength(1)] List<LineaPedidoRequest> Lineas,
     MetodoPago MetodoPago,
-    string? Notas
+    string? Notas,
+    string? StripePaymentIntentId
 );
 
 public record LineaPedidoRequest(
@@ -198,3 +199,18 @@ public record DashboardDto(
     int     AlumnosPendientes,
     List<PedidoDto> PedidosEnCurso
 );
+
+// ── Pagos (Stripe) ───────────────────────────────────────────────────────────
+
+public record CrearPagoRequest(
+    [Required, MinLength(1)] List<LineaPedidoRequest> Lineas,
+    string? Notas
+);
+
+public record PagoIntentResponse(
+    string ClientSecret,
+    string PaymentIntentId,
+    decimal Total
+);
+
+public record StripeConfigDto(string PublishableKey);

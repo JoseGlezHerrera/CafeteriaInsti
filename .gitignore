@@ -56,6 +56,9 @@ local.properties
 *.msixupload
 AppPackages/
 
+# Secrets - NEVER commit real API keys
+appsettings.Development.json
+
 # Node (if using webview with JS)
 node_modules/
 
