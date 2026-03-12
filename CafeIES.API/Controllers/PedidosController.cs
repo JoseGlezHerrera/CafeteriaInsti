@@ -125,7 +125,7 @@ public class PedidosController : ControllerBase
             .OrderByDescending(p => p.FechaCreacion)
             .Take(20)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
 
         return Ok(pedidos.Select(MapDto).ToList());
@@ -215,7 +215,7 @@ public class PedidosController : ControllerBase
             .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
             .OrderBy(p => p.FechaCreacion)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
 
         return Ok(pedidos.Select(MapDto).ToList());
@@ -226,7 +226,7 @@ public class PedidosController : ControllerBase
     {
         var p = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         return p is null ? null : MapDto(p);
@@ -247,6 +247,7 @@ public class PedidosController : ControllerBase
             l.Producto.Nombre,
             l.Cantidad,
             l.PrecioUnitario,
-            l.Subtotal)).ToList()
+            l.Subtotal)).ToList(),
+        p.Usuario.Instituto?.Nombre
     );
 }

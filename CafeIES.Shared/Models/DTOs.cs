@@ -24,7 +24,8 @@ public record RegistroAlumnoRequest(
     [Required, MaxLength(100)] string NombreCompleto,
     [Required, EmailAddress]   string Email,
     [Required, MinLength(8)]   string Password,
-    [Required]                 Turno  Turno
+    [Required]                 Turno  Turno,
+    [Required]                 int    InstitutoId
 );
 
 // Registro mediante invitación (profe/personal)
@@ -32,7 +33,8 @@ public record RegistroInvitadoRequest(
     [Required]                 string TokenInvitacion,
     [Required, MaxLength(100)] string NombreCompleto,
     [Required, EmailAddress]   string Email,
-    [Required, MinLength(8)]   string Password
+    [Required, MinLength(8)]   string Password,
+    [Required]                 int    InstitutoId
 );
 
 // ── Usuario ───────────────────────────────────────────────────────────────────
@@ -43,8 +45,14 @@ public record UsuarioDto(
     string      Email,
     RolUsuario  Rol,
     Turno?      Turno,
-    EstadoCuenta Estado
+    EstadoCuenta Estado,
+    int?        InstitutoId,
+    string?     InstitutoNombre
 );
+
+// ── Instituto ─────────────────────────────────────────────────────────────────
+
+public record InstitutoDto(int Id, string Nombre, string CodigoCorto);
 
 // ── Catálogo ──────────────────────────────────────────────────────────────────
 
@@ -98,7 +106,8 @@ public record PedidoDto(
     MetodoPago    MetodoPago,
     decimal       Total,
     string?       Notas,
-    List<LineaPedidoDto> Lineas
+    List<LineaPedidoDto> Lineas,
+    string?       InstitutoNombre
 );
 
 public record LineaPedidoDto(

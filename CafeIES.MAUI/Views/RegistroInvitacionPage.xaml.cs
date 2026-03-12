@@ -9,4 +9,11 @@ public partial class RegistroInvitacionPage : ContentPage
         InitializeComponent();
         BindingContext = vm;
     }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (BindingContext is RegistroInvitacionViewModel vm)
+            await vm.CargarInstitutosAsync();
+    }
 }

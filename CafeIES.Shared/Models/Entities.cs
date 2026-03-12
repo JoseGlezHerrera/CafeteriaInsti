@@ -4,6 +4,35 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace CafeIES.Shared.Models;
 
 // ─────────────────────────────────────────────
+//  INSTITUTO
+// ─────────────────────────────────────────────
+
+/// <summary>
+/// Centro educativo que utiliza la plataforma.
+/// Cada usuario pertenece a un instituto; el admin gestiona todos.
+/// </summary>
+public class Instituto
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(150)]
+    public string Nombre { get; set; } = string.Empty;
+
+    [MaxLength(300)]
+    public string Direccion { get; set; } = string.Empty;
+
+    /// <summary>Código corto para identificación rápida (ej: "IES-NORTE").</summary>
+    [Required, MaxLength(20)]
+    public string CodigoCorto { get; set; } = string.Empty;
+
+    public bool Activo { get; set; } = true;
+
+    // Navegación
+    public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+}
+
+
+// ─────────────────────────────────────────────
 //  USUARIO
 // ─────────────────────────────────────────────
 
@@ -33,6 +62,10 @@ public class Usuario
     public DateTime FechaRegistro { get; set; } = DateTime.Now;
 
     public DateTime? FechaValidacion { get; set; }
+
+    /// <summary>Instituto al que pertenece. Null para Admin (gestiona todos).</summary>
+    public int? InstitutoId { get; set; }
+    public Instituto? Instituto { get; set; }
 
     /// <summary>Token de refresco JWT activo.</summary>
     public string? RefreshToken { get; set; }

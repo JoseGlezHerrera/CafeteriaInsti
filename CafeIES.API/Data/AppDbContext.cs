@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     // ── Tablas ───────────────────────────────────────────────────────────────
+    public DbSet<Instituto>    Institutos    => Set<Instituto>();
     public DbSet<Usuario>      Usuarios      => Set<Usuario>();
     public DbSet<FranjaHoraria> FranjasHorarias => Set<FranjaHoraria>();
     public DbSet<Invitacion>   Invitaciones  => Set<Invitacion>();
@@ -20,6 +21,12 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(mb);
 
+        // ── Instituto ─────────────────────────────────────────────────────────
+        mb.Entity<Instituto>(e =>
+        {
+            e.HasIndex(i => i.CodigoCorto).IsUnique();
+        });
+
         // ── Usuario ──────────────────────────────────────────────────────────
         mb.Entity<Usuario>(e =>
         {
@@ -27,6 +34,11 @@ public class AppDbContext : DbContext
             e.Property(u => u.Rol).HasConversion<int>();
             e.Property(u => u.Estado).HasConversion<int>();
             e.Property(u => u.Turno).HasConversion<int?>();
+
+            e.HasOne(u => u.Instituto)
+             .WithMany(i => i.Usuarios)
+             .HasForeignKey(u => u.InstitutoId)
+             .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── FranjaHoraria ────────────────────────────────────────────────────
@@ -79,6 +91,13 @@ public class AppDbContext : DbContext
              .HasForeignKey(l => l.ProductoId)
              .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // ── Seed: Institutos iniciales ────────────────────────────────────────
+        mb.Entity<Instituto>().HasData(
+            new Instituto { Id = 1, Nombre = "IES Instituto 1", CodigoCorto = "IES-1", Direccion = "" },
+            new Instituto { Id = 2, Nombre = "IES Instituto 2", CodigoCorto = "IES-2", Direccion = "" },
+            new Instituto { Id = 3, Nombre = "IES Instituto 3", CodigoCorto = "IES-3", Direccion = "" }
+        );
 
         // ── Seed: Categorías iniciales ───────────────────────────────────────
         mb.Entity<Categoria>().HasData(

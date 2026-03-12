@@ -95,6 +95,21 @@
                        Text="{Binding Password}"/>
             </Border>
 
+            <!-- Instituto -->
+            <Label Text="INSTITUTO" Style="{StaticResource Caption}"
+                   FontFamily="SyneBold" FontSize="11" CharacterSpacing="1.5"
+                   Margin="0,8,0,8"/>
+            <Border Style="{StaticResource InputBox}" Margin="0,0,0,8">
+                <Picker ItemsSource="{Binding Institutos}"
+                        ItemDisplayBinding="{Binding Nombre}"
+                        SelectedItem="{Binding InstitutoSeleccionado}"
+                        Title="Selecciona tu instituto"
+                        TextColor="{StaticResource TextColor}"
+                        TitleColor="{StaticResource MutedColor}"
+                        FontFamily="DMSans" FontSize="15"
+                        HorizontalOptions="FillAndExpand"/>
+            </Border>
+
             <!-- Error -->
             <Label Text="{Binding ErrorMessage}"
                    TextColor="{StaticResource RedColor}"

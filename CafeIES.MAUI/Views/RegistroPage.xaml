@@ -108,6 +108,22 @@
                 </Border>
             </Grid>
 
+            <!-- Instituto selector -->
+            <Label Text="INSTITUTO" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                <Picker ItemsSource="{Binding Institutos}"
+                        ItemDisplayBinding="{Binding Nombre}"
+                        SelectedItem="{Binding InstitutoSeleccionado}"
+                        Title="Selecciona tu instituto"
+                        TextColor="{StaticResource TextColor}"
+                        TitleColor="{StaticResource MutedColor}"
+                        FontFamily="DMSans" FontSize="15"
+                        HorizontalOptions="FillAndExpand"/>
+            </Border>
+
             <!-- Error -->
             <Border BackgroundColor="#26e05252" StrokeThickness="1" Stroke="#40e05252"
                     Padding="14,10" Margin="0,16,0,0" IsVisible="{Binding HayError}">

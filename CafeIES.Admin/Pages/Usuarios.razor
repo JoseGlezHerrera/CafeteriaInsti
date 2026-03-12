@@ -22,7 +22,7 @@
                     <div class="pending-avatar">👤</div>
                     <div class="pending-info">
                         <div class="pending-name">@u.NombreCompleto</div>
-                        <div class="pending-email">@u.Email · @GetTurnoEmoji(u.Turno) @u.Turno</div>
+                        <div class="pending-email">@u.Email · @GetTurnoEmoji(u.Turno) @u.Turno @(u.InstitutoNombre is not null ? $"· 🏫 {u.InstitutoNombre}" : "")</div>
                     </div>
                     <div class="pending-actions">
                         <button class="btn-approve" @onclick="() => ValidarAlumno(u.Id, true)">
@@ -44,6 +44,13 @@
         <h2>Todos los usuarios</h2>
         <div class="filters-inline">
             <input class="search-input" placeholder="Buscar..." @bind="_busqueda" @bind:event="oninput"/>
+            <select class="filter-select-sm" @bind="_institutoFiltro">
+                <option value="">Todos los institutos</option>
+                @foreach (var i in _institutos)
+                {
+                    <option value="@i.Id">@i.Nombre</option>
+                }
+            </select>
             <select class="filter-select-sm" @bind="_rolFiltro">
                 <option value="">Todos los roles</option>
                 <option value="Alumno">🎓 Alumno</option>
@@ -58,12 +65,13 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Usuario</th>
-                    <th>Rol</th>
-                    <th>Turno</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
+                     <th>Usuario</th>
+                     <th>Instituto</th>
+                     <th>Rol</th>
+                     <th>Turno</th>
+                     <th>Estado</th>
+                     <th>Acciones</th>
+                 </tr>
             </thead>
             <tbody>
                 @foreach (var u in UsuariosFiltrados)
@@ -77,6 +85,16 @@
                                     <div class="user-email">@u.Email</div>
                                 </div>
                             </div>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(u.InstitutoNombre))
+                            {
+                                <span class="instituto-badge">@u.InstitutoNombre</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
                         </td>
                         <td><span class="role-badge role--@u.Rol.ToString().ToLower()">@GetRolTexto(u.Rol)</span></td>
                         <td>
@@ -145,8 +163,10 @@
 @code {
     private List<UsuarioDto> _todos      = new();
     private List<UsuarioDto> _pendientes = new();
+    private List<InstitutoDto> _institutos = new();
     private string _busqueda  = string.Empty;
     private string _rolFiltro = string.Empty;
+    private string _institutoFiltro = string.Empty;
 
     private IEnumerable<UsuarioDto> UsuariosFiltrados =>
         _todos
@@ -154,9 +174,15 @@
             .Where(u => string.IsNullOrEmpty(_busqueda) ||
                         u.NombreCompleto.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
                         u.Email.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(u => string.IsNullOrEmpty(_rolFiltro) || u.Rol.ToString() == _rolFiltro);
+            .Where(u => string.IsNullOrEmpty(_rolFiltro) || u.Rol.ToString() == _rolFiltro)
+            .Where(u => string.IsNullOrEmpty(_institutoFiltro) ||
+                        u.InstitutoId?.ToString() == _institutoFiltro);
 
-    protected override async Task OnInitializedAsync() => await Recargar();
+    protected override async Task OnInitializedAsync()
+    {
+        _institutos = await Api.GetInstitutosAsync();
+        await Recargar();
+    }
 
     private async Task Recargar()
     {

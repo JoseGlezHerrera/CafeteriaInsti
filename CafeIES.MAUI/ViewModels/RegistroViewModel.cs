@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
+using System.Collections.ObjectModel;
 
 namespace CafeIES.MAUI.ViewModels;
 
@@ -25,6 +26,21 @@ public partial class RegistroViewModel : ObservableObject
     public bool TurnoMañanaSeleccionado => TurnoSeleccionado == Turno.Manana;
     public bool TurnoTardeSeleccionado  => TurnoSeleccionado == Turno.Tarde;
     public bool TurnoNocheSeleccionado  => TurnoSeleccionado == Turno.Noche;
+
+    // ── Instituto ─────────────────────────────────────────────────────────────
+    public ObservableCollection<InstitutoDto> Institutos { get; } = new();
+
+    [ObservableProperty] private InstitutoDto? _institutoSeleccionado;
+
+    [RelayCommand]
+    public async Task CargarInstitutosAsync()
+    {
+        if (Institutos.Count > 0) return;
+        var lista = await _api.GetInstitutosAsync();
+        Institutos.Clear();
+        foreach (var i in lista) Institutos.Add(i);
+        if (Institutos.Count == 1) InstitutoSeleccionado = Institutos[0];
+    }
 
     [RelayCommand]
     private void SeleccionarTurno(string turno)
@@ -64,11 +80,18 @@ public partial class RegistroViewModel : ObservableObject
             return;
         }
 
+        if (InstitutoSeleccionado is null)
+        {
+            HayError     = true;
+            ErrorMessage = "Selecciona tu instituto.";
+            return;
+        }
+
         IsLoading = true;
         HayError  = false;
 
         var resultado = await _api.RegistroAlumnoAsync(new RegistroAlumnoRequest(
-            NombreCompleto, Email, Password, TurnoSeleccionado));
+            NombreCompleto, Email, Password, TurnoSeleccionado, InstitutoSeleccionado.Id));
 
         IsLoading = false;
 

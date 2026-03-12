@@ -163,6 +163,17 @@ public class ApiService
         catch { return false; }
     }
 
+    // ── Institutos ──────────────────────────────────────────────────────────────
+    public async Task<List<InstitutoDto>> GetInstitutosAsync()
+    {
+        try
+        {
+            var list = await _http.GetFromJsonAsync<List<InstitutoDto>>("api/institutos");
+            return list ?? [];
+        }
+        catch { return []; }
+    }
+
     // ── Productos ─────────────────────────────────────────────────────────────
     public async Task<List<ProductoDto>> GetProductosAsync()
     {

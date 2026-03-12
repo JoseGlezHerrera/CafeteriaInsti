@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
+using System.Collections.ObjectModel;
 
 namespace CafeIES.MAUI.ViewModels;
 
@@ -29,6 +30,21 @@ public partial class RegistroInvitacionViewModel : ObservableObject
         ? "👨‍🏫 Profesor"
         : "🏢 Personal";
 
+    // ── Instituto ─────────────────────────────────────────────────────────────
+    public ObservableCollection<InstitutoDto> Institutos { get; } = new();
+
+    [ObservableProperty] private InstitutoDto? _institutoSeleccionado;
+
+    [RelayCommand]
+    public async Task CargarInstitutosAsync()
+    {
+        if (Institutos.Count > 0) return;
+        var lista = await _api.GetInstitutosAsync();
+        Institutos.Clear();
+        foreach (var i in lista) Institutos.Add(i);
+        if (Institutos.Count == 1) InstitutoSeleccionado = Institutos[0];
+    }
+
     [RelayCommand]
     private async Task ActivarAsync()
     {
@@ -39,10 +55,17 @@ public partial class RegistroInvitacionViewModel : ObservableObject
             return;
         }
 
+        if (InstitutoSeleccionado is null)
+        {
+            HayError     = true;
+            ErrorMessage = "Selecciona tu instituto.";
+            return;
+        }
+
         IsLoading = true;
         HayError  = false;
 
-        var req = new RegistroInvitadoRequest(TokenInvitacion, Nombre, Email, Password);
+        var req = new RegistroInvitadoRequest(TokenInvitacion, Nombre, Email, Password, InstitutoSeleccionado.Id);
         var resultado = await _api.RegistroInvitadoAsync(req);
 
         IsLoading = false;

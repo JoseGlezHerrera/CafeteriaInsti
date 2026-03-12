@@ -19,8 +19,17 @@ else if (_dashboard is null)
 else
 {
     <div class="page-header">
-        <h1>Dashboard</h1>
-        <span class="page-sub">Hoy, @DateTime.Now.ToString("dddd d MMMM")</span>
+        <div>
+            <h1>Dashboard</h1>
+            <span class="page-sub">Hoy, @DateTime.Now.ToString("dddd d MMMM")</span>
+        </div>
+        <select class="filter-select" @onchange="OnInstitutoChanged">
+            <option value="">Todos los institutos</option>
+            @foreach (var i in _institutos)
+            {
+                <option value="@i.Id" selected="@(i.Id == _institutoFiltro)">@i.Nombre</option>
+            }
+        </select>
     </div>
 
     <!-- ── Stats ──────────────────────────────────────────────────────────── -->
@@ -74,6 +83,10 @@ else
                         <div class="order-num">#@pedido.NumeroPedido.ToString("D3")</div>
                         <div class="order-info">
                             <div class="order-user">@pedido.UsuarioNombre</div>
+                            @if (!string.IsNullOrEmpty(pedido.InstitutoNombre))
+                            {
+                                <div class="order-instituto">🏫 @pedido.InstitutoNombre</div>
+                            }
                             <div class="order-items">
                                 @string.Join(", ", pedido.Lineas.Select(l => $"{l.ProductoNombre} ×{l.Cantidad}"))
                             </div>
@@ -107,27 +120,36 @@ else
     private DashboardDto? _dashboard;
     private bool _cargado;
     private Timer? _timer;
+    private List<InstitutoDto> _institutos = new();
+    private int? _institutoFiltro;
 
     protected override async Task OnInitializedAsync()
     {
-        _dashboard = await Api.GetDashboardAsync();
-        _cargado   = true;
+        _institutos = await Api.GetInstitutosAsync();
+        _dashboard  = await Api.GetDashboardAsync(_institutoFiltro);
+        _cargado    = true;
 
         _timer = new Timer(async _ =>
         {
             try
             {
-                _dashboard = await Api.GetDashboardAsync();
+                _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
                 await InvokeAsync(StateHasChanged);
             }
             catch { /* ignorar errores de red en auto-refresh */ }
         }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
+    private async Task OnInstitutoChanged(ChangeEventArgs e)
+    {
+        _institutoFiltro = int.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+    }
+
     private async Task CambiarEstado(int pedidoId, EstadoPedido nuevoEstado)
     {
         await Api.CambiarEstadoPedidoAsync(pedidoId, nuevoEstado);
-        _dashboard = await Api.GetDashboardAsync();
+        _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
     }
 
     private static string GetEstadoClass(EstadoPedido estado) => estado switch

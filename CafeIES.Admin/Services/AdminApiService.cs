@@ -56,8 +56,13 @@ public class AdminApiService
     }
 
     // ── Dashboard ─────────────────────────────────────────────────────────────
-    public async Task<DashboardDto?> GetDashboardAsync()
-        => await GetAsync<DashboardDto>("api/admin/dashboard");
+    public async Task<DashboardDto?> GetDashboardAsync(int? institutoId = null)
+    {
+        var url = institutoId.HasValue
+            ? $"api/admin/dashboard?institutoId={institutoId}"
+            : "api/admin/dashboard";
+        return await GetAsync<DashboardDto>(url);
+    }
 
     // ── Productos ─────────────────────────────────────────────────────────────
     public async Task<List<ProductoDto>> GetProductosAsync()
@@ -147,6 +152,10 @@ public class AdminApiService
         => await SendBoolAsync(() => _http.DeleteAsync($"api/invitaciones/{id}"));
 
     public string GetQrUrl(int id) => $"{_http.BaseAddress}api/invitaciones/{id}/qr";
+
+    // ── Institutos ──────────────────────────────────────────────────────────────
+    public async Task<List<InstitutoDto>> GetInstitutosAsync()
+        => await GetListAsync<InstitutoDto>("api/admin/institutos");
 
     // ── Horarios ──────────────────────────────────────────────────────────────
     public async Task<List<FranjaHorariaDto>> GetHorariosAsync()

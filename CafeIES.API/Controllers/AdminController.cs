@@ -17,24 +17,36 @@ public class AdminController : ControllerBase
 
     // ── GET /api/admin/dashboard ─────────────────────────────────────────────
     [HttpGet("dashboard")]
-    public async Task<ActionResult<DashboardDto>> Dashboard()
+    public async Task<ActionResult<DashboardDto>> Dashboard([FromQuery] int? institutoId)
     {
         var hoy = DateTime.Now.Date;
 
-        var pedidosHoy    = await _db.Pedidos.CountAsync(p => p.FechaCreacion.Date == hoy);
-        var ingresosHoy   = await _db.Pedidos
+        var pedidosQuery = _db.Pedidos.AsQueryable();
+        var usuariosQuery = _db.Usuarios.AsQueryable();
+        if (institutoId.HasValue)
+        {
+            pedidosQuery = pedidosQuery.Where(p => p.Usuario.InstitutoId == institutoId);
+            usuariosQuery = usuariosQuery.Where(u => u.InstitutoId == institutoId);
+        }
+
+        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion.Date == hoy);
+        var ingresosHoy   = await pedidosQuery
             .Where(p => p.FechaCreacion.Date == hoy && p.Estado != EstadoPedido.Cancelado)
             .SumAsync(p => (decimal?)p.Total) ?? 0;
         var productosActivos   = await _db.Productos.CountAsync(p => p.Activo);
         var productosStockBajo = await _db.Productos
             .CountAsync(p => p.Activo && p.Stock >= 0 && p.Stock <= 5);
-        var alumnosPendientes  = await _db.Usuarios
+        var alumnosPendientes  = await usuariosQuery
             .CountAsync(u => u.Estado == EstadoCuenta.PendienteValidacion);
 
-        var pedidosEnCurso = await _db.Pedidos
+        var enCursoQuery = _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario)
-            .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
+            .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion);
+        if (institutoId.HasValue)
+            enCursoQuery = enCursoQuery.Where(p => p.Usuario.InstitutoId == institutoId);
+
+        var pedidosEnCurso = await enCursoQuery
             .OrderBy(p => p.FechaCreacion)
             .Take(10)
             .ToListAsync();
@@ -52,11 +64,13 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<List<UsuarioDto>>> GetUsuarios(
         [FromQuery] EstadoCuenta? estado,
         [FromQuery] RolUsuario?   rol,
-        [FromQuery] string?       busqueda)
+        [FromQuery] string?       busqueda,
+        [FromQuery] int?          institutoId)
     {
-        var query = _db.Usuarios.AsQueryable();
-        if (estado.HasValue) query = query.Where(u => u.Estado == estado);
-        if (rol.HasValue)    query = query.Where(u => u.Rol    == rol);
+        var query = _db.Usuarios.Include(u => u.Instituto).AsQueryable();
+        if (estado.HasValue)      query = query.Where(u => u.Estado == estado);
+        if (rol.HasValue)         query = query.Where(u => u.Rol    == rol);
+        if (institutoId.HasValue) query = query.Where(u => u.InstitutoId == institutoId);
         if (!string.IsNullOrWhiteSpace(busqueda))
             query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
@@ -195,6 +209,7 @@ public class AdminController : ControllerBase
         [FromQuery] DateTime? desde,
         [FromQuery] DateTime? hasta,
         [FromQuery] EstadoPedido? estado,
+        [FromQuery] int? institutoId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 30)
     {
@@ -203,12 +218,13 @@ public class AdminController : ControllerBase
 
         var query = _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .AsQueryable();
 
-        if (desde.HasValue)  query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
-        if (hasta.HasValue)  query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
-        if (estado.HasValue) query = query.Where(p => p.Estado == estado);
+        if (desde.HasValue)       query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
+        if (hasta.HasValue)       query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
+        if (estado.HasValue)      query = query.Where(p => p.Estado == estado);
+        if (institutoId.HasValue) query = query.Where(p => p.Usuario.InstitutoId == institutoId);
 
         var totalCount = await query.CountAsync();
         var pedidos = await query
@@ -222,9 +238,21 @@ public class AdminController : ControllerBase
             totalCount, page, pageSize));
     }
 
+    // ── GET /api/admin/institutos ──────────────────────────────────────────────
+    [HttpGet("institutos")]
+    public async Task<ActionResult<List<InstitutoDto>>> GetInstitutos()
+    {
+        var institutos = await _db.Institutos
+            .OrderBy(i => i.Nombre)
+            .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto))
+            .ToListAsync();
+        return Ok(institutos);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
     private static UsuarioDto MapUsuarioDto(Usuario u) =>
-        new(u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado);
+        new(u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado,
+            u.InstitutoId, u.Instituto?.Nombre);
 
     private static FranjaHorariaDto MapFranjaDto(FranjaHoraria f) =>
         new(f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa);
@@ -234,6 +262,7 @@ public class AdminController : ControllerBase
         p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
             l.ProductoId, l.Producto.Nombre, l.Cantidad, l.PrecioUnitario, l.Subtotal
-        )).ToList());
+        )).ToList(),
+        p.Usuario.Instituto?.Nombre);
 }
 

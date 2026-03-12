@@ -29,7 +29,8 @@ public class AuthService
             new Claim(ClaimTypes.Name,           usuario.NombreCompleto),
             new Claim(ClaimTypes.Role,           usuario.Rol.ToString()),
             new Claim("turno",                   usuario.Turno?.ToString() ?? ""),
-            new Claim("estado",                  usuario.Estado.ToString())
+            new Claim("estado",                  usuario.Estado.ToString()),
+            new Claim("institutoId",             usuario.InstitutoId?.ToString() ?? "")
         };
 
         var token = new JwtSecurityToken(

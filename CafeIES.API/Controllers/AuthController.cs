@@ -25,6 +25,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest req)
     {
         var usuario = await _db.Usuarios
+            .Include(u => u.Instituto)
             .FirstOrDefaultAsync(u => u.Email == req.Email.ToLower());
 
         if (usuario is null || !_auth.VerificarPassword(req.Password, usuario.PasswordHash))
@@ -65,6 +66,10 @@ public class AuthController : ControllerBase
         if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
             return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
 
+        var instituto = await _db.Institutos.FindAsync(req.InstitutoId);
+        if (instituto is null || !instituto.Activo)
+            return BadRequest(new { mensaje = "El instituto seleccionado no es válido." });
+
         var usuario = new Usuario
         {
             NombreCompleto = req.NombreCompleto,
@@ -72,7 +77,8 @@ public class AuthController : ControllerBase
             PasswordHash   = _auth.HashPassword(req.Password),
             Rol            = RolUsuario.Alumno,
             Turno          = req.Turno,
-            Estado         = EstadoCuenta.PendienteValidacion
+            Estado         = EstadoCuenta.PendienteValidacion,
+            InstitutoId    = req.InstitutoId
         };
 
         _db.Usuarios.Add(usuario);
@@ -95,6 +101,10 @@ public class AuthController : ControllerBase
         if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
             return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
 
+        var instituto = await _db.Institutos.FindAsync(req.InstitutoId);
+        if (instituto is null || !instituto.Activo)
+            return BadRequest(new { mensaje = "El instituto seleccionado no es válido." });
+
         // Asignar rol según tipo de invitación
         var rol = invitacion.Tipo == TipoInvitacion.Profesor
             ? RolUsuario.Profesor
@@ -108,7 +118,9 @@ public class AuthController : ControllerBase
             Rol             = rol,
             Turno           = null,  // Sin restricción horaria
             Estado          = EstadoCuenta.Activa,
-            FechaValidacion = DateTime.Now
+            FechaValidacion = DateTime.Now,
+            InstitutoId     = req.InstitutoId,
+            Instituto       = instituto
         };
 
         _db.Usuarios.Add(usuario);
@@ -135,6 +147,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshRequest req)
     {
         var usuario = await _db.Usuarios
+            .Include(u => u.Instituto)
             .FirstOrDefaultAsync(u => u.RefreshToken == req.RefreshToken
                                    && u.RefreshTokenExpiry > DateTime.Now);
 
@@ -170,5 +183,6 @@ public class AuthController : ControllerBase
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     private static UsuarioDto MapUsuarioDto(Usuario u) => new(
-        u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado);
+        u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado,
+        u.InstitutoId, u.Instituto?.Nombre);
 }

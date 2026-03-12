@@ -11,6 +11,13 @@
 
 <!-- Filtros -->
 <div class="filters-bar">
+    <select class="filter-select" @bind="_institutoFiltro">
+        <option value="">Todos los institutos</option>
+        @foreach (var i in _institutos)
+        {
+            <option value="@i.Id">@i.Nombre</option>
+        }
+    </select>
     <select class="filter-select" @bind="_estadoFiltro">
         <option value="">Todos los estados</option>
         <option value="Pendiente">⏳ Pendiente</option>
@@ -41,9 +48,10 @@ else
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Usuario</th>
-                    <th>Hora</th>
+                     <th>#</th>
+                     <th>Usuario</th>
+                     <th>Instituto</th>
+                     <th>Hora</th>
                     <th>Productos</th>
                     <th>Total</th>
                     <th>Pago</th>
@@ -63,6 +71,16 @@ else
                                     <div class="user-email">@p.UsuarioEmail</div>
                                 </div>
                             </div>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(p.InstitutoNombre))
+                            {
+                                <span class="instituto-badge">@p.InstitutoNombre</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
                         </td>
                         <td>@p.FechaCreacion.ToString("dd/MM HH:mm")</td>
                         <td>
@@ -124,15 +142,24 @@ else
 
 @code {
     private List<PedidoDto> _pedidos    = new();
+    private List<InstitutoDto> _institutos = new();
     private bool            _cargando   = true;
     private string          _estadoFiltro = string.Empty;
+    private string          _institutoFiltro = string.Empty;
     private DateTime?       _desde;
     private DateTime?       _hasta;
 
     private IEnumerable<PedidoDto> PedidosFiltrados =>
-        _pedidos.Where(p => string.IsNullOrEmpty(_estadoFiltro) || p.Estado.ToString() == _estadoFiltro);
+        _pedidos
+            .Where(p => string.IsNullOrEmpty(_estadoFiltro) || p.Estado.ToString() == _estadoFiltro)
+            .Where(p => string.IsNullOrEmpty(_institutoFiltro) ||
+                        p.InstitutoNombre == _institutos.FirstOrDefault(i => i.Id.ToString() == _institutoFiltro)?.Nombre);
 
-    protected override async Task OnInitializedAsync() => await Recargar();
+    protected override async Task OnInitializedAsync()
+    {
+        _institutos = await Api.GetInstitutosAsync();
+        await Recargar();
+    }
 
     private async Task Recargar()
     {
