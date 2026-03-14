@@ -210,4 +210,29 @@ public class AdminApiService
 
     public async Task<bool> CambiarEstadoPedidoAsync(int id, EstadoPedido estado)
         => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/pedidos/{id}/estado", new CambiarEstadoRequest(estado)));
+
+    // ── Reportes ───────────────────────────────────────────────────────────────
+    public async Task<byte[]?> DescargarExcelAsync(DateTime? desde = null, DateTime? hasta = null)
+        => await DescargarBytesAsync(ConstruirUrlReporte("api/reportes/excel", desde, hasta));
+
+    public async Task<byte[]?> DescargarPdfAsync(DateTime? desde = null, DateTime? hasta = null)
+        => await DescargarBytesAsync(ConstruirUrlReporte("api/reportes/pdf", desde, hasta));
+
+    private static string ConstruirUrlReporte(string endpoint, DateTime? desde, DateTime? hasta)
+    {
+        var qs = new List<string>();
+        if (desde.HasValue) qs.Add($"desde={desde:yyyy-MM-dd}");
+        if (hasta.HasValue) qs.Add($"hasta={hasta:yyyy-MM-dd}");
+        return qs.Count > 0 ? $"{endpoint}?{string.Join("&", qs)}" : endpoint;
+    }
+
+    private async Task<byte[]?> DescargarBytesAsync(string url)
+    {
+        try
+        {
+            var resp = await SendAsync(() => _http.GetAsync(url));
+            return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
+        }
+        catch { return null; }
+    }
 }
