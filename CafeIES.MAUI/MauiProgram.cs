@@ -24,7 +24,8 @@ public static class MauiProgram
             });
 
         // ── HTTP Client ───────────────────────────────────────────────────────
-        // 10.0.2.2 es el alias de localhost desde el emulador Android
+        // 10.0.2.2 es el alias de localhost desde el emulador Android.
+        // Para producción, sustituir estas URLs por la dirección real del servidor.
 #if ANDROID
         var apiBase = "https://10.0.2.2:50658/";
 #else
@@ -32,12 +33,19 @@ public static class MauiProgram
 #endif
         builder.Services.AddSingleton(sp =>
         {
-            var handler = new HttpClientHandler
+            var handler = new HttpClientHandler();
+#if DEBUG
+            // Solo en desarrollo: aceptar certificados autofirmados de localhost.
+            // ELIMINAR esta línea antes de publicar en producción.
+            handler.ServerCertificateCustomValidationCallback = (m, c, ch, e) => true;
+#endif
+            var http = new HttpClient(handler)
             {
-                ServerCertificateCustomValidationCallback = (m, c, ch, e) => true
+                BaseAddress = new Uri(apiBase),
+                Timeout     = TimeSpan.FromSeconds(15)
             };
-            var http = new HttpClient(handler) { BaseAddress = new Uri(apiBase) };
-            return new ApiService(http, sp.GetRequiredService<TokenService>());
+            var logger = sp.GetRequiredService<ILogger<ApiService>>();
+            return new ApiService(http, sp.GetRequiredService<TokenService>(), logger);
         });
 
         // ── Servicios ─────────────────────────────────────────────────────────

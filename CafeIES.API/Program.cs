@@ -1,24 +1,26 @@
-﻿using System.Text;
+using System.Text;
+using System.Threading.RateLimiting;
 using CafeIES.API.Data;
 using CafeIES.API.Hubs;
 using CafeIES.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// â”€â”€ Base de datos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Base de datos ─────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// â”€â”€ Servicios de negocio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Servicios de negocio ──────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<HorarioService>();
 builder.Services.AddSingleton<StripeService>();
 
-// â”€â”€ JWT Authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -50,10 +52,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// â”€â”€ SignalR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Protección contra fuerza bruta en endpoints de autenticación.
+// Máximo 10 intentos por IP por minuto. Responde con 429 si se supera.
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", opt =>
+    {
+        opt.PermitLimit          = 10;
+        opt.Window               = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit           = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+// ── SignalR ───────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
 
-// â”€â”€ CORS (para el panel Blazor en desarrollo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CORS (para el panel Blazor en desarrollo) ─────────────────────────────────
 builder.Services.AddCors(opt =>
     opt.AddPolicy("AllowAdmin", p =>
         p.SetIsOriginAllowed(origin =>
@@ -68,7 +85,7 @@ builder.Services.AddCors(opt =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CafÃ©IES API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CaféIES API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization", Type = SecuritySchemeType.Http,
@@ -85,11 +102,11 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// â”€â”€ Migraciones y seed automÃ¡ticos al arrancar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Se ejecuta al correr la app (F5). Si la BD no estÃ¡ lista, avisa en el log sin romper.
+// ── Migraciones y seed automáticos al arrancar ────────────────────────────────
+// Se ejecuta al correr la app (F5). Si la BD no está lista, avisa en el log sin romper.
 using (var scope = app.Services.CreateScope())
 {
     var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -103,9 +120,9 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "âš ï¸  No se pudo conectar a la BD al arrancar. " +
-            "Comprueba la cadena de conexiÃ³n en appsettings.json.");
-        // No lanzamos la excepciÃ³n: la app arranca igual, Swagger sigue disponible
+        logger.LogError(ex, "⚠️  No se pudo conectar a la BD al arrancar. " +
+            "Comprueba la cadena de conexión en appsettings.json.");
+        // No lanzamos la excepción: la app arranca igual, Swagger sigue disponible
     }
 }
 
@@ -117,6 +134,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAdmin");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

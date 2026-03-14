@@ -1,10 +1,10 @@
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CafeIES.Shared.Models;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 
 namespace CafeIES.MAUI.Services;
 
@@ -16,10 +16,17 @@ public enum MotivoRechazo { Ninguno, Pendiente, Suspendida, Rechazada }
 /// <summary>Mensaje SignalR: el estado de un pedido cambió.</summary>
 public record PedidoActualizadoMessage(int PedidoId, string NuevoEstado);
 
+/// <summary>
+/// Mensaje enviado cuando la sesión expira definitivamente (refresh token inválido).
+/// Suscríbete a este mensaje en App.xaml.cs o AppShell para redirigir al login.
+/// </summary>
+public record SesionExpiradaMessage();
+
 public class ApiService
 {
     private readonly HttpClient _http;
     private readonly TokenService _tokens;
+    private readonly ILogger<ApiService> _logger;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
     public string HubUrl => $"{_http.BaseAddress}hubs/cafeteria";
@@ -28,16 +35,17 @@ public class ApiService
     private HubConnection? _hub;
     public HubConnection? Hub => _hub;
 
-    public ApiService(HttpClient http, TokenService tokens)
+    public ApiService(HttpClient http, TokenService tokens, ILogger<ApiService> logger)
     {
-        _http = http;
+        _http   = http;
         _tokens = tokens;
+        _logger = logger;
     }
 
     public async Task<string?> GetTokenAsync()
         => await _tokens.GetAccessTokenAsync();
 
-    /// <summary>Crea un request con el token Bearer sin mutar DefaultRequestHeaders (#4).</summary>
+    /// <summary>Crea un request con el token Bearer sin mutar DefaultRequestHeaders.</summary>
     private async Task<HttpRequestMessage> CrearRequestAsync(HttpMethod method, string url, HttpContent? content = null)
     {
         var request = new HttpRequestMessage(method, url) { Content = content };
@@ -47,7 +55,10 @@ public class ApiService
         return request;
     }
 
-    /// <summary>Ejecuta un request. Si recibe 401, refresca el token e intenta de nuevo (#1).</summary>
+    /// <summary>
+    /// Ejecuta un request. Si recibe 401, refresca el token e intenta de nuevo.
+    /// Si el refresh falla, desconecta SignalR y notifica al resto de la app.
+    /// </summary>
     private async Task<HttpResponseMessage> EnviarConRefreshAsync(HttpMethod method, string url, HttpContent? content = null)
     {
         var request = await CrearRequestAsync(method, url, content);
@@ -58,7 +69,12 @@ public class ApiService
 
         // Intentar refresh
         if (!await IntentarRefreshAsync())
+        {
+            // Sesión expirada definitivamente: limpiar estado y notificar
+            await DesconectarSignalRAsync();
+            WeakReferenceMessenger.Default.Send(new SesionExpiradaMessage());
             return response;
+        }
 
         // Re-intentar con nuevo token
         var retry = await CrearRequestAsync(method, url, content);
@@ -84,7 +100,11 @@ public class ApiService
             await _tokens.GuardarUsuarioAsync(data.Usuario);
             return true;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al intentar refrescar el token de acceso.");
+            return false;
+        }
         finally { _refreshLock.Release(); }
     }
 
@@ -110,7 +130,11 @@ public class ApiService
                     };
                     return (null, motivo);
                 }
-                catch { return (null, MotivoRechazo.Pendiente); }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo leer el motivo del rechazo en login.");
+                    return (null, MotivoRechazo.Pendiente);
+                }
             }
 
             if (!resp.IsSuccessStatusCode) return (null, MotivoRechazo.Ninguno);
@@ -122,7 +146,11 @@ public class ApiService
             await _tokens.GuardarUsuarioAsync(data.Usuario);
             return (data, MotivoRechazo.Ninguno);
         }
-        catch { return (null, MotivoRechazo.Ninguno); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en LoginAsync.");
+            return (null, MotivoRechazo.Ninguno);
+        }
     }
 
     public async Task<RegistroResultado> RegistroAlumnoAsync(RegistroAlumnoRequest req)
@@ -134,7 +162,11 @@ public class ApiService
             if (resp.StatusCode == HttpStatusCode.Conflict) return RegistroResultado.EmailDuplicado;
             return RegistroResultado.ErrorServidor;
         }
-        catch { return RegistroResultado.ErrorServidor; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en RegistroAlumnoAsync.");
+            return RegistroResultado.ErrorServidor;
+        }
     }
 
     public async Task<LoginResponse?> RegistroInvitadoAsync(RegistroInvitadoRequest req)
@@ -149,7 +181,11 @@ public class ApiService
             await _tokens.GuardarUsuarioAsync(data.Usuario);
             return data;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en RegistroInvitadoAsync.");
+            return null;
+        }
     }
 
     public async Task<bool> CambiarPasswordAsync(CambiarPasswordRequest req)
@@ -160,17 +196,25 @@ public class ApiService
                 JsonContent.Create(req));
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en CambiarPasswordAsync.");
+            return false;
+        }
     }
 
-    // ── Pagos (Stripe) ──────────────────────────────────────────────────────────
+    // ── Pagos (Stripe) ────────────────────────────────────────────────────────
     public async Task<StripeConfigDto?> GetStripeConfigAsync()
     {
         try
         {
             return await _http.GetFromJsonAsync<StripeConfigDto>("api/pagos/config");
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener la configuración de Stripe.");
+            return null;
+        }
     }
 
     public async Task<PagoIntentResponse?> CrearPagoIntentAsync(CrearPagoRequest req)
@@ -183,12 +227,18 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<PagoIntentResponse>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear el PaymentIntent.");
+            return null;
+        }
     }
 
     /// <summary>
     /// Confirma un PaymentIntent con tarjeta usando la API REST de Stripe directamente.
-    /// Usa la publishable key como auth (seguro para cliente).
+    /// Stripe acepta publishable keys con Bearer auth para operaciones de cliente.
+    /// NOTA: El manejo de números de tarjeta en texto plano requiere cumplimiento
+    /// PCI-DSS SAQ D. Para producción, considerar Stripe SDK nativo de iOS/Android.
     /// </summary>
     public async Task<bool> ConfirmarPagoStripeAsync(
         string clientSecret, string publishableKey,
@@ -196,21 +246,25 @@ public class ApiService
     {
         try
         {
-            using var stripeHttp = new HttpClient();
+            using var stripeHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             stripeHttp.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", publishableKey);
+                new AuthenticationHeaderValue("Bearer", publishableKey);
 
             // 1. Crear PaymentMethod
             var pmContent = new FormUrlEncodedContent(new Dictionary<string, string>
             {
-                ["type"]                  = "card",
-                ["card[number]"]          = cardNumber,
-                ["card[exp_month]"]       = expMonth,
-                ["card[exp_year]"]        = expYear,
-                ["card[cvc]"]             = cvc
+                ["type"]            = "card",
+                ["card[number]"]    = cardNumber,
+                ["card[exp_month]"] = expMonth,
+                ["card[exp_year]"]  = expYear,
+                ["card[cvc]"]       = cvc
             });
             var pmResp = await stripeHttp.PostAsync("https://api.stripe.com/v1/payment_methods", pmContent);
-            if (!pmResp.IsSuccessStatusCode) return false;
+            if (!pmResp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Stripe rechazó la creación del PaymentMethod. Status: {Status}", pmResp.StatusCode);
+                return false;
+            }
 
             var pmJson = await pmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
             var pmId = pmJson?["id"]?.ToString();
@@ -226,15 +280,23 @@ public class ApiService
             var confirmResp = await stripeHttp.PostAsync(
                 $"https://api.stripe.com/v1/payment_intents/{piId}/confirm", confirmContent);
 
-            if (!confirmResp.IsSuccessStatusCode) return false;
+            if (!confirmResp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Stripe rechazó la confirmación del PaymentIntent. Status: {Status}", confirmResp.StatusCode);
+                return false;
+            }
 
             var confirmJson = await confirmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
             return confirmJson?["status"]?.ToString() == "succeeded";
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error inesperado al confirmar el pago con Stripe.");
+            return false;
+        }
     }
 
-    // ── Institutos ──────────────────────────────────────────────────────────────
+    // ── Institutos ────────────────────────────────────────────────────────────
     public async Task<List<InstitutoDto>> GetInstitutosAsync()
     {
         try
@@ -242,7 +304,11 @@ public class ApiService
             var list = await _http.GetFromJsonAsync<List<InstitutoDto>>("api/institutos");
             return list ?? [];
         }
-        catch { return []; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener la lista de institutos.");
+            return [];
+        }
     }
 
     // ── Productos ─────────────────────────────────────────────────────────────
@@ -255,7 +321,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<List<ProductoDto>>() ?? new()
                 : new();
         }
-        catch { return new(); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener productos.");
+            return new();
+        }
     }
 
     public async Task<List<CategoriaDto>> GetCategoriasAsync()
@@ -267,7 +337,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<List<CategoriaDto>>() ?? new()
                 : new();
         }
-        catch { return new(); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener categorías.");
+            return new();
+        }
     }
 
     // ── Horario ───────────────────────────────────────────────────────────────
@@ -280,7 +354,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<HorarioStatusDto>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al consultar el estado de horario.");
+            return null;
+        }
     }
 
     // ── Pedidos ───────────────────────────────────────────────────────────────
@@ -294,7 +372,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<PedidoDto>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear el pedido.");
+            return null;
+        }
     }
 
     public async Task<List<PedidoDto>> GetMisPedidosAsync()
@@ -306,7 +388,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<List<PedidoDto>>() ?? new()
                 : new();
         }
-        catch { return new(); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener mis pedidos.");
+            return new();
+        }
     }
 
     public async Task<UsuarioStatsDto?> GetMisEstadisticasAsync()
@@ -318,7 +404,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<UsuarioStatsDto>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener estadísticas.");
+            return null;
+        }
     }
 
     public async Task<PedidoDto?> GetPedidoAsync(int id)
@@ -330,7 +420,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<PedidoDto>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener el pedido {Id}.", id);
+            return null;
+        }
     }
 
     // ── Admin: Pedidos ────────────────────────────────────────────────────────
@@ -352,7 +446,11 @@ public class ApiService
                 if (all.Count >= paginated.TotalCount) break;
                 page++;
             }
-            catch { break; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error al obtener pedidos admin (página {Page}).", page);
+                break;
+            }
         }
         return all;
     }
@@ -365,7 +463,11 @@ public class ApiService
                 JsonContent.Create(new CambiarEstadoRequest(estado)));
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cambiar el estado del pedido {Id}.", id);
+            return false;
+        }
     }
 
     // ── Admin: Usuarios ───────────────────────────────────────────────────────
@@ -378,7 +480,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<List<UsuarioDto>>() ?? new()
                 : new();
         }
-        catch { return new(); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener la lista de usuarios.");
+            return new();
+        }
     }
 
     public async Task<bool> ValidarAlumnoAsync(int id, bool aprobar)
@@ -388,7 +494,11 @@ public class ApiService
             var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/admin/usuarios/{id}/validar?aprobar={aprobar}", null);
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al validar al alumno {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<bool> SuspenderUsuarioAsync(int id)
@@ -398,7 +508,11 @@ public class ApiService
             var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/admin/usuarios/{id}/suspender", null);
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al suspender al usuario {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<bool> ReactivarUsuarioAsync(int id)
@@ -408,7 +522,11 @@ public class ApiService
             var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/admin/usuarios/{id}/reactivar", null);
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al reactivar al usuario {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<(bool Ok, string? Error)> EliminarUsuarioAsync(int id)
@@ -420,7 +538,11 @@ public class ApiService
             var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
             return (false, body?.GetValueOrDefault("mensaje") ?? "Error al eliminar el usuario.");
         }
-        catch { return (false, "Error de conexión."); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar al usuario {Id}.", id);
+            return (false, "Error de conexión.");
+        }
     }
 
     // ── Admin: Productos ──────────────────────────────────────────────────────
@@ -433,7 +555,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<List<ProductoDto>>() ?? new()
                 : new();
         }
-        catch { return new(); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener productos (admin).");
+            return new();
+        }
     }
 
     public async Task<ProductoDto?> GetProductoByIdAsync(int id)
@@ -445,7 +571,11 @@ public class ApiService
                 ? await resp.Content.ReadFromJsonAsync<ProductoDto>()
                 : null;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener el producto {Id}.", id);
+            return null;
+        }
     }
 
     public async Task<bool> CrearProductoAsync(CrearProductoRequest req)
@@ -456,7 +586,11 @@ public class ApiService
                 JsonContent.Create(req));
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear el producto.");
+            return false;
+        }
     }
 
     public async Task<bool> ActualizarProductoAsync(int id, CrearProductoRequest req)
@@ -467,7 +601,11 @@ public class ApiService
                 JsonContent.Create(req));
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al actualizar el producto {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<bool> ActualizarStockAsync(int id, int nuevoStock)
@@ -478,7 +616,11 @@ public class ApiService
                 JsonContent.Create(new ActualizarStockRequest(nuevoStock)));
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al actualizar el stock del producto {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<bool> ToggleActivoAsync(int id)
@@ -488,7 +630,11 @@ public class ApiService
             var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/productos/{id}/toggle", null);
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cambiar el estado activo del producto {Id}.", id);
+            return false;
+        }
     }
 
     public async Task<bool> EliminarProductoAsync(int id)
@@ -498,23 +644,30 @@ public class ApiService
             var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/productos/{id}");
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar el producto {Id}.", id);
+            return false;
+        }
     }
 
-    // ── SignalR (#10) ─────────────────────────────────────────────────────────
+    // ── SignalR ───────────────────────────────────────────────────────────────
     public async Task ConectarSignalRAsync()
     {
         if (_hub is not null) return;
 
-        var token = await _tokens.GetAccessTokenAsync();
         _hub = new HubConnectionBuilder()
             .WithUrl(HubUrl, options =>
             {
                 options.AccessTokenProvider = () => _tokens.GetAccessTokenAsync()!;
+#if DEBUG
+                // Solo en desarrollo: aceptar certificados autofirmados.
+                // NUNCA habilitar en producción.
                 options.HttpMessageHandlerFactory = _ => new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback = (m, c, ch, e) => true
                 };
+#endif
             })
             .WithAutomaticReconnect()
             .Build();
@@ -528,11 +681,20 @@ public class ApiService
                 var estado = doc.RootElement.GetProperty("estado").GetString() ?? string.Empty;
                 WeakReferenceMessenger.Default.Send(new PedidoActualizadoMessage(id, estado));
             }
-            catch { /* payload inesperado */ }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Payload inesperado en EstadoPedidoActualizado.");
+            }
         });
 
-        try { await _hub.StartAsync(); }
-        catch { /* SignalR no es crítico */ }
+        try
+        {
+            await _hub.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo conectar a SignalR. La actualización en tiempo real no estará disponible.");
+        }
     }
 
     public async Task DesconectarSignalRAsync()

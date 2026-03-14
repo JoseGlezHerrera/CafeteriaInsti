@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CafeIES.Shared.Validation;
 
 namespace CafeIES.Shared.Models;
 
@@ -21,20 +22,20 @@ public record RefreshRequest(
 
 // Registro de alumno (autoregistro)
 public record RegistroAlumnoRequest(
-    [Required, MaxLength(100)] string NombreCompleto,
-    [Required, EmailAddress]   string Email,
-    [Required, MinLength(8)]   string Password,
-    [Required]                 Turno  Turno,
-    [Required]                 int    InstitutoId
+    [Required, MaxLength(100)]                    string NombreCompleto,
+    [Required, EmailAddress]                      string Email,
+    [Required, MinLength(8), PasswordComplexity]  string Password,
+    [Required]                                    Turno  Turno,
+    [Required]                                    int    InstitutoId
 );
 
 // Registro mediante invitación (profe/personal)
 public record RegistroInvitadoRequest(
-    [Required]                 string TokenInvitacion,
-    [Required, MaxLength(100)] string NombreCompleto,
-    [Required, EmailAddress]   string Email,
-    [Required, MinLength(8)]   string Password,
-    [Required]                 int    InstitutoId
+    [Required]                                    string TokenInvitacion,
+    [Required, MaxLength(100)]                    string NombreCompleto,
+    [Required, EmailAddress]                      string Email,
+    [Required, MinLength(8), PasswordComplexity]  string Password,
+    [Required]                                    int    InstitutoId
 );
 
 // ── Usuario ───────────────────────────────────────────────────────────────────
@@ -173,7 +174,7 @@ public record UpsertFranjaRequest(
 
 public record CambiarPasswordRequest(
     [Required] string PasswordActual,
-    [Required, MinLength(8)] string NuevaPassword
+    [Required, MinLength(8), PasswordComplexity] string NuevaPassword
 );
 
 // ── Estadísticas del usuario ─────────────────────────────────────────────────

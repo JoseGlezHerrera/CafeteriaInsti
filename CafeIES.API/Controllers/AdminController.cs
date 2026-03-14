@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CafeIES.API.Data;
+using CafeIES.API.Extensions;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,13 @@ namespace CafeIES.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public AdminController(AppDbContext db) => _db = db;
+    private readonly ILogger<AdminController> _logger;
+
+    public AdminController(AppDbContext db, ILogger<AdminController> logger)
+    {
+        _db     = db;
+        _logger = logger;
+    }
 
     // ── GET /api/admin/dashboard ─────────────────────────────────────────────
     [HttpGet("dashboard")]
@@ -55,7 +62,7 @@ public class AdminController : ControllerBase
             pedidosHoy, ingresosHoy,
             productosActivos, productosStockBajo,
             alumnosPendientes,
-            pedidosEnCurso.Select(MapPedidoDto).ToList()
+            pedidosEnCurso.Select(p => p.ToDto()).ToList()
         ));
     }
 
@@ -75,7 +82,7 @@ public class AdminController : ControllerBase
             query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
         var users = await query.OrderBy(u => u.NombreCompleto).ToListAsync();
-        return Ok(users.Select(MapUsuarioDto).ToList());
+        return Ok(users.Select(u => u.ToDto()).ToList());
     }
 
     // ── PATCH /api/admin/usuarios/{id}/validar ────────────────────────────────
@@ -85,9 +92,15 @@ public class AdminController : ControllerBase
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
 
+        var accion = aprobar ? "aprobó" : "rechazó";
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+
         user.Estado          = aprobar ? EstadoCuenta.Activa : EstadoCuenta.Rechazada;
         user.FechaValidacion = DateTime.Now;
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} {Accion} la cuenta del usuario {UserId} ({Email})",
+            adminEmail, accion, id, user.Email);
 
         return Ok(new { mensaje = aprobar ? "Cuenta aprobada." : "Cuenta rechazada." });
     }
@@ -100,8 +113,13 @@ public class AdminController : ControllerBase
         if (user is null) return NotFound();
         if (user.Rol == RolUsuario.Admin) return BadRequest(new { mensaje = "No se puede suspender al admin." });
 
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         user.Estado = EstadoCuenta.Suspendida;
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} suspendió al usuario {UserId} ({Email})",
+            adminEmail, id, user.Email);
+
         return NoContent();
     }
 
@@ -114,8 +132,13 @@ public class AdminController : ControllerBase
         if (user.Estado != EstadoCuenta.Suspendida && user.Estado != EstadoCuenta.Rechazada)
             return BadRequest(new { mensaje = "La cuenta no está suspendida ni rechazada." });
 
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         user.Estado = EstadoCuenta.Activa;
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} reactivó la cuenta del usuario {UserId} ({Email})",
+            adminEmail, id, user.Email);
+
         return NoContent();
     }
 
@@ -125,8 +148,15 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        var turnoAnterior = user.Turno;
         user.Turno = req.Turno;
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} cambió el turno del usuario {UserId} ({Email}) de {Anterior} a {Nuevo}",
+            adminEmail, id, user.Email, turnoAnterior, req.Turno);
+
         return NoContent();
     }
 
@@ -144,8 +174,14 @@ public class AdminController : ControllerBase
         if (tienePedidos)
             return BadRequest(new { mensaje = "No se puede eliminar un usuario con pedidos. Suspéndelo en su lugar." });
 
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        var emailEliminado = user.Email;
         _db.Usuarios.Remove(user);
         await _db.SaveChangesAsync();
+
+        _logger.LogWarning("[AUDIT] {Admin} eliminó permanentemente al usuario {UserId} ({Email})",
+            adminEmail, id, emailEliminado);
+
         return NoContent();
     }
 
@@ -156,7 +192,7 @@ public class AdminController : ControllerBase
         var franjas = await _db.FranjasHorarias
             .OrderBy(f => f.Turno).ThenBy(f => f.HoraInicio)
             .ToListAsync();
-        return Ok(franjas.Select(MapFranjaDto).ToList());
+        return Ok(franjas.Select(f => f.ToDto()).ToList());
     }
 
     // ── POST /api/admin/horarios ──────────────────────────────────────────────
@@ -173,7 +209,12 @@ public class AdminController : ControllerBase
         };
         _db.FranjasHorarias.Add(franja);
         await _db.SaveChangesAsync();
-        return Ok(MapFranjaDto(franja));
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} creó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
+            adminEmail, franja.Id, franja.Turno, franja.HoraInicio, franja.HoraFin);
+
+        return Ok(franja.ToDto());
     }
 
     // ── PUT /api/admin/horarios/{id} ──────────────────────────────────────────
@@ -189,7 +230,12 @@ public class AdminController : ControllerBase
         franja.HoraFin     = req.HoraFin;
         franja.Activa      = req.Activa;
         await _db.SaveChangesAsync();
-        return Ok(MapFranjaDto(franja));
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} actualizó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
+            adminEmail, id, franja.Turno, franja.HoraInicio, franja.HoraFin);
+
+        return Ok(franja.ToDto());
     }
 
     // ── DELETE /api/admin/horarios/{id} ───────────────────────────────────────
@@ -198,8 +244,14 @@ public class AdminController : ControllerBase
     {
         var franja = await _db.FranjasHorarias.FindAsync(id);
         if (franja is null) return NotFound();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         _db.FranjasHorarias.Remove(franja);
         await _db.SaveChangesAsync();
+
+        _logger.LogWarning("[AUDIT] {Admin} eliminó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
+            adminEmail, id, franja.Turno, franja.HoraInicio, franja.HoraFin);
+
         return NoContent();
     }
 
@@ -234,7 +286,7 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         return Ok(new PaginatedResponse<PedidoDto>(
-            pedidos.Select(MapPedidoDto).ToList(),
+            pedidos.Select(p => p.ToDto()).ToList(),
             totalCount, page, pageSize));
     }
 
@@ -248,21 +300,4 @@ public class AdminController : ControllerBase
             .ToListAsync();
         return Ok(institutos);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-    private static UsuarioDto MapUsuarioDto(Usuario u) =>
-        new(u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado,
-            u.InstitutoId, u.Instituto?.Nombre);
-
-    private static FranjaHorariaDto MapFranjaDto(FranjaHoraria f) =>
-        new(f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa);
-
-    private static PedidoDto MapPedidoDto(Pedido p) => new(
-        p.Id, p.NumeroPedido, p.Usuario.NombreCompleto, p.Usuario.Email,
-        p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
-        p.Lineas.Select(l => new LineaPedidoDto(
-            l.ProductoId, l.Producto.Nombre, l.Cantidad, l.PrecioUnitario, l.Subtotal
-        )).ToList(),
-        p.Usuario.Instituto?.Nombre);
 }
-
