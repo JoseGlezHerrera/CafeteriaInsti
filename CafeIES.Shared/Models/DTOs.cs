@@ -215,3 +215,14 @@ public record PagoIntentResponse(
 );
 
 public record StripeConfigDto(string PublishableKey);
+
+// ── Notificaciones push ───────────────────────────────────────────────────────
+
+/// <summary>Registra o actualiza el token FCM del dispositivo.</summary>
+public record RegistrarTokenRequest(
+    [Required, MaxLength(512)] string Token,
+    [Required, MaxLength(10)]  string Plataforma   // "android" | "ios"
+);
+
+/// <summary>Elimina el token FCM al cerrar sesión.</summary>
+public record EliminarTokenRequest([Required, MaxLength(512)] string Token);

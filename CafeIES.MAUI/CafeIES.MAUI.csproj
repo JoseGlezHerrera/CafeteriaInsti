@@ -24,8 +24,21 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
 	</ItemGroup>
 
+	<!-- Push notifications: Firebase Cloud Messaging (Android + iOS vía APNS) -->
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android')) OR $(TargetFramework.StartsWith('net9.0-ios'))">
+		<PackageReference Include="Plugin.Firebase.CloudMessaging" Version="3.0.2" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\CafeIES.Shared\CafeIES.Shared.csproj" />
+	</ItemGroup>
+
+	<!-- Firebase configuration files — replace placeholders with real files from Firebase Console -->
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android'))">
+		<GoogleServicesJson Include="Platforms\Android\google-services.json" />
+	</ItemGroup>
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-ios'))">
+		<BundleResource Include="Platforms\iOS\GoogleService-Info.plist" />
 	</ItemGroup>
 
 	<!-- Fonts: explicit declaration ensures they are bundled on all targets -->

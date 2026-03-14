@@ -678,6 +678,33 @@ public class ApiService
         }
     }
 
+    // ── Notificaciones push ───────────────────────────────────────────────────
+    public async Task RegistrarTokenPushAsync(string token, string plataforma)
+    {
+        try
+        {
+            await EnviarConRefreshAsync(HttpMethod.Post, "api/notificaciones/token",
+                JsonContent.Create(new CafeIES.Shared.Models.RegistrarTokenRequest(token, plataforma)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al registrar el token FCM en la API.");
+        }
+    }
+
+    public async Task EliminarTokenPushAsync(string token)
+    {
+        try
+        {
+            await EnviarConRefreshAsync(HttpMethod.Delete, "api/notificaciones/token",
+                JsonContent.Create(new CafeIES.Shared.Models.EliminarTokenRequest(token)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar el token FCM de la API.");
+        }
+    }
+
     // ── SignalR ───────────────────────────────────────────────────────────────
     public async Task ConectarSignalRAsync()
     {

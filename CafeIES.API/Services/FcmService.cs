@@ -1,0 +1,143 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using Google.Apis.Auth.OAuth2;
+
+namespace CafeIES.API.Services;
+
+/// <summary>
+/// Envía notificaciones push mediante la FCM HTTP v1 API.
+/// Requiere un Service Account de Firebase con el rol "Firebase Cloud Messaging API Admin".
+/// Configurar en appsettings.json:
+///   "Fcm": {
+///     "ProjectId": "&lt;tu-project-id&gt;",
+///     "ServiceAccountJson": "&lt;contenido-del-service-account.json como string&gt;"
+///   }
+/// Si ProjectId o ServiceAccountJson están vacíos, el servicio se deshabilita
+/// silenciosamente sin romper ningún flujo de la aplicación.
+/// </summary>
+public class FcmService
+{
+    private readonly IHttpClientFactory _httpFactory;
+    private readonly IConfiguration     _config;
+    private readonly ILogger<FcmService> _logger;
+
+    private const string FcmScope = "https://www.googleapis.com/auth/firebase.messaging";
+
+    public FcmService(IHttpClientFactory httpFactory, IConfiguration config, ILogger<FcmService> logger)
+    {
+        _httpFactory = httpFactory;
+        _config      = config;
+        _logger      = logger;
+    }
+
+    /// <summary>
+    /// Envía una notificación push a la lista de tokens FCM indicada.
+    /// Silencia cualquier error para no interrumpir el flujo principal del servidor.
+    /// </summary>
+    public async Task EnviarAsync(
+        IEnumerable<string>         tokens,
+        string                      titulo,
+        string                      cuerpo,
+        Dictionary<string, string>? datos = null)
+    {
+        var projectId = _config["Fcm:ProjectId"];
+        if (string.IsNullOrEmpty(projectId))
+        {
+            _logger.LogDebug("FCM desactivado: Fcm:ProjectId no configurado.");
+            return;
+        }
+
+        string? accessToken;
+        try
+        {
+            accessToken = await ObtenerAccessTokenAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo obtener el access token de FCM.");
+            return;
+        }
+
+        if (accessToken is null) return;
+
+        var url  = $"https://fcm.googleapis.com/v1/projects/{projectId}/messages:send";
+        using var http = _httpFactory.CreateClient("fcm");
+
+        foreach (var token in tokens)
+        {
+            await EnviarATokenAsync(http, token, titulo, cuerpo, datos ?? [], url, accessToken);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    private async Task EnviarATokenAsync(
+        HttpClient                  http,
+        string                      token,
+        string                      titulo,
+        string                      cuerpo,
+        Dictionary<string, string>  datos,
+        string                      url,
+        string                      accessToken)
+    {
+        try
+        {
+            // Payload FCM HTTP v1 — incluye configuraciones Android e APNs
+            var payload = new
+            {
+                message = new
+                {
+                    token,
+                    notification = new { title = titulo, body = cuerpo },
+                    data = datos,
+                    android = new
+                    {
+                        priority = "high",
+                        notification = new { sound = "default", channel_id = "pedidos" }
+                    },
+                    apns = new
+                    {
+                        headers = new Dictionary<string, string>
+                        {
+                            ["apns-priority"] = "10",
+                            ["apns-push-type"] = "alert"
+                        },
+                        payload = new
+                        {
+                            aps = new { alert = new { title = titulo, body = cuerpo }, sound = "default", badge = 1 }
+                        }
+                    }
+                }
+            };
+
+            var req = new HttpRequestMessage(HttpMethod.Post, url);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            req.Content = JsonContent.Create(payload);
+
+            var resp = await http.SendAsync(req);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                _logger.LogWarning(
+                    "FCM rechazó notificación al token ...{Suffix}. HTTP {Status}: {Body}",
+                    token.Length > 8 ? token[^8..] : token,
+                    (int)resp.StatusCode,
+                    body);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error inesperado al enviar notificación FCM al token ...{Suffix}.",
+                token.Length > 8 ? token[^8..] : token);
+        }
+    }
+
+    private async Task<string?> ObtenerAccessTokenAsync()
+    {
+        var json = _config["Fcm:ServiceAccountJson"];
+        if (string.IsNullOrEmpty(json)) return null;
+
+        var credential = GoogleCredential.FromJson(json).CreateScoped(FcmScope);
+        return await ((ITokenAccess)credential).GetAccessTokenForRequestAsync();
+    }
+}

@@ -48,13 +48,15 @@ public partial class PedidosViewModel : ObservableObject
 
 public partial class PerfilViewModel : ObservableObject
 {
-    private readonly ApiService   _api;
-    private readonly TokenService _tokens;
+    private readonly ApiService              _api;
+    private readonly TokenService            _tokens;
+    private readonly PushNotificationService _push;
 
-    public PerfilViewModel(ApiService api, TokenService tokens)
+    public PerfilViewModel(ApiService api, TokenService tokens, PushNotificationService push)
     {
         _api    = api;
         _tokens = tokens;
+        _push   = push;
     }
 
     [ObservableProperty] private string _nombreCompleto  = string.Empty;
@@ -173,6 +175,8 @@ public partial class PerfilViewModel : ObservableObject
 
         if (!confirmar) return;
 
+        // Eliminar token push antes de borrar credenciales
+        await _push.EliminarAsync();
         await _api.DesconectarSignalRAsync();
         _tokens.LimpiarTokens();
         await Shell.Current.GoToAsync("//Login");

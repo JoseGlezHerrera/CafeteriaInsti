@@ -15,7 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Categoria>    Categorias    => Set<Categoria>();
     public DbSet<Producto>     Productos     => Set<Producto>();
     public DbSet<Pedido>       Pedidos       => Set<Pedido>();
-    public DbSet<LineaPedido>  LineasPedido  => Set<LineaPedido>();
+    public DbSet<LineaPedido>       LineasPedido      => Set<LineaPedido>();
+    public DbSet<DispositivoToken>  DispositivoTokens => Set<DispositivoToken>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -90,6 +91,18 @@ public class AppDbContext : DbContext
              .WithMany(p => p.Lineas)
              .HasForeignKey(l => l.ProductoId)
              .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── DispositivoToken ─────────────────────────────────────────────────
+        mb.Entity<DispositivoToken>(e =>
+        {
+            e.HasOne(t => t.Usuario)
+             .WithMany()
+             .HasForeignKey(t => t.UsuarioId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            // Un token FCM es único por dispositivo (no por usuario)
+            e.HasIndex(t => t.Token).IsUnique();
         });
 
         // ── Seed: Institutos iniciales ────────────────────────────────────────
