@@ -15,6 +15,9 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
+#if ANDROID || IOS
+            .UseFirebase(firebase => firebase.UseCloudMessaging())
+#endif
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("Syne-Bold.ttf", "SyneBold");
@@ -51,6 +54,7 @@ public static class MauiProgram
         // ── Servicios ─────────────────────────────────────────────────────────
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddSingleton<CarritoViewModel>();
+        builder.Services.AddSingleton<PushNotificationService>();
 
         // ── ViewModels ────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();

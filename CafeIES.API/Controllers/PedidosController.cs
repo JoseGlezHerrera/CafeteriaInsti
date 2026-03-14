@@ -21,15 +21,17 @@ public class PedidosController : ControllerBase
     private readonly HorarioService  _horario;
     private readonly StripeService   _stripe;
     private readonly IHubContext<CafeteriaHub> _hub;
+    private readonly FcmService      _fcm;
     private readonly ILogger<PedidosController> _logger;
 
     public PedidosController(AppDbContext db, HorarioService horario, StripeService stripe,
-        IHubContext<CafeteriaHub> hub, ILogger<PedidosController> logger)
+        IHubContext<CafeteriaHub> hub, FcmService fcm, ILogger<PedidosController> logger)
     {
         _db      = db;
         _horario = horario;
         _stripe  = stripe;
         _hub     = hub;
+        _fcm     = fcm;
         _logger  = logger;
     }
 
@@ -227,9 +229,25 @@ public class PedidosController : ControllerBase
         pedido.Estado = req.NuevoEstado;
         await _db.SaveChangesAsync();
 
-        // Notificar al usuario propietario del pedido
+        // Notificar al usuario propietario del pedido vía SignalR (tiempo real en app abierta)
         await _hub.Clients.Group($"user-{pedido.UsuarioId}")
             .SendAsync("EstadoPedidoActualizado", new { pedido.Id, Estado = req.NuevoEstado.ToString() });
+
+        // Notificación push cuando el pedido está listo para recoger
+        if (req.NuevoEstado == EstadoPedido.Listo)
+        {
+            var tokens = await _db.DispositivoTokens
+                .Where(t => t.UsuarioId == pedido.UsuarioId)
+                .Select(t => t.Token)
+                .ToListAsync();
+
+            if (tokens.Count > 0)
+                await _fcm.EnviarAsync(
+                    tokens,
+                    "¡Tu pedido está listo! ☕",
+                    $"Pedido #{pedido.NumeroPedido} — ya puedes pasar a recogerlo.",
+                    new Dictionary<string, string> { ["pedidoId"] = pedido.Id.ToString() });
+        }
 
         return NoContent();
     }

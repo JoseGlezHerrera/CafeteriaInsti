@@ -22,6 +22,40 @@ namespace CafeIES.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("CafeIES.Shared.Models.DispositivoToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("FechaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("DispositivoTokens");
+                });
+
             modelBuilder.Entity("CafeIES.Shared.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
@@ -446,6 +480,17 @@ namespace CafeIES.API.Migrations
                     b.HasIndex("InstitutoId");
 
                     b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("CafeIES.Shared.Models.DispositivoToken", b =>
+                {
+                    b.HasOne("CafeIES.Shared.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("CafeIES.Shared.Models.LineaPedido", b =>

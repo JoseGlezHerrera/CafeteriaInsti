@@ -1,0 +1,32 @@
+{
+  "_comment": "CONFIGURACIÓN FIREBASE — sustituir todos los campos REPLACE_ME",
+  "_comment2": "Pasos: Firebase Console → Configuración del proyecto → Android → Descargar google-services.json",
+  "project_info": {
+    "project_number": "REPLACE_ME_PROJECT_NUMBER",
+    "firebase_url": "",
+    "project_id": "cafeies-app",
+    "storage_bucket": ""
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REPLACE_ME_APP_ID",
+        "android_client_info": {
+          "package_name": "es.cafeies.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "REPLACE_ME_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,11 +7,13 @@ namespace CafeIES.MAUI.ViewModels;
 
 public partial class LoginViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly ApiService              _api;
+    private readonly PushNotificationService _push;
 
-    public LoginViewModel(ApiService api)
+    public LoginViewModel(ApiService api, PushNotificationService push)
     {
-        _api = api;
+        _api  = api;
+        _push = push;
     }
 
     [ObservableProperty]
@@ -60,8 +62,9 @@ public partial class LoginViewModel : ObservableObject
             return;
         }
 
-        // Conectar SignalR (#10)
+        // Conectar SignalR y registrar token push en segundo plano
         _ = _api.ConectarSignalRAsync();
+        _ = _push.RegistrarAsync();
 
         // Navegar al TabBar según el rol
         var destino = resultado.Usuario.Rol == RolUsuario.Admin ? "//Admin" : "//Main";

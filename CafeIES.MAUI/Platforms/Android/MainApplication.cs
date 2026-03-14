@@ -12,4 +12,11 @@ public class MainApplication : MauiApplication
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+
+    public override void OnCreate()
+    {
+        base.OnCreate();
+        // Firebase se inicializa automáticamente mediante google-services.json
+        // al usar Plugin.Firebase.CloudMessaging
+    }
 }

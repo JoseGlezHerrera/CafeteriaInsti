@@ -10,9 +10,14 @@ namespace CafeIES.MAUI.ViewModels;
 [QueryProperty(nameof(TipoInvitacion),  "tipo")]
 public partial class RegistroInvitacionViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly ApiService              _api;
+    private readonly PushNotificationService _push;
 
-    public RegistroInvitacionViewModel(ApiService api) => _api = api;
+    public RegistroInvitacionViewModel(ApiService api, PushNotificationService push)
+    {
+        _api  = api;
+        _push = push;
+    }
 
     [ObservableProperty] private string _tokenInvitacion = string.Empty;
 
@@ -77,8 +82,9 @@ public partial class RegistroInvitacionViewModel : ObservableObject
             return;
         }
 
-        // Conectar SignalR y navegar a Home
+        // Conectar SignalR y registrar token push en segundo plano
         _ = _api.ConectarSignalRAsync();
+        _ = _push.RegistrarAsync();
         try
         {
             await Shell.Current.GoToAsync("//Main");

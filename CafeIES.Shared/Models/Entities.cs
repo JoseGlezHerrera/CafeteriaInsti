@@ -283,3 +283,31 @@ public class LineaPedido
     [NotMapped]
     public decimal Subtotal => Cantidad * PrecioUnitario;
 }
+
+
+// ─────────────────────────────────────────────
+//  TOKEN DE NOTIFICACIONES PUSH
+// ─────────────────────────────────────────────
+
+/// <summary>
+/// Token FCM registrado por el dispositivo móvil de un usuario.
+/// Se almacena para enviar notificaciones push (p. ej. pedido listo).
+/// Un usuario puede tener varios tokens (varios dispositivos).
+/// </summary>
+public class DispositivoToken
+{
+    public int Id { get; set; }
+
+    public int UsuarioId { get; set; }
+    public Usuario? Usuario { get; set; }
+
+    /// <summary>Token de registro FCM (Android) / APNs vía FCM (iOS).</summary>
+    [Required, MaxLength(512)]
+    public string Token { get; set; } = string.Empty;
+
+    /// <summary>"android" | "ios"</summary>
+    [MaxLength(10)]
+    public string Plataforma { get; set; } = string.Empty;
+
+    public DateTime FechaActualizacion { get; set; } = DateTime.UtcNow;
+}

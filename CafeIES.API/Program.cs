@@ -22,6 +22,11 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<HorarioService>();
 builder.Services.AddSingleton<StripeService>();
+builder.Services.AddScoped<FcmService>();
+
+// ── HTTP clients (para llamadas salientes: FCM, etc.) ─────────────────────────
+builder.Services.AddHttpClient("fcm", c =>
+    c.Timeout = TimeSpan.FromSeconds(10));
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
