@@ -79,6 +79,14 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
     public bool HasError => !string.IsNullOrEmpty(Error);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneImagen))]
+    private string? _imagenUrl;
+
+    public bool TieneImagen => !string.IsNullOrEmpty(ImagenUrl);
+
+    [ObservableProperty] private bool _isSubiendoImagen;
+
+    [ObservableProperty]
     private CategoriaDto? _categoriaSeleccionada;
 
     public ObservableCollection<CategoriaDto> Categorias { get; } = new();
@@ -110,6 +118,9 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                 Descripcion  = prod.Descripcion ?? string.Empty;
                 Precio       = prod.Precio;
                 Stock        = prod.Stock;
+                ImagenUrl    = prod.ImagenUrl is not null
+                    ? _api.BuildImageUrl(prod.ImagenUrl)
+                    : null;
                 CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
             }
         }
@@ -120,6 +131,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
             Descripcion  = string.Empty;
             Precio       = 0;
             Stock        = -1;
+            ImagenUrl    = null;
             CategoriaSeleccionada = Categorias.FirstOrDefault();
         }
 
@@ -155,6 +167,49 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         if (!ok) { Error = "Error al guardar. Inténtalo de nuevo."; return; }
 
         await Shell.Current.GoToAsync("..");
+    }
+
+    [RelayCommand]
+    private async Task SeleccionarImagenAsync()
+    {
+        if (ProductoId <= 0)
+        {
+            Error = "Guarda el producto primero antes de subir una imagen.";
+            return;
+        }
+
+        try
+        {
+            var foto = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
+            {
+                Title = "Seleccionar imagen del producto"
+            });
+            if (foto is null) return;
+
+            IsSubiendoImagen = true;
+            Error = string.Empty;
+
+            using var stream = await foto.OpenReadAsync();
+            var ext          = Path.GetExtension(foto.FileName).ToLowerInvariant();
+            var contentType  = ext is ".png" ? "image/png"
+                             : ext is ".webp" ? "image/webp"
+                             : "image/jpeg";
+
+            var url = await _api.SubirImagenProductoAsync(ProductoId, stream, foto.FileName, contentType);
+
+            if (url is null)
+                Error = "Error al subir la imagen. Comprueba el formato y el tamaño (máx. 5 MB).";
+            else
+                ImagenUrl = _api.BuildImageUrl(url);
+        }
+        catch (Exception ex) when (ex is PermissionException || ex is FeatureNotSupportedException)
+        {
+            Error = "No se pudo acceder a la galería. Comprueba los permisos de la app.";
+        }
+        finally
+        {
+            IsSubiendoImagen = false;
+        }
     }
 
     [RelayCommand]

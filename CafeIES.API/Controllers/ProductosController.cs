@@ -134,6 +134,45 @@ public class ProductosController : ControllerBase
         return NoContent();
     }
 
+    // ── POST /api/productos/{id}/imagen  (Admin) ──────────────────────────────
+    [HttpPost("{id}/imagen")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> SubirImagen(int id, IFormFile imagen)
+    {
+        var producto = await _db.Productos.FindAsync(id);
+        if (producto is null) return NotFound();
+
+        if (imagen.Length > 5 * 1024 * 1024)
+            return BadRequest(new { mensaje = "La imagen no puede superar 5 MB." });
+
+        var ext = Path.GetExtension(imagen.FileName).ToLowerInvariant();
+        if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
+            return BadRequest(new { mensaje = "Formato no soportado. Usa JPG, PNG o WebP." });
+
+        // Eliminar imagen anterior si era local
+        if (!string.IsNullOrEmpty(producto.ImagenUrl) && producto.ImagenUrl.StartsWith("/uploads/"))
+        {
+            var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",
+                producto.ImagenUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(oldPath))
+                System.IO.File.Delete(oldPath);
+        }
+
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "productos");
+        Directory.CreateDirectory(uploadsDir);
+
+        var fileName = $"{id}_{Guid.NewGuid():N}{ext}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+
+        using (var stream = System.IO.File.Create(filePath))
+            await imagen.CopyToAsync(stream);
+
+        producto.ImagenUrl = $"/uploads/productos/{fileName}";
+        await _db.SaveChangesAsync();
+
+        return Ok(new { imagenUrl = producto.ImagenUrl });
+    }
+
     private static ProductoDto MapDto(Producto p) => new(
         p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
         p.ImagenUrl, p.Activo, p.NivelStock,

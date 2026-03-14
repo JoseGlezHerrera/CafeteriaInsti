@@ -97,6 +97,48 @@
                     </VerticalStackLayout>
                 </Grid>
 
+                <!-- Imagen -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Imagen del producto"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Grid ColumnDefinitions="80,*" ColumnSpacing="14">
+                        <!-- Preview -->
+                        <Border Grid.Column="0"
+                                WidthRequest="72" HeightRequest="72"
+                                BackgroundColor="{StaticResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <!-- Imagen cargada -->
+                            <Image Source="{Binding ImagenUrl}"
+                                   Aspect="AspectFill"
+                                   IsVisible="{Binding TieneImagen}"/>
+                            <!-- Placeholder sin imagen -->
+                            <Label Text="📷" FontSize="30"
+                                   HorizontalOptions="Center" VerticalOptions="Center"
+                                   IsVisible="{Binding TieneImagen, Converter={StaticResource InvertBoolConverter}}"/>
+                        </Border>
+                        <!-- Botón seleccionar -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Grid>
+                                <Button Text="📷 Seleccionar imagen"
+                                        Style="{StaticResource SecondaryButton}"
+                                        HeightRequest="40"
+                                        Command="{Binding SeleccionarImagenCommand}"
+                                        IsEnabled="{Binding IsSubiendoImagen, Converter={StaticResource InvertBoolConverter}}"
+                                        IsVisible="{Binding IsSubiendoImagen, Converter={StaticResource InvertBoolConverter}}"/>
+                                <ActivityIndicator IsRunning="{Binding IsSubiendoImagen}"
+                                                   IsVisible="{Binding IsSubiendoImagen}"
+                                                   Color="{StaticResource AccentColor}"
+                                                   HeightRequest="40"/>
+                            </Grid>
+                            <Label Text="JPG, PNG o WebP · máx. 5 MB"
+                                   FontFamily="DMSans" FontSize="11"
+                                   TextColor="{StaticResource MutedColor}"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+
                 <!-- Categoria -->
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Categoria"
