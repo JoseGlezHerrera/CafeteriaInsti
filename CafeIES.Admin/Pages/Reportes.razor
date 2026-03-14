@@ -1,5 +1,6 @@
 @page "/reportes"
 @inject AdminApiService Api
+@inject IJSRuntime JS
 
 <PageTitle>Reportes · CaféIES Admin</PageTitle>
 
@@ -12,7 +13,21 @@
     <input class="search-input" type="date" @bind="_desde" title="Desde"/>
     <input class="search-input" type="date" @bind="_hasta" title="Hasta"/>
     <button class="btn-primary" @onclick="Cargar">Generar</button>
+    @if (_generado && _pedidos.Any())
+    {
+        <button class="btn-secondary" @onclick="DescargarExcel" disabled="@_exportando">
+            @if (_exportandoExcel) { <span>⏳</span> } else { <span>📊 Excel</span> }
+        </button>
+        <button class="btn-secondary" @onclick="DescargarPdf" disabled="@_exportando">
+            @if (_exportandoPdf) { <span>⏳</span> } else { <span>📄 PDF</span> }
+        </button>
+    }
 </div>
+
+@if (!string.IsNullOrEmpty(_exportError))
+{
+    <div class="alert alert-danger">@_exportError</div>
+}
 
 @if (_cargando)
 {
@@ -88,11 +103,16 @@ else if (_generado)
 }
 
 @code {
-    private List<PedidoDto> _pedidos  = new();
-    private bool _cargando  = false;
-    private bool _generado  = false;
-    private DateTime? _desde = DateTime.Today.AddDays(-7);
-    private DateTime? _hasta = DateTime.Today;
+    private List<PedidoDto> _pedidos      = new();
+    private bool            _cargando     = false;
+    private bool            _generado     = false;
+    private bool            _exportandoExcel = false;
+    private bool            _exportandoPdf   = false;
+    private string?         _exportError;
+    private DateTime?       _desde = DateTime.Today.AddDays(-7);
+    private DateTime?       _hasta = DateTime.Today;
+
+    private bool _exportando => _exportandoExcel || _exportandoPdf;
 
     private IEnumerable<(string Nombre, int Unidades, decimal Ingresos)> ProductosRanking =>
         _pedidos
@@ -102,12 +122,73 @@ else if (_generado)
             .Select(g => (g.Key, g.Sum(l => l.Cantidad), g.Sum(l => l.Subtotal)))
             .OrderByDescending(x => x.Item2);
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Registra la función de descarga si el navegador no la tiene todavía
+            await JS.InvokeVoidAsync("eval",
+                @"if (!window.cafeiesDownload) {" +
+                @"  window.cafeiesDownload = function(filename, contentType, data) {" +
+                @"    const blob = new Blob([new Uint8Array(data)], { type: contentType });" +
+                @"    const url  = URL.createObjectURL(blob);" +
+                @"    const a    = document.createElement('a');" +
+                @"    a.href     = url;" +
+                @"    a.download = filename;" +
+                @"    document.body.appendChild(a);" +
+                @"    a.click();" +
+                @"    document.body.removeChild(a);" +
+                @"    URL.revokeObjectURL(url);" +
+                @"  };" +
+                @"}");
+        }
+    }
+
     private async Task Cargar()
     {
-        _cargando = true;
-        _pedidos  = await Api.GetAllPedidosAsync(_desde, _hasta);
-        _cargando = false;
-        _generado = true;
+        _cargando    = true;
+        _exportError = null;
+        _pedidos     = await Api.GetAllPedidosAsync(_desde, _hasta);
+        _cargando    = false;
+        _generado    = true;
+    }
+
+    private async Task DescargarExcel()
+    {
+        _exportError     = null;
+        _exportandoExcel = true;
+        try
+        {
+            var bytes = await Api.DescargarExcelAsync(_desde, _hasta);
+            if (bytes is null)
+            {
+                _exportError = "No se pudo generar el Excel. Inténtalo de nuevo.";
+                return;
+            }
+            var nombre = $"reporte-cafeies-{DateTime.Now:yyyyMMdd}.xlsx";
+            await JS.InvokeVoidAsync("cafeiesDownload", nombre,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                bytes);
+        }
+        finally { _exportandoExcel = false; }
+    }
+
+    private async Task DescargarPdf()
+    {
+        _exportError   = null;
+        _exportandoPdf = true;
+        try
+        {
+            var bytes = await Api.DescargarPdfAsync(_desde, _hasta);
+            if (bytes is null)
+            {
+                _exportError = "No se pudo generar el PDF. Inténtalo de nuevo.";
+                return;
+            }
+            var nombre = $"reporte-cafeies-{DateTime.Now:yyyyMMdd}.pdf";
+            await JS.InvokeVoidAsync("cafeiesDownload", nombre, "application/pdf", bytes);
+        }
+        finally { _exportandoPdf = false; }
     }
 
     private static string GetPagoTexto(MetodoPago m) => m switch
