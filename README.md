@@ -1,6 +1,6 @@
 # CaféIES — Sistema de pedidos de cafetería para institutos
 
-> App móvil + panel de administración para gestionar pedidos de cafetería en centros educativos.  
+> App móvil + panel de administración para gestionar pedidos de cafetería en centros educativos.
 > **Multi-instituto** con **pago real (Stripe)** integrado — preparando despliegue en Azure y Google Play Store.
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
@@ -46,7 +46,7 @@
         Ambos comparten ────────────────►│   (Pagos)            │
                                          └──────────────────────┘
 ┌─────────────────┐
-│  CafeIES.Shared │ ← DTOs, Entidades, Enums (compartido por todos)
+│  CafeIES.Shared │ ← DTOs, Entidades, Enums, Validaciones (compartido por todos)
 └─────────────────┘
 ```
 
@@ -76,31 +76,36 @@ CafeIES/
 │
 ├── CafeIES.sln
 │
-├── CafeIES.Shared/                    ← Modelos compartidos (DTOs, Entidades, Enums)
-│   └── Models/
-│       ├── Enums.cs                   Turno, RolUsuario, EstadoPedido, MetodoPago
-│       ├── Entities.cs                Usuario, Producto, Pedido, FranjaHoraria, Invitacion
-│       └── DTOs.cs                    Todos los DTOs de request/response
+├── CafeIES.Shared/                    ← Modelos compartidos (DTOs, Entidades, Enums, Validaciones)
+│   ├── Models/
+│   │   ├── Enums.cs                   Turno, RolUsuario, EstadoPedido, MetodoPago
+│   │   ├── Entities.cs                Usuario, Producto, Pedido, FranjaHoraria, Invitacion
+│   │   └── DTOs.cs                    Todos los DTOs de request/response
+│   └── Validation/
+│       └── PasswordComplexityAttribute.cs  Validación: mayúscula + número + símbolo
 │
 ├── CafeIES.API/                       ← Backend ASP.NET Core 9 (puerto 50658)
 │   ├── Controllers/
-│   │   ├── AuthController.cs          Login, registro alumno/invitado, refresh JWT
+│   │   ├── AuthController.cs          Login, registro alumno/invitado, refresh JWT (rate-limited)
 │   │   ├── ProductosController.cs     CRUD + toggle activo + actualizar stock
 │   │   ├── CategoriasController.cs    CRUD categorías
 │   │   ├── PedidosController.cs       Crear pedido (validación horaria + stock + Stripe)
 │   │   ├── PagosController.cs         PaymentIntent Stripe + webhook
 │   │   ├── InstitutosController.cs    Listado público de institutos (para registro)
 │   │   ├── InvitacionesController.cs  Generar/revocar QR+enlace para profe/personal
-│   │   └── AdminController.cs         Dashboard, validar alumnos, gestión, filtro instituto
+│   │   └── AdminController.cs         Dashboard, validar alumnos, gestión + audit trail
 │   ├── Data/
 │   │   ├── AppDbContext.cs            EF Core + seed de institutos, categorías y franjas
 │   │   └── DbSeeder.cs               Crea el admin inicial al arrancar
+│   ├── Extensions/
+│   │   ├── ClaimsPrincipalExtensions.cs  GetUserId() null-safe para claims JWT
+│   │   └── DtoMapperExtensions.cs        ToDto() centralizado (Usuario, Pedido, FranjaHoraria)
 │   ├── Services/
 │   │   ├── AuthService.cs             JWT (access 1h + refresh 30d), BCrypt, token rotation
 │   │   ├── HorarioService.cs          Lógica de restricción horaria por turno
 │   │   └── StripeService.cs           PaymentIntent, verificación de pago, webhook
 │   ├── Hubs/CafeteriaHub.cs           SignalR: grupos cafeteria + user-{id}
-│   ├── Program.cs                     Setup: EF, JWT, CORS, SignalR, Swagger, Stripe
+│   ├── Program.cs                     Setup: EF, JWT, CORS, SignalR, Swagger, RateLimiter
 │   ├── appsettings.json               BBDD, JWT Key, Stripe (placeholders)
 │   └── appsettings.Development.json   Claves reales (gitignored)
 │
@@ -108,7 +113,7 @@ CafeIES/
 │   ├── AppShell.xaml(.cs)             Shell con TabBar + rutas + visibilidad por rol
 │   ├── MauiProgram.cs                 DI: servicios, ViewModels, páginas
 │   ├── Services/
-│   │   ├── ApiService.cs              HTTP client con auto-refresh de tokens
+│   │   ├── ApiService.cs              HTTP client con auto-refresh, logging y SesionExpiradaMessage
 │   │   └── TokenService.cs            JWT en SecureStorage (Keychain/EncryptedPrefs)
 │   ├── Converters/Converters.cs       Conversores XAML (stock, estado, visibilidad)
 │   ├── ViewModels/
@@ -139,9 +144,10 @@ CafeIES/
     │   ├── Horarios.razor             Franjas horarias por turno (con validación)
     │   └── Reportes.razor             Estadísticas y métricas
     ├── Services/
-    │   ├── AdminApiService.cs         HTTP client con auto-refresh
-    │   └── AuthAdminService.cs        Sesión en sessionStorage + refresh token
+    │   ├── AdminApiService.cs         HTTP client con auto-refresh (timeout 20s)
+    │   └── AuthAdminService.cs        Sesión: accessToken en sessionStorage, refreshToken en memoria
     └── wwwroot/
+        ├── appsettings.json           URL de la API (configurable por entorno)
         └── css/app.css                Tema dark & warm completo
 ```
 
@@ -156,7 +162,7 @@ CafeIES/
 
 ### 1. Configurar la API
 
-Edita `CafeIES.API/appsettings.json` con tus datos de conexión.  
+Edita `CafeIES.API/appsettings.json` con tus datos de conexión.
 Las claves de Stripe van en `appsettings.Development.json` (no se sube a Git):
 
 ```json
@@ -170,14 +176,24 @@ Las claves de Stripe van en `appsettings.Development.json` (no se sube a Git):
 }
 ```
 
-### 2. Primera migración
+### 2. Configurar la URL de la API en el panel Admin
+
+Edita `CafeIES.Admin/wwwroot/appsettings.json` para apuntar a tu servidor:
+
+```json
+{
+  "ApiBaseUrl": "https://localhost:50658/"
+}
+```
+
+### 3. Primera migración
 ```bash
 cd CafeIES.API
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
 
-### 3. Arrancar los 3 proyectos
+### 4. Arrancar los 3 proyectos
 
 Se pueden lanzar simultáneamente desde Visual Studio con el perfil `.slnlaunch`:
 
@@ -193,7 +209,7 @@ Al arrancar la API por primera vez:
 ⚠️  Cambia la contraseña tras el primer login.
 ```
 
-> **MAUI en Android emulador**: la API se alcanza en `10.0.2.2:50658` (ya configurado en `ApiService.cs`).
+> **MAUI en Android emulador**: la API se alcanza en `10.0.2.2:50658` (ya configurado en `MauiProgram.cs`).
 
 ---
 
@@ -217,7 +233,7 @@ Alumno ──────────── Se registra solo en la app (elige tu
 
 ## Lógica de horarios
 
-Franjas editables desde `/horarios` en el panel admin — **sin tocar código**.  
+Franjas editables desde `/horarios` en el panel admin — **sin tocar código**.
 Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de eliminar.
 
 | Turno   | Franja 1 (ejemplo) | Franja 2 (ejemplo) |
@@ -236,6 +252,7 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - **Dashboard admin**: recibe pedidos nuevos al instante sin recargar (auto-refresh cada 30s como backup).
 - **App móvil**: el alumno ve el estado de su pedido actualizado en vivo en `DetallePedidoPage`.
 - **Grupos SignalR**: `cafeteria` (para admins) y `user-{id}` (para cada usuario).
+- **Sesión expirada**: si el refresh token caduca, `ApiService` desconecta SignalR automáticamente y emite `SesionExpiradaMessage`.
 
 ---
 
@@ -244,15 +261,20 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 | Mecanismo | Detalle |
 |-----------|---------|
 | Contraseñas | BCrypt con workFactor 12 |
+| Complejidad contraseña | Mínimo 8 caracteres + mayúscula + número + símbolo |
 | JWT Access Token | Duración 1 hora, firmado con HMAC-SHA256 |
 | JWT Refresh Token | Duración 30 días, rotación en cada uso |
 | Auto-refresh | MAUI (`ApiService`) y Blazor (`AuthAdminService`) renuevan tokens transparentemente |
-| Almacenamiento | MAUI: `SecureStorage` (Keychain/EncryptedSharedPreferences). Blazor: `sessionStorage` |
+| Almacenamiento tokens | MAUI: `SecureStorage` (Keychain/EncryptedSharedPreferences). Blazor: accessToken en `sessionStorage`, refreshToken **solo en memoria** (no persiste entre recargas) |
+| Rate limiting | 10 req/min por IP en endpoints de auth — responde HTTP 429 |
+| Audit trail | Todas las acciones admin (validar, suspender, eliminar, cambiar turno/horarios) se registran con `[AUDIT]` en los logs del servidor |
 | Pagos | Stripe PaymentIntent — total calculado en servidor, verificado antes de crear pedido |
 | Secretos | Claves reales en `appsettings.Development.json` (gitignored), placeholders en repo |
 | Stock | Transacciones SQL para evitar sobreventa concurrente |
 | Pedidos | Máquina de estados: solo transiciones válidas permitidas |
 | Ownership | Los usuarios solo ven/cancelan sus propios pedidos |
+| SSL en desarrollo | `ServerCertificateCustomValidationCallback` solo activo bajo `#if DEBUG` |
+| Claims JWT | Extracción null-safe con `ClaimsPrincipalExtensions.GetUserId()` |
 
 ---
 
@@ -277,6 +299,11 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - [x] Cache local de catálogo (5 min) para rendimiento
 - [x] Modales de confirmación en acciones destructivas
 - [x] Validación de franjas horarias
+- [x] **Rate limiting** en endpoints de autenticación (10 req/min/IP)
+- [x] **Audit trail** de acciones admin en logs estructurados
+- [x] **Validación de complejidad de contraseña** (mayúscula + número + símbolo)
+- [x] Timeout en HttpClient (15s MAUI, 20s Admin)
+- [x] Desconexión automática de SignalR al expirar la sesión
 
 ### Bugs corregidos (auditorías S26-S28)
 
@@ -320,6 +347,7 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - [x] Claim `institutoId` en JWT
 
 ### Fase 4 — Mejoras adicionales
+- [x] ~~Seguridad~~: rate limiting, audit trail, complejidad de contraseña, null-safe claims, timeout HTTP
 - [ ] Subida de imágenes de productos (Azure Blob Storage / servidor)
 - [ ] Notificaciones push cuando el pedido esté listo (FCM para Android, APNS para iOS)
 - [ ] Exportación de reportes a Excel/PDF
@@ -329,7 +357,19 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 
 ## Changelog
 
-### v0.5.0 — Stripe + Multi-instituto (actual)
+### v0.6.0 — Seguridad y calidad (actual)
+- **Rate limiting**: 10 req/min por IP en endpoints de auth, responde HTTP 429
+- **Audit trail**: todas las acciones admin registradas con `[AUDIT]` en logs del servidor
+- **Validación de contraseñas**: `PasswordComplexityAttribute` — mayúscula + número + símbolo obligatorios
+- **Null-safe claims**: `ClaimsPrincipalExtensions.GetUserId()` evita `NullReferenceException`
+- **Timeout HTTP**: 15s en MAUI, 20s en Admin Blazor
+- **SSL**: `ServerCertificateCustomValidationCallback` solo activo bajo `#if DEBUG`
+- **RefreshToken**: eliminado de `sessionStorage` en Admin — solo en memoria
+- **SignalR**: desconexión automática y `SesionExpiradaMessage` al expirar sesión
+- **DtoMapperExtensions**: `ToDto()` centralizado elimina duplicación en controllers
+- **Logging**: `ILogger<ApiService>` en todos los catch de la app móvil
+
+### v0.5.0 — Stripe + Multi-instituto
 - **Pagos reales con Stripe**: PaymentIntent + formulario de tarjeta en MAUI + verificación server-side + webhook
 - **Soporte multi-instituto**: entidad Instituto, selector en registro, filtros por instituto en Dashboard/Usuarios/Pedidos
 - Claim `institutoId` en JWT para identificación por instituto
