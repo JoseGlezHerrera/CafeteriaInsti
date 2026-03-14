@@ -1,8 +1,9 @@
 using System.Security.Claims;
 using CafeIES.API.Data;
-using CafeIES.Shared.Models;
+using CafeIES.API.Extensions;
 using CafeIES.API.Hubs;
 using CafeIES.API.Services;
+using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -33,8 +34,10 @@ public class PedidosController : ControllerBase
     [HttpGet("puedo-pedir")]
     public async Task<ActionResult<HorarioStatusDto>> PuedoPedir()
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var result = await _horario.PuedePedirAhoraAsync(userId);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await _horario.PuedePedirAhoraAsync(userId.Value);
 
         return Ok(new HorarioStatusDto(
             result.Puede,
@@ -48,10 +51,11 @@ public class PedidosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PedidoDto>> Crear([FromBody] CrearPedidoRequest req)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
 
         // 1. Comprobar horario
-        var horario = await _horario.PuedePedirAhoraAsync(userId);
+        var horario = await _horario.PuedePedirAhoraAsync(userId.Value);
         if (!horario.Puede)
             return BadRequest(new { mensaje = horario.Mensaje });
 
@@ -102,7 +106,7 @@ public class PedidosController : ControllerBase
 
             var pedido = new Pedido
             {
-                UsuarioId      = userId,
+                UsuarioId      = userId.Value,
                 NumeroPedido   = ultimoNumero + 1,
                 MetodoPago     = req.MetodoPago,
                 Total          = total,
@@ -115,7 +119,7 @@ public class PedidosController : ControllerBase
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // 4. Notificar a la cafetería en tiempo real vía SignalR
+            // 5. Notificar a la cafetería en tiempo real vía SignalR
             var dto = await GetPedidoDtoAsync(pedido.Id);
             await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
 
@@ -132,7 +136,9 @@ public class PedidosController : ControllerBase
     [HttpGet("mis-pedidos")]
     public async Task<ActionResult<List<PedidoDto>>> MisPedidos()
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
         var pedidos = await _db.Pedidos
             .Where(p => p.UsuarioId == userId)
             .OrderByDescending(p => p.FechaCreacion)
@@ -141,14 +147,16 @@ public class PedidosController : ControllerBase
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
 
-        return Ok(pedidos.Select(MapDto).ToList());
+        return Ok(pedidos.Select(p => p.ToDto()).ToList());
     }
 
     // ── GET /api/pedidos/mis-stats ───────────────────────────────────────────
     [HttpGet("mis-stats")]
     public async Task<ActionResult<UsuarioStatsDto>> MisEstadisticas()
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
         var query = _db.Pedidos.Where(p => p.UsuarioId == userId && p.Estado != EstadoPedido.Cancelado);
         var totalPedidos = await query.CountAsync();
         var totalGastado = await query.SumAsync(p => (decimal?)p.Total) ?? 0;
@@ -163,7 +171,9 @@ public class PedidosController : ControllerBase
         if (pedido is null) return NotFound();
 
         // Verificar propiedad: solo el dueño o Admin/Personal pueden ver el pedido
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
         var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal");
         if (pedido.UsuarioId != userId && !esStaff)
             return Forbid();
@@ -231,7 +241,7 @@ public class PedidosController : ControllerBase
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
 
-        return Ok(pedidos.Select(MapDto).ToList());
+        return Ok(pedidos.Select(p => p.ToDto()).ToList());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -242,25 +252,6 @@ public class PedidosController : ControllerBase
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
 
-        return p is null ? null : MapDto(p);
+        return p?.ToDto();
     }
-
-    private static PedidoDto MapDto(Pedido p) => new(
-        p.Id,
-        p.NumeroPedido,
-        p.Usuario.NombreCompleto,
-        p.Usuario.Email,
-        p.FechaCreacion,
-        p.Estado,
-        p.MetodoPago,
-        p.Total,
-        p.Notas,
-        p.Lineas.Select(l => new LineaPedidoDto(
-            l.ProductoId,
-            l.Producto.Nombre,
-            l.Cantidad,
-            l.PrecioUnitario,
-            l.Subtotal)).ToList(),
-        p.Usuario.Instituto?.Nombre
-    );
 }

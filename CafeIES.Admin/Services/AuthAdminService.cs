@@ -11,7 +11,7 @@ public class AuthAdminService
     private readonly IJSRuntime _js;
 
     private string?     _accessToken;
-    private string?     _refreshToken;
+    private string?     _refreshToken;  // Solo en memoria — no se persiste en sessionStorage
     private UsuarioDto? _usuario;
 
     public AuthAdminService(HttpClient http, IJSRuntime js)
@@ -40,14 +40,17 @@ public class AuthAdminService
             if (data.Usuario.Rol != RolUsuario.Admin) return false;
 
             _accessToken  = data.AccessToken;
-            _refreshToken = data.RefreshToken;
+            _refreshToken = data.RefreshToken;   // En memoria únicamente
             _usuario      = data.Usuario;
 
             _http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
 
+            // Persistimos el access token (1h de vida) y los datos del usuario.
+            // El refresh token (30 días) NO se guarda en sessionStorage por seguridad:
+            // si hay una vulnerabilidad XSS podría ser robado. Al recargar la página
+            // se pedirá login de nuevo, lo cual es el comportamiento correcto para un panel admin.
             await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_token",   _accessToken);
-            await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_refresh",  _refreshToken);
             await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_usuario",  JsonSerializer.Serialize(_usuario));
 
             return true;
@@ -55,11 +58,11 @@ public class AuthAdminService
         catch { return false; }
     }
 
-    /// <summary>Restaura la sesión desde sessionStorage (al recargar la página)</summary>
+    /// <summary>Restaura el access token desde sessionStorage al recargar la página.</summary>
     public async Task RestaurarSesionAsync()
     {
-        _accessToken  = await _js.InvokeAsync<string?>("sessionStorage.getItem", "admin_token");
-        _refreshToken = await _js.InvokeAsync<string?>("sessionStorage.getItem", "admin_refresh");
+        _accessToken = await _js.InvokeAsync<string?>("sessionStorage.getItem", "admin_token");
+        // _refreshToken permanece null al recargar; si el access token expira se requerirá login.
 
         if (!string.IsNullOrEmpty(_accessToken))
         {
@@ -83,13 +86,13 @@ public class AuthAdminService
         if (data is null) return false;
 
         _accessToken  = data.AccessToken;
-        _refreshToken = data.RefreshToken;
+        _refreshToken = data.RefreshToken;   // Actualizar en memoria
         _usuario      = data.Usuario;
         _http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
 
+        // Actualizar solo el access token y usuario en sessionStorage
         await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_token",   _accessToken);
-        await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_refresh",  _refreshToken);
         await _js.InvokeVoidAsync("sessionStorage.setItem", "admin_usuario",  JsonSerializer.Serialize(_usuario));
         return true;
     }

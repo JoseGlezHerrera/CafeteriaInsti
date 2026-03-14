@@ -1,8 +1,10 @@
 using CafeIES.API.Data;
-using CafeIES.Shared.Models;
+using CafeIES.API.Extensions;
 using CafeIES.API.Services;
+using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
@@ -22,6 +24,7 @@ public class AuthController : ControllerBase
 
     // ── POST /api/auth/login ─────────────────────────────────────────────────
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest req)
     {
         var usuario = await _db.Usuarios
@@ -53,11 +56,12 @@ public class AuthController : ControllerBase
         return Ok(new LoginResponse(
             accessToken,
             refreshToken,
-            MapUsuarioDto(usuario)));
+            usuario.ToDto()));
     }
 
-    // ── POST /api/auth/registro/alumno
+    // ── POST /api/auth/registro/alumno ───────────────────────────────────────
     [HttpPost("registro/alumno")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult> RegistroAlumno([FromBody] RegistroAlumnoRequest req)
     {
         if (!req.Email.Contains('@'))
@@ -89,6 +93,7 @@ public class AuthController : ControllerBase
 
     // ── POST /api/auth/registro/invitacion ───────────────────────────────────
     [HttpPost("registro/invitacion")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<LoginResponse>> RegistroInvitado([FromBody] RegistroInvitadoRequest req)
     {
         // Validar token de invitación
@@ -139,11 +144,12 @@ public class AuthController : ControllerBase
         usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
         await _db.SaveChangesAsync();
 
-        return Ok(new LoginResponse(accessToken, refreshToken, MapUsuarioDto(usuario)));
+        return Ok(new LoginResponse(accessToken, refreshToken, usuario.ToDto()));
     }
 
-    // ── POST /api/auth/refresh
+    // ── POST /api/auth/refresh ───────────────────────────────────────────────
     [HttpPost("refresh")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshRequest req)
     {
         var usuario = await _db.Usuarios
@@ -160,7 +166,7 @@ public class AuthController : ControllerBase
         usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
         await _db.SaveChangesAsync();
 
-        return Ok(new LoginResponse(accessToken, refreshToken, MapUsuarioDto(usuario)));
+        return Ok(new LoginResponse(accessToken, refreshToken, usuario.ToDto()));
     }
 
     // ── POST /api/auth/cambiar-password ──────────────────────────────────────
@@ -168,8 +174,10 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult> CambiarPassword([FromBody] CambiarPasswordRequest req)
     {
-        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-        var usuario = await _db.Usuarios.FindAsync(userId);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var usuario = await _db.Usuarios.FindAsync(userId.Value);
         if (usuario is null) return NotFound();
 
         if (!_auth.VerificarPassword(req.PasswordActual, usuario.PasswordHash))
@@ -180,9 +188,4 @@ public class AuthController : ControllerBase
 
         return Ok(new { mensaje = "Contraseña actualizada correctamente." });
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
-    private static UsuarioDto MapUsuarioDto(Usuario u) => new(
-        u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado,
-        u.InstitutoId, u.Instituto?.Nombre);
 }
