@@ -1,12 +1,13 @@
 # CaféIES — Sistema de pedidos de cafetería para institutos
 
 > App móvil + panel de administración para gestionar pedidos de cafetería en centros educativos.
-> **Multi-instituto** con **pago real (Stripe)** integrado — preparando despliegue en Azure y Google Play Store.
+> **Multi-instituto** con **pago real (Stripe)** y **notificaciones push (FCM)** integrados — preparando despliegue en Azure y Google Play Store.
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/MAUI-Android%20%7C%20iOS%20%7C%20Windows-blue?logo=dotnet)](https://learn.microsoft.com/dotnet/maui/)
 [![Blazor WASM](https://img.shields.io/badge/Blazor-WebAssembly-purple?logo=blazor)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![Stripe](https://img.shields.io/badge/Stripe-Pagos-635bff?logo=stripe)](https://stripe.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Push%20FCM-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 
 ---
 
@@ -19,6 +20,7 @@
 - [Flujo de registro](#flujo-de-registro)
 - [Lógica de horarios](#lógica-de-horarios)
 - [Notificaciones en tiempo real](#notificaciones-en-tiempo-real-signalr)
+- [Notificaciones push](#notificaciones-push-fcm)
 - [Seguridad](#seguridad)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
 - [Roadmap — Próximos hitos](#roadmap--próximos-hitos)
@@ -33,18 +35,19 @@
 │   CafeIES.MAUI  │◄───────────────────►│    CafeIES.API       │
 │  (Android/iOS/   │     SignalR WS      │  (ASP.NET Core 9)    │
 │   Windows)       │◄──────────────────►│                      │
-└─────────────────┘                      │  SQL Server + EF Core│
-        │                                │  JWT + BCrypt        │
-        │  Stripe REST API               │  SignalR Hub         │
-        │◄──────────────────►            │  Stripe SDK          │
-        │                                └──────────┬───────────┘
-┌─────────────────┐     HTTPS/JSON                  │
-│  CafeIES.Admin  │◄───────────────────►            │ Webhook
-│  (Blazor WASM)   │     SignalR WS                  │
-└─────────────────┘                      ┌──────────▼───────────┐
-                                         │   Stripe             │
-        Ambos comparten ────────────────►│   (Pagos)            │
-                                         └──────────────────────┘
+└────────┬────────┘                      │  SQL Server + EF Core│
+         │  FCM Push (recibe)            │  JWT + BCrypt        │
+         │◄──────────────────────────    │  SignalR Hub         │
+         │                               │  Stripe SDK          │
+         │  Stripe REST API              │  FcmService (env)    │
+         │◄──────────────────►           └──────────┬───────────┘
+         │                                          │ Webhook (Stripe)
+┌─────────────────┐     HTTPS/JSON                  │ Push (FCM HTTP v1)
+│  CafeIES.Admin  │◄───────────────────►            │
+│  (Blazor WASM)   │     SignalR WS      ┌───────────▼──────────┐
+└─────────────────┘                      │  Stripe / Firebase   │
+                                         │  (servicios externos)│
+        Ambos comparten ────────────────►└──────────────────────┘
 ┌─────────────────┐
 │  CafeIES.Shared │ ← DTOs, Entidades, Enums, Validaciones (compartido por todos)
 └─────────────────┘
@@ -63,6 +66,7 @@
 | Autenticación | JWT Bearer + BCrypt (workFactor: 12) | — |
 | Pagos | Stripe (PaymentIntent + Webhook) | Stripe.net 50.x |
 | Tiempo real | SignalR | — |
+| Notificaciones push | Firebase Cloud Messaging (FCM HTTP v1) | Plugin.Firebase.CloudMessaging 3.0.2 |
 | QR invitaciones | QRCoder | — |
 | MVVM (MAUI) | CommunityToolkit.Mvvm 8.3.2 | — |
 | UI helpers (MAUI) | CommunityToolkit.Maui 9.0.3 | — |
@@ -87,12 +91,14 @@ CafeIES/
 ├── CafeIES.API/                       ← Backend ASP.NET Core 9 (puerto 50658)
 │   ├── Controllers/
 │   │   ├── AuthController.cs          Login, registro alumno/invitado, refresh JWT (rate-limited)
-│   │   ├── ProductosController.cs     CRUD + toggle activo + actualizar stock
+│   │   ├── ProductosController.cs     CRUD + toggle activo + actualizar stock + subida imagen
 │   │   ├── CategoriasController.cs    CRUD categorías
-│   │   ├── PedidosController.cs       Crear pedido (validación horaria + stock + Stripe)
+│   │   ├── PedidosController.cs       Crear pedido (validación horaria + stock + Stripe + push)
 │   │   ├── PagosController.cs         PaymentIntent Stripe + webhook
 │   │   ├── InstitutosController.cs    Listado público de institutos (para registro)
 │   │   ├── InvitacionesController.cs  Generar/revocar QR+enlace para profe/personal
+│   │   ├── NotificacionesController.cs  POST/DELETE /api/notificaciones/token (tokens FCM)
+│   │   ├── ReportesController.cs      GET /api/reportes/excel y /pdf
 │   │   └── AdminController.cs         Dashboard, validar alumnos, gestión + audit trail
 │   ├── Data/
 │   │   ├── AppDbContext.cs            EF Core + seed de institutos, categorías y franjas
@@ -103,7 +109,10 @@ CafeIES/
 │   ├── Services/
 │   │   ├── AuthService.cs             JWT (access 1h + refresh 30d), BCrypt, token rotation
 │   │   ├── HorarioService.cs          Lógica de restricción horaria por turno
-│   │   └── StripeService.cs           PaymentIntent, verificación de pago, webhook
+│   │   ├── StripeService.cs           PaymentIntent, verificación de pago, webhook
+│   │   ├── FcmService.cs              Push via FCM HTTP v1 + Google OAuth2 service account
+│   │   ├── ReporteExcelService.cs     Genera .xlsx (3 hojas) con ClosedXML
+│   │   └── ReportePdfService.cs       Genera .pdf con QuestPDF
 │   ├── Hubs/CafeteriaHub.cs           SignalR: grupos cafeteria + user-{id}
 │   ├── Program.cs                     Setup: EF, JWT, CORS, SignalR, Swagger, RateLimiter
 │   ├── appsettings.json               BBDD, JWT Key, Stripe (placeholders)
@@ -114,18 +123,22 @@ CafeIES/
 │   ├── MauiProgram.cs                 DI: servicios, ViewModels, páginas
 │   ├── Services/
 │   │   ├── ApiService.cs              HTTP client con auto-refresh, logging y SesionExpiradaMessage
-│   │   └── TokenService.cs            JWT en SecureStorage (Keychain/EncryptedPrefs)
+│   │   ├── TokenService.cs            JWT en SecureStorage (Keychain/EncryptedPrefs)
+│   │   └── PushNotificationService.cs  Obtiene token FCM y lo registra/elimina en la API
 │   ├── Converters/Converters.cs       Conversores XAML (stock, estado, visibilidad)
+│   ├── Platforms/
+│   │   ├── Android/google-services.json  Placeholder Firebase — sustituir con archivo real
+│   │   └── iOS/GoogleService-Info.plist  Placeholder Firebase — sustituir con archivo real
 │   ├── ViewModels/
-│   │   ├── LoginViewModel.cs          Login con validación
+│   │   ├── LoginViewModel.cs          Login con validación + registro de token push
 │   │   ├── RegistroViewModel.cs       Autoregistro alumno (selección de turno)
-│   │   ├── RegistroInvitacionViewModel.cs  Registro por QR (profe/personal)
+│   │   ├── RegistroInvitacionViewModel.cs  Registro por QR + registro de token push
 │   │   ├── HomeViewModel.cs           Catálogo + horario + filtros + cache local 5min
 │   │   ├── CarritoViewModel.cs        Carrito + checkout + validación stock
 │   │   ├── PedidosViewModel.cs        Historial paginado
 │   │   ├── DetallePedidoViewModel.cs  Estado en tiempo real via SignalR
 │   │   ├── AdminPedidosViewModel.cs   Gestión pedidos (admin móvil)
-│   │   ├── AdminProductosViewModel.cs CRUD productos (admin móvil)
+│   │   ├── AdminProductosViewModel.cs CRUD productos + subida de imagen
 │   │   └── AdminUsuariosViewModel.cs  Gestión usuarios (admin móvil)
 │   └── Views/                         Todas las páginas XAML con tema dark & warm
 │
@@ -163,7 +176,7 @@ CafeIES/
 ### 1. Configurar la API
 
 Edita `CafeIES.API/appsettings.json` con tus datos de conexión.
-Las claves de Stripe van en `appsettings.Development.json` (no se sube a Git):
+Las claves de Stripe y Firebase van en `appsettings.Development.json` (no se sube a Git):
 
 ```json
 // appsettings.Development.json (crear este archivo, está en .gitignore)
@@ -172,9 +185,15 @@ Las claves de Stripe van en `appsettings.Development.json` (no se sube a Git):
     "SecretKey": "sk_test_TU_CLAVE",
     "PublishableKey": "pk_test_TU_CLAVE",
     "WebhookSecret": "whsec_TU_SECRET"
+  },
+  "Fcm": {
+    "ProjectId": "TU_FIREBASE_PROJECT_ID",
+    "ServiceAccountJson": "{ ...contenido del service-account.json descargado de Firebase Console... }"
   }
 }
 ```
+
+> **FCM opcional**: si `Fcm:ProjectId` está vacío, el servidor simplemente no envía push. El resto de la app funciona con normalidad.
 
 ### 2. Configurar la URL de la API en el panel Admin
 
@@ -256,6 +275,50 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 
 ---
 
+## Notificaciones push (FCM)
+
+Cuando el personal de cafetería marca un pedido como **Listo**, el usuario recibe una notificación push aunque la app esté cerrada.
+
+### Flujo
+
+```
+Personal marca pedido → Listo
+        │
+        ▼
+PedidosController.CambiarEstado
+        │  consulta DispositivoTokens del usuario
+        ▼
+FcmService.EnviarAsync()
+        │  OAuth2 con Service Account → FCM HTTP v1 API
+        ▼
+Firebase Cloud Messaging
+        │
+   ┌────┴────┐
+   ▼         ▼
+Android     iOS
+ (FCM)     (APNs via FCM)
+```
+
+### Configuración necesaria
+
+| Paso | Descripción |
+|------|-------------|
+| 1 | Crear proyecto en [Firebase Console](https://console.firebase.google.com) |
+| 2 | Android: descargar `google-services.json` → `CafeIES.MAUI/Platforms/Android/` |
+| 3 | iOS: descargar `GoogleService-Info.plist` → `CafeIES.MAUI/Platforms/iOS/` |
+| 4 | Firebase Console → Configuración → Cuentas de servicio → Generar nueva clave privada |
+| 5 | Copiar el JSON en `appsettings.Development.json` → `Fcm:ServiceAccountJson` |
+| 6 | Poner el project-id en `Fcm:ProjectId` |
+| 7 | iOS además: subir clave de autenticación APNs en Firebase → Cloud Messaging |
+
+### Comportamiento si FCM no está configurado
+
+- `FcmService` detecta que `Fcm:ProjectId` está vacío y sale sin hacer nada.
+- `PushNotificationService` en MAUI captura cualquier excepción de Firebase y la registra como warning.
+- El resto de la aplicación (SignalR, pedidos, pagos) funciona con total normalidad.
+
+---
+
 ## Seguridad
 
 | Mecanismo | Detalle |
@@ -295,6 +358,10 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - [x] Funciones admin desde la app móvil (pedidos, productos, usuarios)
 - [x] **Soporte multi-instituto** — entidad Instituto, selector en registro, filtros en admin
 - [x] Dashboard admin con filtro por instituto
+- [x] **Exportación de reportes** — Excel (3 hojas) y PDF desde el panel admin
+- [x] **Tests unitarios** — 95 tests (HorarioService, AuthService, dominio, validaciones)
+- [x] **Subida de imágenes de productos** — servidor local + Blazor picker + MAUI MediaPicker
+- [x] **Notificaciones push (FCM)** — aviso al usuario cuando su pedido está listo para recoger (Android + iOS via Firebase, configurable)
 - [x] Tema dark & warm consistente en app y panel web
 - [x] Cache local de catálogo (5 min) para rendimiento
 - [x] Modales de confirmación en acciones destructivas
@@ -331,7 +398,7 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - [x] Webhook de Stripe para confirmación y detección de pagos huérfanos
 - [x] Verificación server-side antes de crear pedido
 
-### Fase 2 — Despliegue y Play Store ← SIGUIENTE
+### Fase 5 — Despliegue y Play Store ← SIGUIENTE
 - [ ] Desplegar API + Blazor Admin en Azure App Service
 - [ ] Base de datos en Azure SQL (Free tier)
 - [ ] Configurar dominio y certificado HTTPS
@@ -346,18 +413,37 @@ Incluye validación de que `HoraInicio < HoraFin` y confirmación antes de elimi
 - [x] Badge de instituto en pedidos y usuarios
 - [x] Claim `institutoId` en JWT
 
-### Fase 4 — Mejoras adicionales
+### Fase 4 — ~~Mejoras adicionales~~ ✅ COMPLETADA
 - [x] ~~Seguridad~~: rate limiting, audit trail, complejidad de contraseña, null-safe claims, timeout HTTP
-- [ ] Subida de imágenes de productos (Azure Blob Storage / servidor)
-- [ ] Notificaciones push cuando el pedido esté listo (FCM para Android, APNS para iOS)
-- [ ] Exportación de reportes a Excel/PDF
-- [ ] Tests unitarios para servicios críticos (HorarioService, AuthService, stock)
+- [x] ~~Subida de imágenes de productos~~ — servidor local, Admin Blazor picker, MAUI MediaPicker
+- [x] ~~Notificaciones push~~ — FCM HTTP v1 (Android + iOS via APNs), configurable con Firebase
+- [x] ~~Exportación de reportes a Excel/PDF~~ — ClosedXML (3 hojas) + QuestPDF
+- [x] ~~Tests unitarios~~ — 95 tests: HorarioService, AuthService, dominio, validaciones
 
 ---
 
 ## Changelog
 
-### v0.6.0 — Seguridad y calidad (actual)
+### v0.7.0 — Notificaciones push FCM (actual)
+- **Push notifications**: aviso al usuario cuando su pedido pasa a "Listo"
+- `DispositivoToken` — entidad para almacenar tokens FCM por usuario/dispositivo (un usuario puede tener varios)
+- `FcmService` — FCM HTTP v1 API con autenticación OAuth2 mediante Service Account de Firebase; completamente opcional (se deshabilita si no hay configuración)
+- `NotificacionesController` — `POST /api/notificaciones/token` (upsert con reasignación en reinstalaciones) y `DELETE` para limpiar al cerrar sesión
+- `PushNotificationService` (MAUI) — obtiene el token FCM y lo registra/elimina automáticamente
+- Plugin.Firebase.CloudMessaging 3.0.2 — soporta Android (FCM) e iOS (APNs via Firebase) con `#if ANDROID || IOS`
+- Placeholders de configuración Firebase para `google-services.json` y `GoogleService-Info.plist`
+- Android: `MainActivity` con `OnNewIntent` para deep links desde notificación; iOS: `AppDelegate` con callbacks APNs
+
+### v0.6.1 — Tests, imágenes y exportación
+- **95 tests unitarios** con xUnit + EF InMemory: HorarioService (12), AuthService (16), dominio (FranjaHoraria, Invitacion, Producto, EstadoPedido), validación de contraseña
+- **Exportación Excel** (3 hojas: Resumen KPIs, Pedidos, Ranking productos) con ClosedXML 0.102.3
+- **Exportación PDF** (KPIs, métodos de pago, top-10 productos) con QuestPDF Community
+- **Subida de imágenes de productos**: endpoint `POST /api/productos/{id}/imagen` con protección path-traversal, validación de tipo/tamaño (5 MB), soft-delete del archivo anterior
+- Panel Admin Blazor: selector de imagen con previsualización en modal de producto
+- MAUI: `MediaPicker.Default.PickPhotoAsync()` + upload multipart desde `AdminEditProductoPage`
+- 10 bugs corregidos (auditoría): transacción serializable, null-safe mappers, category validation en PUT, request size limits, date validation, timing leak en GetById, catch logging
+
+### v0.6.0 — Seguridad y calidad
 - **Rate limiting**: 10 req/min por IP en endpoints de auth, responde HTTP 429
 - **Audit trail**: todas las acciones admin registradas con `[AUDIT]` en logs del servidor
 - **Validación de contraseñas**: `PasswordComplexityAttribute` — mayúscula + número + símbolo obligatorios
