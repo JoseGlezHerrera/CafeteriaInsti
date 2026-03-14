@@ -31,6 +31,10 @@ public class ApiService
 
     public string HubUrl => $"{_http.BaseAddress}hubs/cafeteria";
 
+    /// <summary>Construye la URL absoluta de una imagen relativa devuelta por la API (ej: /uploads/productos/1_abc.jpg).</summary>
+    public string BuildImageUrl(string relativePath)
+        => $"{_http.BaseAddress!.ToString().TrimEnd('/')}{relativePath}";
+
     // ── SignalR ───────────────────────────────────────────────────────────────
     private HubConnection? _hub;
     public HubConnection? Hub => _hub;
@@ -648,6 +652,29 @@ public class ApiService
         {
             _logger.LogWarning(ex, "Error al eliminar el producto {Id}.", id);
             return false;
+        }
+    }
+
+    public async Task<string?> SubirImagenProductoAsync(int id, Stream stream, string fileName, string contentType)
+    {
+        try
+        {
+            using var content     = new MultipartFormDataContent();
+            var       fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            content.Add(fileContent, "imagen", fileName);
+
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, $"api/productos/{id}/imagen", content);
+            if (!resp.IsSuccessStatusCode) return null;
+
+            var result = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+            return result?.GetValueOrDefault("imagenUrl");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al subir la imagen del producto {Id}.", id);
+            return null;
         }
     }
 

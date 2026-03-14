@@ -136,6 +136,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();   // Sirve wwwroot/uploads/productos/
 app.UseCors("AllowAdmin");
 app.UseRateLimiter();
 app.UseAuthentication();

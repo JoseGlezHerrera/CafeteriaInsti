@@ -1,6 +1,8 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CafeIES.Shared.Models;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace CafeIES.Admin.Services;
 
@@ -210,6 +212,27 @@ public class AdminApiService
 
     public async Task<bool> CambiarEstadoPedidoAsync(int id, EstadoPedido estado)
         => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/pedidos/{id}/estado", new CambiarEstadoRequest(estado)));
+
+    // ── Imágenes ───────────────────────────────────────────────────────────────
+    public async Task<string?> SubirImagenProductoAsync(int id, IBrowserFile archivo)
+    {
+        try
+        {
+            using var content     = new MultipartFormDataContent();
+            var       fileContent = new StreamContent(
+                archivo.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024));
+            fileContent.Headers.ContentType =
+                new MediaTypeHeaderValue(archivo.ContentType);
+            content.Add(fileContent, "imagen", archivo.Name);
+
+            var resp = await SendAsync(() => _http.PostAsync($"api/productos/{id}/imagen", content));
+            if (!resp.IsSuccessStatusCode) return null;
+
+            var result = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+            return result?.GetValueOrDefault("imagenUrl");
+        }
+        catch { return null; }
+    }
 
     // ── Reportes ───────────────────────────────────────────────────────────────
     public async Task<byte[]?> DescargarExcelAsync(DateTime? desde = null, DateTime? hasta = null)
