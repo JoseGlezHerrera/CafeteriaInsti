@@ -122,26 +122,10 @@ else if (_generado)
             .Select(g => (g.Key, g.Sum(l => l.Cantidad), g.Sum(l => l.Subtotal)))
             .OrderByDescending(x => x.Item2);
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            // Registra la función de descarga si el navegador no la tiene todavía
-            await JS.InvokeVoidAsync("eval",
-                @"if (!window.cafeiesDownload) {" +
-                @"  window.cafeiesDownload = function(filename, contentType, data) {" +
-                @"    const blob = new Blob([new Uint8Array(data)], { type: contentType });" +
-                @"    const url  = URL.createObjectURL(blob);" +
-                @"    const a    = document.createElement('a');" +
-                @"    a.href     = url;" +
-                @"    a.download = filename;" +
-                @"    document.body.appendChild(a);" +
-                @"    a.click();" +
-                @"    document.body.removeChild(a);" +
-                @"    URL.revokeObjectURL(url);" +
-                @"  };" +
-                @"}");
-        }
+        // cafeiesDownload está definida en wwwroot/index.html — no necesita eval
+        return Task.CompletedTask;
     }
 
     private async Task Cargar()

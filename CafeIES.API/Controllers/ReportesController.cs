@@ -25,6 +25,9 @@ public class ReportesController : ControllerBase
         [FromQuery] DateTime? desde = null,
         [FromQuery] DateTime? hasta = null)
     {
+        if (desde.HasValue && hasta.HasValue && desde > hasta)
+            return BadRequest(new { mensaje = "La fecha 'desde' no puede ser posterior a 'hasta'." });
+
         var pedidos = await CargarPedidosAsync(desde, hasta);
         var bytes   = ReporteExcelService.Generar(pedidos, desde, hasta);
 
@@ -40,6 +43,9 @@ public class ReportesController : ControllerBase
         [FromQuery] DateTime? desde = null,
         [FromQuery] DateTime? hasta = null)
     {
+        if (desde.HasValue && hasta.HasValue && desde > hasta)
+            return BadRequest(new { mensaje = "La fecha 'desde' no puede ser posterior a 'hasta'." });
+
         var pedidos = await CargarPedidosAsync(desde, hasta);
         var bytes   = ReportePdfService.Generar(pedidos, desde, hasta);
 

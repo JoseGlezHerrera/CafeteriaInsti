@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Data;
 using CafeIES.API.Data;
 using CafeIES.API.Extensions;
 using CafeIES.API.Hubs;
@@ -20,13 +21,16 @@ public class PedidosController : ControllerBase
     private readonly HorarioService  _horario;
     private readonly StripeService   _stripe;
     private readonly IHubContext<CafeteriaHub> _hub;
+    private readonly ILogger<PedidosController> _logger;
 
-    public PedidosController(AppDbContext db, HorarioService horario, StripeService stripe, IHubContext<CafeteriaHub> hub)
+    public PedidosController(AppDbContext db, HorarioService horario, StripeService stripe,
+        IHubContext<CafeteriaHub> hub, ILogger<PedidosController> logger)
     {
         _db      = db;
         _horario = horario;
         _stripe  = stripe;
         _hub     = hub;
+        _logger  = logger;
     }
 
     // ── GET /api/pedidos/puedo-pedir ─────────────────────────────────────────
@@ -59,8 +63,8 @@ public class PedidosController : ControllerBase
         if (!horario.Puede)
             return BadRequest(new { mensaje = horario.Mensaje });
 
-        // Usar transacción para evitar race conditions de stock
-        await using var transaction = await _db.Database.BeginTransactionAsync();
+        // Usar transacción SERIALIZABLE para evitar race conditions de stock y numeración
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
             // 2. Calcular total y validar stock
@@ -125,8 +129,9 @@ public class PedidosController : ControllerBase
 
             return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al procesar el pedido para el usuario {UserId}.", userId);
             await transaction.RollbackAsync();
             return StatusCode(500, new { mensaje = "Error al procesar el pedido. Inténtalo de nuevo." });
         }
@@ -167,12 +172,12 @@ public class PedidosController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<PedidoDto>> GetById(int id)
     {
-        var pedido = await _db.Pedidos.FirstOrDefaultAsync(p => p.Id == id);
-        if (pedido is null) return NotFound();
-
-        // Verificar propiedad: solo el dueño o Admin/Personal pueden ver el pedido
+        // Verificar identidad antes de hacer la consulta
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
+
+        var pedido = await _db.Pedidos.FirstOrDefaultAsync(p => p.Id == id);
+        if (pedido is null) return NotFound();
 
         var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal");
         if (pedido.UsuarioId != userId && !esStaff)
