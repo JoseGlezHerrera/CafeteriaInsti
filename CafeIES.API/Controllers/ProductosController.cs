@@ -82,6 +82,9 @@ public class ProductosController : ControllerBase
         var producto = await _db.Productos.Include(p => p.Categoria).FirstOrDefaultAsync(p => p.Id == id);
         if (producto is null) return NotFound();
 
+        if (!await _db.Categorias.AnyAsync(c => c.Id == req.CategoriaId))
+            return BadRequest(new { mensaje = "Categoría no válida." });
+
         producto.Nombre      = req.Nombre;
         producto.Descripcion = req.Descripcion;
         producto.Precio      = req.Precio;
@@ -137,6 +140,8 @@ public class ProductosController : ControllerBase
     // ── POST /api/productos/{id}/imagen  (Admin) ──────────────────────────────
     [HttpPost("{id}/imagen")]
     [Authorize(Roles = "Admin")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 5_242_880)]  // 5 MB
+    [RequestSizeLimit(5_242_880)]
     public async Task<ActionResult> SubirImagen(int id, IFormFile imagen)
     {
         var producto = await _db.Productos.FindAsync(id);
@@ -149,12 +154,16 @@ public class ProductosController : ControllerBase
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
             return BadRequest(new { mensaje = "Formato no soportado. Usa JPG, PNG o WebP." });
 
-        // Eliminar imagen anterior si era local
+        // Eliminar imagen anterior si era local (con protección contra path traversal)
         if (!string.IsNullOrEmpty(producto.ImagenUrl) && producto.ImagenUrl.StartsWith("/uploads/"))
         {
-            var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",
-                producto.ImagenUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            if (System.IO.File.Exists(oldPath))
+            var uploadsRoot = Path.GetFullPath(
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+            var oldPath = Path.GetFullPath(
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",
+                    producto.ImagenUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
+            // Solo borrar si la ruta sigue dentro del directorio de uploads
+            if (oldPath.StartsWith(uploadsRoot) && System.IO.File.Exists(oldPath))
                 System.IO.File.Delete(oldPath);
         }
 

@@ -17,10 +17,12 @@ public static class DtoMapperExtensions
 
     public static PedidoDto ToDto(this Pedido p) => new(
         p.Id, p.NumeroPedido,
-        p.Usuario.NombreCompleto, p.Usuario.Email,
+        p.Usuario?.NombreCompleto ?? "Desconocido",
+        p.Usuario?.Email          ?? "",
         p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
-            l.ProductoId, l.Producto.Nombre, l.Cantidad, l.PrecioUnitario, l.Subtotal
+            l.ProductoId, l.Producto?.Nombre ?? "Producto eliminado",
+            l.Cantidad, l.PrecioUnitario, l.Subtotal
         )).ToList(),
-        p.Usuario.Instituto?.Nombre);
+        p.Usuario?.Instituto?.Nombre);
 }
