@@ -82,3 +82,6 @@ wwwroot/
 secrets.json
 *.env
 .env.*
+
+# Claude Code memory
+.claude/
