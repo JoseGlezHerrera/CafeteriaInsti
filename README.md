@@ -1,7 +1,7 @@
 # CaféIES — Sistema de pedidos de cafetería para institutos
 
 > App móvil + panel de administración para gestionar pedidos de cafetería en centros educativos.
-> **Multi-instituto** con **pago real (Stripe)** y **notificaciones push (FCM)** integrados — preparando despliegue en Azure y Google Play Store.
+> **Multi-instituto** con **pago real (Stripe)**, **notificaciones push (FCM)** e **infraestructura Azure lista para producción** (App Service + SQL + Blob Storage + Static Web Apps + GitHub Actions CI/CD).
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/MAUI-Android%20%7C%20iOS%20%7C%20Windows-blue?logo=dotnet)](https://learn.microsoft.com/dotnet/maui/)
@@ -17,6 +17,7 @@
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Despliegue en Azure](#despliegue-en-azure)
 - [Flujo de registro](#flujo-de-registro)
 - [Lógica de horarios](#lógica-de-horarios)
 - [Notificaciones en tiempo real](#notificaciones-en-tiempo-real-signalr)
@@ -67,6 +68,10 @@
 | Pagos | Stripe (PaymentIntent + Webhook) | Stripe.net 50.x |
 | Tiempo real | SignalR | — |
 | Notificaciones push | Firebase Cloud Messaging (FCM HTTP v1) | Plugin.Firebase.CloudMessaging 3.0.2 |
+| Almacenamiento imágenes | Azure Blob Storage (prod) / wwwroot (dev) | Azure.Storage.Blobs 12.22.2 |
+| Hosting API | Azure App Service (.NET 9) | — |
+| Hosting Admin | Azure Static Web Apps (free tier) | — |
+| CI/CD | GitHub Actions | — |
 | QR invitaciones | QRCoder | — |
 | MVVM (MAUI) | CommunityToolkit.Mvvm 8.3.2 | — |
 | UI helpers (MAUI) | CommunityToolkit.Maui 9.0.3 | — |
@@ -111,11 +116,15 @@ CafeIES/
 │   │   ├── HorarioService.cs          Lógica de restricción horaria por turno
 │   │   ├── StripeService.cs           PaymentIntent, verificación de pago, webhook
 │   │   ├── FcmService.cs              Push via FCM HTTP v1 + Google OAuth2 service account
+│   │   ├── IBlobStorageService.cs     Abstracción para almacenamiento de imágenes
+│   │   ├── LocalBlobStorageService.cs Implementación local (wwwroot/uploads — desarrollo)
+│   │   ├── AzureBlobStorageService.cs Implementación Azure Blob Storage (producción)
 │   │   ├── ReporteExcelService.cs     Genera .xlsx (3 hojas) con ClosedXML
 │   │   └── ReportePdfService.cs       Genera .pdf con QuestPDF
 │   ├── Hubs/CafeteriaHub.cs           SignalR: grupos cafeteria + user-{id}
-│   ├── Program.cs                     Setup: EF, JWT, CORS, SignalR, Swagger, RateLimiter
-│   ├── appsettings.json               BBDD, JWT Key, Stripe (placeholders)
+│   ├── Program.cs                     Setup: EF, JWT, CORS, SignalR, Swagger, RateLimiter, health check
+│   ├── appsettings.json               BBDD, JWT Key, Stripe, AzureStorage (placeholders)
+│   ├── appsettings.Production.json    Overrides de logging y CORS para Azure App Service
 │   └── appsettings.Development.json   Claves reales (gitignored)
 │
 ├── CafeIES.MAUI/                      ← App móvil (Android + iOS + Windows)
@@ -160,8 +169,14 @@ CafeIES/
     │   ├── AdminApiService.cs         HTTP client con auto-refresh (timeout 20s)
     │   └── AuthAdminService.cs        Sesión: accessToken en sessionStorage, refreshToken en memoria
     └── wwwroot/
-        ├── appsettings.json           URL de la API (configurable por entorno)
+        ├── appsettings.json           URL de la API (configurable por entorno / GitHub Actions)
+        ├── staticwebapp.config.json   SPA fallback + MIME types para Azure Static Web Apps
         └── css/app.css                Tema dark & warm completo
+
+.github/
+└── workflows/
+    ├── deploy-api.yml                 CI/CD: build + publish → Azure App Service
+    └── deploy-admin.yml               CI/CD: build + inject URL + publish → Azure Static Web Apps
 ```
 
 ---
@@ -229,6 +244,82 @@ Al arrancar la API por primera vez:
 ```
 
 > **MAUI en Android emulador**: la API se alcanza en `10.0.2.2:50658` (ya configurado en `MauiProgram.cs`).
+
+---
+
+## Despliegue en Azure
+
+### Recursos necesarios
+
+| Recurso | Tier recomendado | Descripción |
+|---------|-----------------|-------------|
+| **Azure App Service** | B1 (Basic) | Hosting de la API .NET 9 |
+| **Azure SQL Database** | Basic (5 DTU) | Base de datos de producción |
+| **Azure Blob Storage** | LRS Standard | Imágenes de productos (contenedor `productos`, acceso público blob) |
+| **Azure Static Web Apps** | Free | Hosting del panel Blazor WASM |
+
+### CI/CD con GitHub Actions
+
+El repositorio incluye dos pipelines que se disparan automáticamente al hacer push a `main`:
+
+| Workflow | Archivo | Disparo |
+|----------|---------|---------|
+| Deploy API | `.github/workflows/deploy-api.yml` | Cambios en `CafeIES.API/**` o `CafeIES.Shared/**` |
+| Deploy Admin | `.github/workflows/deploy-admin.yml` | Cambios en `CafeIES.Admin/**` o `CafeIES.Shared/**` |
+
+### Secrets de GitHub necesarios
+
+Configurar en **Settings → Secrets and variables → Actions** del repositorio:
+
+| Secret | Descripción | Cómo obtenerlo |
+|--------|-------------|----------------|
+| `AZURE_WEBAPP_NAME` | Nombre del App Service (ej: `cafeies-api`) | Azure Portal → App Service → nombre |
+| `AZURE_WEBAPP_PUBLISH_PROFILE` | Perfil de publicación completo | Azure Portal → App Service → Overview → "Get publish profile" |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Token de la Static Web App | Azure Portal → Static Web App → Overview → "Manage deployment token" |
+| `API_BASE_URL` | URL pública de la API (ej: `https://cafeies-api.azurewebsites.net/`) | Azure Portal → App Service → URL |
+
+### Configuración de Azure App Service
+
+En el portal de Azure, añadir estas **Application Settings** (equivalen a `appsettings.json`):
+
+```
+ConnectionStrings__DefaultConnection  → cadena de conexión de Azure SQL
+Jwt__Key                              → clave secreta JWT (mín. 32 caracteres)
+Stripe__SecretKey                     → sk_live_...
+Stripe__PublishableKey                → pk_live_...
+Stripe__WebhookSecret                 → whsec_...
+Fcm__ProjectId                        → project-id de Firebase
+Fcm__ServiceAccountJson               → JSON del service account (una línea)
+AzureStorage__ConnectionString        → DefaultEndpointsProtocol=https;AccountName=...
+```
+
+> Los secretos se inyectan como variables de entorno en el proceso — nunca tocan el disco del servidor CI.
+
+### Pasos de despliegue (primera vez)
+
+1. **Crear los recursos Azure** (App Service + SQL + Storage + Static Web App)
+2. **Ejecutar las migraciones** contra Azure SQL:
+   ```bash
+   # Con la cadena de conexión de producción en ASPNETCORE_ConnectionStrings__DefaultConnection
+   dotnet ef database update --project CafeIES.API
+   ```
+3. **Configurar Application Settings** en el App Service (tabla anterior)
+4. **Configurar los secrets** en GitHub (tabla anterior)
+5. **Actualizar URLs** en el código:
+   - `CafeIES.API/appsettings.Production.json` → reemplazar `https://REPLACE_ME.azurestaticapps.net` con la URL real de la Static Web App (para CORS)
+   - `CafeIES.MAUI/MauiProgram.cs` → verificar que `https://cafeies-api.azurewebsites.net/` coincide con el nombre de tu App Service
+6. **Hacer push a `main`** — los pipelines se disparan automáticamente
+
+### Almacenamiento de imágenes
+
+El servicio `IBlobStorageService` selecciona automáticamente la implementación según el entorno:
+
+- **Desarrollo** (`AzureStorage:ConnectionString` vacío): guarda en `wwwroot/uploads/productos/`, devuelve URL relativa
+- **Producción** (connection string presente): sube a Azure Blob Storage, devuelve URL pública permanente
+
+### Health check
+
+La API expone `GET /health` que responde `200 Healthy`. Azure App Service lo usa para verificar que la aplicación arrancó correctamente antes de enrutar tráfico.
 
 ---
 
@@ -362,6 +453,7 @@ Android     iOS
 - [x] **Tests unitarios** — 95 tests (HorarioService, AuthService, dominio, validaciones)
 - [x] **Subida de imágenes de productos** — servidor local + Blazor picker + MAUI MediaPicker
 - [x] **Notificaciones push (FCM)** — aviso al usuario cuando su pedido está listo para recoger (Android + iOS via Firebase, configurable)
+- [x] **Infraestructura Azure** — `IBlobStorageService` (local/Azure Blob), health check `/health`, CORS desde config, `appsettings.Production.json`, GitHub Actions CI/CD (API + Admin), `staticwebapp.config.json` para SPA routing
 - [x] Tema dark & warm consistente en app y panel web
 - [x] Cache local de catálogo (5 min) para rendimiento
 - [x] Modales de confirmación en acciones destructivas
@@ -398,11 +490,15 @@ Android     iOS
 - [x] Webhook de Stripe para confirmación y detección de pagos huérfanos
 - [x] Verificación server-side antes de crear pedido
 
-### Fase 5 — Despliegue y Play Store ← SIGUIENTE
-- [ ] Desplegar API + Blazor Admin en Azure App Service
-- [ ] Base de datos en Azure SQL (Free tier)
-- [ ] Configurar dominio y certificado HTTPS
-- [ ] Configurar Stripe webhook en producción
+### Fase 5 — Despliegue y Play Store ← EN CURSO
+- [x] Infraestructura Azure lista: App Service, Blob Storage, Static Web Apps, GitHub Actions CI/CD
+- [x] `IBlobStorageService` con implementación local (dev) y Azure Blob Storage (prod)
+- [x] Health check en `/health` para App Service
+- [x] CORS configurable desde `appsettings.Production.json`
+- [x] Pipelines de CI/CD para API y Admin Blazor
+- [ ] Crear recursos Azure y configurar secrets en GitHub
+- [ ] Ejecutar migración inicial en Azure SQL
+- [ ] Configurar Stripe webhook en producción (`whsec_...`)
 - [ ] Preparar la app MAUI para Google Play Store (firma, manifest, ficha)
 - [ ] Distribución interna / beta cerrada
 
@@ -424,7 +520,19 @@ Android     iOS
 
 ## Changelog
 
-### v0.7.0 — Notificaciones push FCM (actual)
+### v0.8.0 — Infraestructura Azure y CI/CD (actual)
+- **`IBlobStorageService`**: abstracción con dos implementaciones — `LocalBlobStorageService` (desarrollo, guarda en `wwwroot/uploads/`) y `AzureBlobStorageService` (producción, Azure Blob Storage contenedor `productos` con acceso público). Selección automática según la presencia de `AzureStorage:ConnectionString`
+- **Health check**: `GET /health` → HTTP 200; usado por Azure App Service para liveness probes
+- **CORS desde config**: `Cors:AllowedOrigins` en `appsettings.json`; `appsettings.Production.json` añade la URL de la Static Web App
+- **`appsettings.Production.json`**: overrides de log level (Warning en producción) y CORS para Azure
+- **GitHub Actions CI/CD**:
+  - `deploy-api.yml`: `dotnet publish -c Release` + `azure/webapps-deploy@v3`
+  - `deploy-admin.yml`: inyecta `API_BASE_URL` en `appsettings.json` + `Azure/static-web-apps-deploy@v1`
+- **`staticwebapp.config.json`**: `navigationFallback` para SPA routing de Blazor WASM en Azure Static Web Apps + MIME types correctos para `.wasm`/`.dll`
+- **MAUI producción**: URL `https://cafeies-api.azurewebsites.net/` en bloque `#else` (release builds)
+- **Tests**: guardas de medianoche en 3 tests de `HorarioService` con franjas relativas al tiempo actual
+
+### v0.7.0 — Notificaciones push FCM
 - **Push notifications**: aviso al usuario cuando su pedido pasa a "Listo"
 - `DispositivoToken` — entidad para almacenar tokens FCM por usuario/dispositivo (un usuario puede tener varios)
 - `FcmService` — FCM HTTP v1 API con autenticación OAuth2 mediante Service Account de Firebase; completamente opcional (se deshabilita si no hay configuración)
