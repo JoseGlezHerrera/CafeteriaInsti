@@ -18,6 +18,7 @@ on:
       - 'CafeIES.API/**'
       - 'CafeIES.Shared/**'
       - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
 
 env:
   DOTNET_VERSION: '9.x'

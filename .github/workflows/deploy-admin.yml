@@ -11,6 +11,7 @@ on:
       - 'CafeIES.Admin/**'
       - 'CafeIES.Shared/**'
       - '.github/workflows/deploy-admin.yml'
+  workflow_dispatch:
 
 env:
   DOTNET_VERSION: '9.x'
