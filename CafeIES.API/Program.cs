@@ -24,9 +24,20 @@ builder.Services.AddScoped<HorarioService>();
 builder.Services.AddSingleton<StripeService>();
 builder.Services.AddScoped<FcmService>();
 
+// ── Almacenamiento de imágenes ────────────────────────────────────────────────
+// Si AzureStorage:ConnectionString está configurado → Azure Blob Storage (producción)
+// Si no                                             → disco local wwwroot/uploads/ (desarrollo)
+if (!string.IsNullOrEmpty(builder.Configuration["AzureStorage:ConnectionString"]))
+    builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
+else
+    builder.Services.AddSingleton<IBlobStorageService, LocalBlobStorageService>();
+
 // ── HTTP clients (para llamadas salientes: FCM, etc.) ─────────────────────────
 builder.Services.AddHttpClient("fcm", c =>
     c.Timeout = TimeSpan.FromSeconds(10));
+
+// ── Health check ──────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -78,12 +89,19 @@ builder.Services.AddRateLimiter(options =>
 // ── SignalR ───────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
 
-// ── CORS (para el panel Blazor en desarrollo) ─────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────────────
+// En desarrollo: acepta cualquier origen localhost.
+// En producción: añadir la URL del Admin (Azure Static Web Apps) en Cors:AllowedOrigins.
+var corsAllowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(opt =>
     opt.AddPolicy("AllowAdmin", p =>
         p.SetIsOriginAllowed(origin =>
                 origin.StartsWith("https://localhost") ||
-                origin.StartsWith("http://localhost"))
+                origin.StartsWith("http://localhost") ||
+                corsAllowedOrigins.Any(o =>
+                    origin.TrimEnd('/').Equals(o.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)))
          .AllowAnyHeader()
          .AllowAnyMethod()
          .AllowCredentials()
@@ -149,5 +167,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<CafeteriaHub>("/hubs/cafeteria");
+app.MapHealthChecks("/health");
 
 app.Run();

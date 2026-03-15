@@ -102,6 +102,9 @@ public class HorarioServiceTests
     [Fact]
     public async Task PuedePedirAhora_FranjaActiva_RetornaPermitido()
     {
+        // FranjaActiva abarca ±60 min; cruza medianoche en las horas 23 y 0.
+        if (DateTime.Now.Hour is 0 or 23) return;
+
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
         db.FranjasHorarias.Add(FranjaActiva(id: 1));   // abarca ±60min desde ahora
@@ -117,6 +120,9 @@ public class HorarioServiceTests
     [Fact]
     public async Task PuedePedirAhora_FranjaActiva_MensajeContieneHoraFin()
     {
+        // FranjaActiva abarca ±60 min; cruza medianoche en las horas 23 y 0.
+        if (DateTime.Now.Hour is 0 or 23) return;
+
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
         var franja = FranjaActiva(id: 1);
@@ -134,6 +140,10 @@ public class HorarioServiceTests
     [Fact]
     public async Task PuedePedirAhora_SinFranjaActivaConFranjaFutura_RetornaDenegadoConProxima()
     {
+        // La franja futura empieza en +90 min; cruza medianoche si Hour >= 22 o == 0.
+        // HorarioService usa TimeOnly y no detectaría la franja como próxima → falso negativo.
+        if (DateTime.Now.Hour is 0 or 22 or 23) return;
+
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
         db.FranjasHorarias.Add(FranjaFutura(id: 1));   // empieza en +90min

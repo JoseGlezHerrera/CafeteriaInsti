@@ -1,4 +1,5 @@
 using CafeIES.API.Data;
+using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +11,14 @@ namespace CafeIES.API.Controllers;
 [Route("api/[controller]")]
 public class ProductosController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext        _db;
+    private readonly IBlobStorageService _blobs;
 
-    public ProductosController(AppDbContext db) => _db = db;
+    public ProductosController(AppDbContext db, IBlobStorageService blobs)
+    {
+        _db    = db;
+        _blobs = blobs;
+    }
 
     // ── GET /api/productos  (público para usuarios autenticados) ─────────────
     [HttpGet]
@@ -154,32 +160,17 @@ public class ProductosController : ControllerBase
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
             return BadRequest(new { mensaje = "Formato no soportado. Usa JPG, PNG o WebP." });
 
-        // Eliminar imagen anterior si era local (con protección contra path traversal)
-        if (!string.IsNullOrEmpty(producto.ImagenUrl) && producto.ImagenUrl.StartsWith("/uploads/"))
-        {
-            var uploadsRoot = Path.GetFullPath(
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
-            var oldPath = Path.GetFullPath(
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",
-                    producto.ImagenUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
-            // Solo borrar si la ruta sigue dentro del directorio de uploads
-            if (oldPath.StartsWith(uploadsRoot) && System.IO.File.Exists(oldPath))
-                System.IO.File.Delete(oldPath);
-        }
-
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "productos");
-        Directory.CreateDirectory(uploadsDir);
+        // Eliminar imagen anterior (local o Blob)
+        await _blobs.EliminarAsync(producto.ImagenUrl);
 
         var fileName = $"{id}_{Guid.NewGuid():N}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
+        using var stream = imagen.OpenReadStream();
+        var url = await _blobs.SubirAsync(stream, fileName, imagen.ContentType);
 
-        using (var stream = System.IO.File.Create(filePath))
-            await imagen.CopyToAsync(stream);
-
-        producto.ImagenUrl = $"/uploads/productos/{fileName}";
+        producto.ImagenUrl = url;
         await _db.SaveChangesAsync();
 
-        return Ok(new { imagenUrl = producto.ImagenUrl });
+        return Ok(new { imagenUrl = url });
     }
 
     private static ProductoDto MapDto(Producto p) => new(

@@ -27,12 +27,17 @@ public static class MauiProgram
             });
 
         // ── HTTP Client ───────────────────────────────────────────────────────
-        // 10.0.2.2 es el alias de localhost desde el emulador Android.
-        // Para producción, sustituir estas URLs por la dirección real del servidor.
+#if DEBUG
+        // Desarrollo: 10.0.2.2 es localhost visto desde el emulador Android
 #if ANDROID
         var apiBase = "https://10.0.2.2:50658/";
 #else
         var apiBase = "https://localhost:50658/";
+#endif
+#else
+        // Producción: URL de la API desplegada en Azure App Service
+        // REEMPLAZAR con la URL real tras el despliegue
+        var apiBase = "https://cafeies-api.azurewebsites.net/";
 #endif
         builder.Services.AddSingleton(sp =>
         {

@@ -47,6 +47,7 @@ local.properties
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 *.plist
+!**/GoogleService-Info.plist
 
 # Windows
 *.appxbundle
