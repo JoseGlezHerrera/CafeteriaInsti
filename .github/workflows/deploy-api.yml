@@ -1,0 +1,54 @@
+name: Deploy API → Azure App Service
+
+# Secrets necesarios en GitHub → Settings → Secrets and variables → Actions:
+#   AZURE_WEBAPP_NAME            — nombre del App Service (ej: cafeies-api)
+#   AZURE_WEBAPP_PUBLISH_PROFILE — contenido del publish profile descargado desde el portal de Azure
+#   AZURE_SQL_CONN_STR           — cadena de conexión de Azure SQL (para el slot de producción)
+#   STRIPE_SECRET_KEY            — sk_live_... (clave Stripe live)
+#   STRIPE_PUBLISHABLE_KEY       — pk_live_...
+#   STRIPE_WEBHOOK_SECRET        — whsec_...
+#   FCM_PROJECT_ID               — project id de Firebase
+#   FCM_SERVICE_ACCOUNT_JSON     — JSON del service account de Firebase (como string)
+#   AZURE_STORAGE_CONN_STR       — cadena de conexión de Azure Storage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CafeIES.API/**'
+      - 'CafeIES.Shared/**'
+      - '.github/workflows/deploy-api.yml'
+
+env:
+  DOTNET_VERSION: '9.x'
+  PROJECT_PATH:   'CafeIES.API/CafeIES.API.csproj'
+  PUBLISH_DIR:    'publish/api'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Build & Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o ${{ env.PUBLISH_DIR }} --no-restore
+
+      # Inyectar configuración de producción como App Settings de Azure en lugar de ficheros
+      # (recomendado — los secretos nunca tocan el disco de CI)
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name:        ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package:         ${{ env.PUBLISH_DIR }}
