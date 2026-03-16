@@ -59,7 +59,7 @@ jobs:
         run: dotnet workload install maui-android --skip-sign-check
 
       - name: Restore
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+        run: dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
 
       # Decodifica el keystore almacenado en base64 en el secret
       - name: Decodificar keystore
