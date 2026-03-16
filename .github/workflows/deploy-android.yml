@@ -101,6 +101,10 @@ jobs:
           if [ -z "$KP" ]; then echo "ERROR: ANDROID_KEY_PASSWORD no configurado o vacio" && exit 1; fi
           if [ -z "$SP" ]; then echo "ERROR: ANDROID_KEYSTORE_PASSWORD no configurado o vacio" && exit 1; fi
           echo "Secrets de firma OK (${#KP} chars / ${#SP} chars)"
+          keytool -list \
+            -keystore ${{ runner.temp }}/cafeies-release.keystore \
+            -storepass "$SP" \
+            -alias cafeies 2>&1 || (echo "ERROR: contrasena del keystore incorrecta" && exit 1)
 
       - name: Build & Sign AAB
         env:
