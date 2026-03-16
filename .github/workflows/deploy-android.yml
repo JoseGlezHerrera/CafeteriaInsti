@@ -104,8 +104,8 @@ jobs:
             -p:AndroidKeyStore=true \
             -p:AndroidSigningKeyStore=${{ runner.temp }}/cafeies-release.keystore \
             -p:AndroidSigningKeyAlias=cafeies \
-            -p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASSWORD }} \
-            -p:AndroidSigningStorePass=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+            -p:AndroidSigningKeyPass='${{ secrets.ANDROID_KEY_PASSWORD }}' \
+            -p:AndroidSigningStorePass='${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' \
             -p:ApplicationVersion=${{ steps.version.outputs.code }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.name }}
 
