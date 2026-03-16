@@ -274,7 +274,7 @@ Configurar en **Settings → Secrets and variables → Actions** del repositorio
 | Secret | Descripción | Cómo obtenerlo |
 |--------|-------------|----------------|
 | `AZURE_WEBAPP_NAME` | Nombre del App Service (ej: `cafeies-api`) | Azure Portal → App Service → nombre |
-| `AZURE_WEBAPP_PUBLISH_PROFILE` | Perfil de publicación completo | Azure Portal → App Service → Overview → "Get publish profile" |
+| `AZURE_CREDENTIALS` | JSON del service principal de Azure | `az ad sp create-for-rbac --name cafeies-github --role contributor --scopes /subscriptions/.../resourceGroups/cafeies-rg --json-auth` |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | Token de la Static Web App | Azure Portal → Static Web App → Overview → "Manage deployment token" |
 | `API_BASE_URL` | URL pública de la API (ej: `https://cafeies-api.azurewebsites.net/`) | Azure Portal → App Service → URL |
 
@@ -454,6 +454,10 @@ Android     iOS
 - [x] **Subida de imágenes de productos** — servidor local + Blazor picker + MAUI MediaPicker
 - [x] **Notificaciones push (FCM)** — aviso al usuario cuando su pedido está listo para recoger (Android + iOS via Firebase, configurable)
 - [x] **Infraestructura Azure** — `IBlobStorageService` (local/Azure Blob), health check `/health`, CORS desde config, `appsettings.Production.json`, GitHub Actions CI/CD (API + Admin), `staticwebapp.config.json` para SPA routing
+- [x] **Despliegue en producción** — App Service + SQL Database + Blob Storage + Static Web Apps creados y operativos en Azure (`northeurope`)
+- [x] **Migraciones en Azure SQL** — esquema y seed aplicados contra `cafeies-sql2.database.windows.net/cafeiesdb`
+- [x] **Stripe webhook configurado en producción** — endpoint `https://cafeies-api.azurewebsites.net/api/pagos/webhook` registrado en Stripe, `whsec_` inyectado en App Settings
+- [x] **Test end-to-end de pagos verificado** — login → producto → PaymentIntent → confirm (`pm_card_visa`) → pedido creado → `succeeded` (1.50 EUR)
 - [x] Tema dark & warm consistente en app y panel web
 - [x] Cache local de catálogo (5 min) para rendimiento
 - [x] Modales de confirmación en acciones destructivas
@@ -490,15 +494,18 @@ Android     iOS
 - [x] Webhook de Stripe para confirmación y detección de pagos huérfanos
 - [x] Verificación server-side antes de crear pedido
 
-### Fase 5 — Despliegue y Play Store ← EN CURSO
-- [x] Infraestructura Azure lista: App Service, Blob Storage, Static Web Apps, GitHub Actions CI/CD
+### Fase 5a — ~~Despliegue Azure~~ ✅ COMPLETADA
+- [x] Infraestructura Azure: App Service (B1), Azure SQL (Basic), Blob Storage (LRS), Static Web Apps (Free)
 - [x] `IBlobStorageService` con implementación local (dev) y Azure Blob Storage (prod)
 - [x] Health check en `/health` para App Service
 - [x] CORS configurable desde `appsettings.Production.json`
-- [x] Pipelines de CI/CD para API y Admin Blazor
-- [ ] Crear recursos Azure y configurar secrets en GitHub
-- [ ] Ejecutar migración inicial en Azure SQL
-- [ ] Configurar Stripe webhook en producción (`whsec_...`)
+- [x] Pipelines CI/CD para API (`az webapp deploy --type zip`) y Admin Blazor (`static-web-apps-deploy@v1`)
+- [x] Recursos Azure creados y secrets configurados en GitHub
+- [x] Migración inicial aplicada en Azure SQL
+- [x] Stripe webhook configurado en producción
+- [x] Test end-to-end de pagos verificado en producción
+
+### Fase 5b — Play Store ← PENDIENTE
 - [ ] Preparar la app MAUI para Google Play Store (firma, manifest, ficha)
 - [ ] Distribución interna / beta cerrada
 
@@ -520,13 +527,21 @@ Android     iOS
 
 ## Changelog
 
-### v0.8.0 — Infraestructura Azure y CI/CD (actual)
+### v0.9.0 — Despliegue Azure completo y pagos verificados en producción (actual)
+- **Recursos Azure** creados: App Service `cafeies-api` (B1, Linux, .NET 9), Azure SQL `cafeies-sql2/cafeiesdb` (Basic 5 DTU, northeurope), Blob Storage `cafeiesimgs` (contenedor `productos`, LRS), Static Web App (free tier)
+- **EF Core migrations** aplicadas contra Azure SQL con `dotnet ef database update --connection`; seed inicial ejecutado (admin, institutos, categorías, franjas)
+- **Stripe webhook** registrado en producción (`POST /api/pagos/webhook`); `whsec_` inyectado como App Setting en Azure App Service
+- **CI/CD corregido**: `deploy-api.yml` migrado de `azure/webapps-deploy@v3` + publish profile a `azure/login@v2` (service principal `AZURE_CREDENTIALS`) + `az webapp deploy --type zip`; `workflow_dispatch` añadido a ambos pipelines
+- **Test end-to-end** en producción verificado: login → creación de producto → `POST /api/pagos/crear-intent` → confirmación Stripe (`pm_card_visa`, succeeded 1.50 EUR) → `POST /api/pedidos` con `stripePaymentIntentId` → Pedido #1 creado
+- **Scripts infra**: `create-sp.ps1`, `fix-credentials.ps1`, `create-stripe-webhook.ps1`, `test-pagos.ps1` (claves via `$env:STRIPE_SECRET_KEY`)
+
+### v0.8.0 — Infraestructura Azure y CI/CD
 - **`IBlobStorageService`**: abstracción con dos implementaciones — `LocalBlobStorageService` (desarrollo, guarda en `wwwroot/uploads/`) y `AzureBlobStorageService` (producción, Azure Blob Storage contenedor `productos` con acceso público). Selección automática según la presencia de `AzureStorage:ConnectionString`
 - **Health check**: `GET /health` → HTTP 200; usado por Azure App Service para liveness probes
 - **CORS desde config**: `Cors:AllowedOrigins` en `appsettings.json`; `appsettings.Production.json` añade la URL de la Static Web App
 - **`appsettings.Production.json`**: overrides de log level (Warning en producción) y CORS para Azure
 - **GitHub Actions CI/CD**:
-  - `deploy-api.yml`: `dotnet publish -c Release` + `azure/webapps-deploy@v3`
+  - `deploy-api.yml`: `dotnet publish -c Release` + `az webapp deploy --type zip`
   - `deploy-admin.yml`: inyecta `API_BASE_URL` en `appsettings.json` + `Azure/static-web-apps-deploy@v1`
 - **`staticwebapp.config.json`**: `navigationFallback` para SPA routing de Blazor WASM en Azure Static Web Apps + MIME types correctos para `.wasm`/`.dll`
 - **MAUI producción**: URL `https://cafeies-api.azurewebsites.net/` en bloque `#else` (release builds)
