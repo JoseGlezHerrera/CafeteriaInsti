@@ -509,9 +509,11 @@ Android     iOS
 - [x] `AndroidManifest.xml` con permisos correctos (INTERNET, CAMERA, POST_NOTIFICATIONS, READ_MEDIA_IMAGES)
 - [x] `network_security_config.xml` — cleartext HTTP bloqueado en producción, solo CAs del sistema
 - [x] `proguard.cfg` — reglas R8 para Mono runtime, Firebase, OkHttp y SignalR
-- [x] `.csproj` — `ApplicationTitle`, firma via env vars, `AndroidPackageFormat=aab`, AOT perfilado
+- [x] `.csproj` — `ApplicationTitle`, firma via env vars, `AndroidPackageFormat=aab`, `MauiLinkMode=SdkAndUserAssemblies`
 - [x] `infra/generar-keystore.ps1` — genera el keystore de firma con `keytool`
-- [x] `infra/build-android-release.ps1` — build y firma del AAB con `dotnet publish`
+- [x] `infra/build-android-release.ps1` — build y firma del AAB con `dotnet publish` (AAB generado: ~30 MB)
+- [x] `.github/workflows/deploy-android.yml` — pipeline CI/CD: build → firma → subida automática a Google Play
+- [x] `infra/configurar-play-store-secrets.ps1` — configura los 4 secrets de GitHub con un solo script
 - [ ] Sustituir `google-services.json` con el archivo real de Firebase Console
 - [ ] Diseñar icono definitivo (appicon.svg / appiconfg.svg) y capturas de pantalla
 - [ ] Crear cuenta Google Play Developer y subir primera versión (prueba interna)
@@ -535,13 +537,16 @@ Android     iOS
 
 ## Changelog
 
-### v0.10.0 — Preparación Google Play Store (actual)
-- **`AndroidManifest.xml`** (fuente): permisos explícitos (`INTERNET`, `CAMERA`, `POST_NOTIFICATIONS`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` con `maxSdkVersion="32"`), `allowBackup="false"`, `android:label="CaféIES"`, referencia a `network_security_config`
+### v0.10.0 — Preparación Google Play Store + pipeline CI/CD Android (actual)
+- **`AndroidManifest.xml`** (fuente): permisos explícitos (`INTERNET`, `CAMERA`, `POST_NOTIFICATIONS`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` con `maxSdkVersion="32"`), `allowBackup="false"`, referencia a `network_security_config`; iconos omitidos (MAUI resizetizer los inyecta automáticamente)
 - **`network_security_config.xml`**: cleartext HTTP bloqueado globalmente; solo CAs del sistema (Azure usa Let's Encrypt/DigiCert). El bypass de cert autofirmado sigue controlado por `#if DEBUG` en `MauiProgram.cs`
 - **`proguard.cfg`**: reglas R8 para Mono/.NET MAUI runtime (`crc64**`), Firebase Cloud Messaging, OkHttp/OkIO (SignalR), enumeraciones y Parcelable
-- **`.csproj`**: `<ApplicationTitle>CaféIES</ApplicationTitle>`; bloque Release Android con `AndroidPackageFormat=aab`, signing via variables de entorno (`CAFEIES_KEYSTORE_PATH`, `CAFEIES_STORE_PASS`, `CAFEIES_KEY_PASS`), `MauiLinkMode=SdkAndUserAssemblies`, `AndroidEnableProfiledAot=true`
-- **`infra/generar-keystore.ps1`**: genera keystore RSA-2048 10000 días con `keytool`; detecta JDK en rutas comunes
-- **`infra/build-android-release.ps1`**: `dotnet publish -f net9.0-android -c Release -p:AndroidPackageFormat=aab`; valida variables, avisa si `google-services.json` tiene placeholders, imprime tamaño del AAB y próximos pasos
+- **`.csproj`**: `<ApplicationTitle>CaféIES</ApplicationTitle>`; bloque Release Android con `AndroidPackageFormat=aab`, signing via variables de entorno (`CAFEIES_KEYSTORE_PATH`, `CAFEIES_STORE_PASS`, `CAFEIES_KEY_PASS`), `MauiLinkMode=SdkAndUserAssemblies`
+- **`MauiProgram.cs`**: eliminada llamada `UseFirebase()` — Plugin.Firebase.CloudMessaging 3.1.0 auto-inicializa desde `google-services.json`; no requiere registro en el builder
+- **`infra/generar-keystore.ps1`**: genera keystore RSA-2048 10000 días con `keytool`; detecta JDK en rutas comunes; guarda credenciales en `keystore-credentials.local.txt` (gitignored)
+- **`infra/build-android-release.ps1`**: `dotnet publish -f net9.0-android -c Release -p:AndroidPackageFormat=aab`; valida variables, avisa si `google-services.json` tiene placeholders, imprime tamaño del AAB. AAB generado: **30.1 MB**
+- **`.github/workflows/deploy-android.yml`**: pipeline completo — checkout → setup .NET 9 → `dotnet workload install maui-android` → restore → decodifica keystore desde secret Base64 → build y firma AAB → `r0adkll/upload-google-play@v1`; `versionCode = github.run_number + 1000`; trigger automático en push a `CafeIES.MAUI/**`; `workflow_dispatch` con selector de track (internal/alpha/beta/production)
+- **`infra/configurar-play-store-secrets.ps1`**: configura automáticamente los 4 secrets de GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`) usando `gh secret set`; incluye instrucciones paso a paso para crear el service account de Google Cloud
 
 ### v0.9.0 — Despliegue Azure completo y pagos verificados en producción
 - **Recursos Azure** creados: App Service `cafeies-api` (B1, Linux, .NET 9), Azure SQL `cafeies-sql2/cafeiesdb` (Basic 5 DTU, northeurope), Blob Storage `cafeiesimgs` (contenedor `productos`, LRS), Static Web App (free tier)
