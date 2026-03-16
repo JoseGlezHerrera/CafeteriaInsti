@@ -58,6 +58,15 @@ jobs:
       - name: Instalar workload maui-android
         run: dotnet workload install maui-android --skip-sign-check
 
+      # Forzar SDK 9.x: el runner tiene .NET 10 preinstalado que toma
+      # precedencia sobre el .NET 9 instalado por actions/setup-dotnet.
+      # global.json en el directorio de trabajo fuerza SDK 9.x para
+      # restore y publish, evitando incompatibilidades de assets.
+      - name: Crear global.json para fijar SDK 9.x
+        run: |
+          echo '{"sdk":{"version":"9.0.0","rollForward":"latestFeature"}}' > global.json
+          dotnet --version
+
       - name: Restore
         run: |
           dotnet restore CafeIES.Shared/CafeIES.Shared.csproj
