@@ -85,3 +85,7 @@ secrets.json
 
 # Claude Code memory
 .claude/
+
+# Credenciales locales del keystore Android (generadas por infra/generar-keystore.ps1)
+infra/keystore-credentials.local.txt
+infra/cafeies-release.keystore
