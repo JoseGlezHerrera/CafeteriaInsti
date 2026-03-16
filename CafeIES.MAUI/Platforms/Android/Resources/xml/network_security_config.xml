@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuración de seguridad de red para Android 7+ (API 24+).
+  Producción: solo se confían CAs del sistema (Let's Encrypt/DigiCert de Azure).
+              Tráfico cleartext HTTP bloqueado.
+  El bypass de certificado autofirmado para localhost solo existe en #if DEBUG
+  dentro de MauiProgram.cs y no afecta a las builds de Release.
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>
