@@ -86,6 +86,7 @@ jobs:
         run: |
           dotnet publish ${{ env.PROJECT_PATH }} \
             -f net9.0-android \
+            -p:TargetFrameworks=net9.0-android \
             -c Release \
             -p:AndroidPackageFormat=aab \
             -p:AndroidKeyStore=true \
