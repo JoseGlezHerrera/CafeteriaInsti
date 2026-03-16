@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="es.cafeies.app">
+
+  <!--
+    Permisos requeridos por CaféIES:
+      - INTERNET              → llamadas a la API REST y SignalR
+      - CAMERA                → captura de foto en AdminEditProducto (opcional; no requerida para pick from gallery)
+      - READ_MEDIA_IMAGES     → selector de imagen en Android 13+ (API 33+)
+      - READ_EXTERNAL_STORAGE → selector de imagen en Android 6-12 (API 23-32)
+      - VIBRATE               → vibración en notificaciones push
+      - POST_NOTIFICATIONS    → permiso en tiempo de ejecución para FCM (Android 13+, API 33+)
+  -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Selector de imágenes Android 13+ -->
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+  <!-- Selector de imágenes Android 6-12 -->
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+                   android:maxSdkVersion="32" />
+
+  <!-- La cámara es opcional: la app funciona sin ella (solo pick from gallery) -->
+  <uses-feature android:name="android.hardware.camera"          android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+  <application
+    android:label="CaféIES"
+    android:icon="@mipmap/appicon"
+    android:roundIcon="@mipmap/appicon_round"
+    android:supportsRtl="false"
+    android:allowBackup="false"
+    android:networkSecurityConfig="@xml/network_security_config">
+
+    <!--
+      Las activities, servicios y providers propios de MAUI (.NET runtime, SignalR, Firebase,
+      FileProvider, etc.) se fusionan automáticamente por el build tool de MAUI.
+      No los declaramos aquí para evitar duplicados.
+    -->
+
+  </application>
+</manifest>

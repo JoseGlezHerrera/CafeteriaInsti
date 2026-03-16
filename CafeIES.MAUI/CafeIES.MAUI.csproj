@@ -4,6 +4,7 @@
 		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-windows10.0.19041.0</TargetFrameworks>
 		<RootNamespace>CafeIES.MAUI</RootNamespace>
 		<ApplicationId>es.cafeies.app</ApplicationId>
+		<ApplicationTitle>CaféIES</ApplicationTitle>
 		<ApplicationVersion>1</ApplicationVersion>
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<Nullable>enable</Nullable>
@@ -13,6 +14,29 @@
 		<SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
 		<!-- Permite ejecutar sin despliegue MSIX en Windows -->
 		<WindowsPackageType>None</WindowsPackageType>
+	</PropertyGroup>
+
+	<!--
+	  ── Android Release — firma y empaquetado para Play Store ────────────────────
+	  Credenciales via variables de entorno (no se suben a git):
+	    CAFEIES_KEYSTORE_PATH  → ruta al archivo .keystore (ej: C:\keys\cafeies-release.keystore)
+	    CAFEIES_STORE_PASS     → contraseña del keystore
+	    CAFEIES_KEY_PASS       → contraseña de la clave (puede ser igual a la del keystore)
+	  Generar con: infra/generar-keystore.ps1
+	-->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(TargetFramework.StartsWith('net9.0-android'))">
+		<!-- AAB (Android App Bundle) — requerido por Play Store desde agosto 2021 -->
+		<AndroidPackageFormat>aab</AndroidPackageFormat>
+		<!-- Firma del bundle -->
+		<AndroidKeyStore>true</AndroidKeyStore>
+		<AndroidSigningKeyStore>$(CAFEIES_KEYSTORE_PATH)</AndroidSigningKeyStore>
+		<AndroidSigningKeyAlias>cafeies</AndroidSigningKeyAlias>
+		<AndroidSigningKeyPass>$(CAFEIES_KEY_PASS)</AndroidSigningKeyPass>
+		<AndroidSigningStorePass>$(CAFEIES_STORE_PASS)</AndroidSigningStorePass>
+		<!-- Enlazador: elimina código no utilizado (reduce tamaño del bundle) -->
+		<MauiLinkMode>SdkAndUserAssemblies</MauiLinkMode>
+		<!-- AOT perfilado: mejor tiempo de arranque sin el impacto de tamaño del AOT completo -->
+		<AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -36,6 +60,11 @@
 	<!-- Firebase configuration files — replace placeholders with real files from Firebase Console -->
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android'))">
 		<GoogleServicesJson Include="Platforms\Android\google-services.json" />
+	</ItemGroup>
+
+	<!-- ProGuard / R8 para Release Android -->
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android'))">
+		<ProguardConfiguration Include="Platforms\Android\proguard.cfg" />
 	</ItemGroup>
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-ios'))">
 		<BundleResource Include="Platforms\iOS\GoogleService-Info.plist" />

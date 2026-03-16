@@ -505,9 +505,17 @@ Android     iOS
 - [x] Stripe webhook configurado en producción
 - [x] Test end-to-end de pagos verificado en producción
 
-### Fase 5b — Play Store ← PENDIENTE
-- [ ] Preparar la app MAUI para Google Play Store (firma, manifest, ficha)
-- [ ] Distribución interna / beta cerrada
+### Fase 5b — Play Store ← EN CURSO
+- [x] `AndroidManifest.xml` con permisos correctos (INTERNET, CAMERA, POST_NOTIFICATIONS, READ_MEDIA_IMAGES)
+- [x] `network_security_config.xml` — cleartext HTTP bloqueado en producción, solo CAs del sistema
+- [x] `proguard.cfg` — reglas R8 para Mono runtime, Firebase, OkHttp y SignalR
+- [x] `.csproj` — `ApplicationTitle`, firma via env vars, `AndroidPackageFormat=aab`, AOT perfilado
+- [x] `infra/generar-keystore.ps1` — genera el keystore de firma con `keytool`
+- [x] `infra/build-android-release.ps1` — build y firma del AAB con `dotnet publish`
+- [ ] Sustituir `google-services.json` con el archivo real de Firebase Console
+- [ ] Diseñar icono definitivo (appicon.svg / appiconfg.svg) y capturas de pantalla
+- [ ] Crear cuenta Google Play Developer y subir primera versión (prueba interna)
+- [ ] Configurar política de privacidad pública (URL requerida por Play Store)
 
 ### Fase 3 — ~~Soporte multi-instituto~~ ✅ COMPLETADA
 - [x] Entidad `Instituto` con seed de 3 centros iniciales
@@ -527,7 +535,15 @@ Android     iOS
 
 ## Changelog
 
-### v0.9.0 — Despliegue Azure completo y pagos verificados en producción (actual)
+### v0.10.0 — Preparación Google Play Store (actual)
+- **`AndroidManifest.xml`** (fuente): permisos explícitos (`INTERNET`, `CAMERA`, `POST_NOTIFICATIONS`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` con `maxSdkVersion="32"`), `allowBackup="false"`, `android:label="CaféIES"`, referencia a `network_security_config`
+- **`network_security_config.xml`**: cleartext HTTP bloqueado globalmente; solo CAs del sistema (Azure usa Let's Encrypt/DigiCert). El bypass de cert autofirmado sigue controlado por `#if DEBUG` en `MauiProgram.cs`
+- **`proguard.cfg`**: reglas R8 para Mono/.NET MAUI runtime (`crc64**`), Firebase Cloud Messaging, OkHttp/OkIO (SignalR), enumeraciones y Parcelable
+- **`.csproj`**: `<ApplicationTitle>CaféIES</ApplicationTitle>`; bloque Release Android con `AndroidPackageFormat=aab`, signing via variables de entorno (`CAFEIES_KEYSTORE_PATH`, `CAFEIES_STORE_PASS`, `CAFEIES_KEY_PASS`), `MauiLinkMode=SdkAndUserAssemblies`, `AndroidEnableProfiledAot=true`
+- **`infra/generar-keystore.ps1`**: genera keystore RSA-2048 10000 días con `keytool`; detecta JDK en rutas comunes
+- **`infra/build-android-release.ps1`**: `dotnet publish -f net9.0-android -c Release -p:AndroidPackageFormat=aab`; valida variables, avisa si `google-services.json` tiene placeholders, imprime tamaño del AAB y próximos pasos
+
+### v0.9.0 — Despliegue Azure completo y pagos verificados en producción
 - **Recursos Azure** creados: App Service `cafeies-api` (B1, Linux, .NET 9), Azure SQL `cafeies-sql2/cafeiesdb` (Basic 5 DTU, northeurope), Blob Storage `cafeiesimgs` (contenedor `productos`, LRS), Static Web App (free tier)
 - **EF Core migrations** aplicadas contra Azure SQL con `dotnet ef database update --connection`; seed inicial ejecutado (admin, institutos, categorías, franjas)
 - **Stripe webhook** registrado en producción (`POST /api/pagos/webhook`); `whsec_` inyectado como App Setting en Azure App Service
