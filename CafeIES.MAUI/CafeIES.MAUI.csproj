@@ -35,8 +35,6 @@
 		<AndroidSigningStorePass>$(CAFEIES_STORE_PASS)</AndroidSigningStorePass>
 		<!-- Enlazador: elimina código no utilizado (reduce tamaño del bundle) -->
 		<MauiLinkMode>SdkAndUserAssemblies</MauiLinkMode>
-		<!-- AOT perfilado: mejor tiempo de arranque sin el impacto de tamaño del AOT completo -->
-		<AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
 	</PropertyGroup>
 
 	<ItemGroup>

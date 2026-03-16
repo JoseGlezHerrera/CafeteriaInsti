@@ -15,9 +15,9 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
-#if ANDROID || IOS
-            .UseFirebase(firebase => firebase.UseCloudMessaging())
-#endif
+            // Firebase se inicializa automáticamente desde google-services.json (Android) /
+            // GoogleService-Info.plist (iOS) — Plugin.Firebase.CloudMessaging 3.1.0 no
+            // necesita llamada explícita a UseFirebase() en el builder de MAUI.
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("Syne-Bold.ttf", "SyneBold");
