@@ -1,0 +1,118 @@
+name: Deploy Android → Google Play
+
+# Secrets necesarios en GitHub → Settings → Secrets and variables → Actions:
+#   ANDROID_KEYSTORE_BASE64       — keystore codificado en base64
+#                                   (genera con: infra/configurar-play-store-secrets.ps1)
+#   ANDROID_KEYSTORE_PASSWORD     — contraseña del keystore
+#   ANDROID_KEY_PASSWORD          — contraseña de la clave (normalmente igual)
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON — JSON del service account de Google Play API
+#                                   (ver infra/configurar-play-store-secrets.ps1 para instrucciones)
+#
+# IMPORTANTE: la primera versión debe subirse MANUALMENTE a Play Console.
+#             A partir de la segunda, este pipeline la sube automáticamente.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CafeIES.MAUI/**'
+      - 'CafeIES.Shared/**'
+      - '.github/workflows/deploy-android.yml'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play Store track donde subir el AAB'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      version_name:
+        description: 'Nombre de versión visible (ej: 1.1.0)'
+        required: false
+        default: ''
+
+env:
+  DOTNET_VERSION:     '9.x'
+  PROJECT_PATH:       'CafeIES.MAUI/CafeIES.MAUI.csproj'
+  PACKAGE_NAME:       'es.cafeies.app'
+  DOTNET_NOLOGO:      'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Instalar workload maui-android
+        run: dotnet workload install maui-android --skip-sign-check
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      # Decodifica el keystore almacenado en base64 en el secret
+      - name: Decodificar keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ runner.temp }}/cafeies-release.keystore
+
+      # El versionCode debe ser único y creciente en cada subida a Play Store.
+      # Usamos github.run_number + offset (1000) para evitar colisiones con
+      # el versionCode=1 de la primera versión subida manualmente.
+      - name: Calcular versionCode y versionName
+        id: version
+        run: |
+          VERSION_CODE=$(( 1000 + ${{ github.run_number }} ))
+          VERSION_NAME="${{ inputs.version_name }}"
+          if [ -z "$VERSION_NAME" ]; then
+            # Formato automático: año.mes.run (ej: 2026.03.42)
+            VERSION_NAME="$(date +'%Y.%m').${{ github.run_number }}"
+          fi
+          echo "code=$VERSION_CODE"    >> $GITHUB_OUTPUT
+          echo "name=$VERSION_NAME"    >> $GITHUB_OUTPUT
+          echo "VersionCode: $VERSION_CODE  VersionName: $VERSION_NAME"
+
+      - name: Build & Sign AAB
+        run: |
+          dotnet publish ${{ env.PROJECT_PATH }} \
+            -f net9.0-android \
+            -c Release \
+            -p:AndroidPackageFormat=aab \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore=${{ runner.temp }}/cafeies-release.keystore \
+            -p:AndroidSigningKeyAlias=cafeies \
+            -p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASSWORD }} \
+            -p:AndroidSigningStorePass=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+            -p:ApplicationVersion=${{ steps.version.outputs.code }} \
+            -p:ApplicationDisplayVersion=${{ steps.version.outputs.name }}
+
+      - name: Verificar AAB generado
+        run: |
+          AAB=$(find CafeIES.MAUI/bin/Release/net9.0-android/publish -name '*-Signed.aab' | head -1)
+          if [ -z "$AAB" ]; then echo "ERROR: AAB no encontrado" && exit 1; fi
+          echo "AAB: $AAB  ($(du -sh "$AAB" | cut -f1))"
+          echo "aab_path=$AAB" >> $GITHUB_ENV
+
+      - name: Subir a Google Play (${{ inputs.track || 'internal' }})
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName:   ${{ env.PACKAGE_NAME }}
+          releaseFiles:  ${{ env.aab_path }}
+          track:         ${{ inputs.track || 'internal' }}
+          status:        completed
+          releaseName:   "v${{ steps.version.outputs.name }} (build ${{ steps.version.outputs.code }})"
+
+      - name: Limpiar keystore temporal
+        if: always()
+        run: rm -f ${{ runner.temp }}/cafeies-release.keystore
