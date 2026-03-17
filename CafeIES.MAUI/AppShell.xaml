@@ -30,9 +30,6 @@
         <Tab Title="Invitac." Icon="icon_profile.png" Route="AdminInvitacionesTab">
             <ShellContent ContentTemplate="{DataTemplate views:AdminInvitacionesPage}"/>
         </Tab>
-        <Tab Title="Perfil" Icon="icon_profile.png" Route="AdminPerfil">
-            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
-        </Tab>
     </TabBar>
 
     <!-- App principal con Tab Bar -->
