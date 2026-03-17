@@ -32,27 +32,31 @@
                        Text="{Binding TextoBusqueda}"/>
             </Border>
             <!-- Chips Rol -->
-            <HorizontalStackLayout Spacing="8">
-                <Button Text="Todos" Command="{Binding SetFiltroRolCommand}" CommandParameter="Todos"
-                        Style="{Binding FiltroRolTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="🎓 Alumno" Command="{Binding SetFiltroRolCommand}" CommandParameter="Alumno"
-                        Style="{Binding FiltroRolAlumnoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="👨‍🏫 Profesor" Command="{Binding SetFiltroRolCommand}" CommandParameter="Profesor"
-                        Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="🏢 Personal" Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
-                        Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-            </HorizontalStackLayout>
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="Todos" Command="{Binding SetFiltroRolCommand}" CommandParameter="Todos"
+                            Style="{Binding FiltroRolTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="🎓 Alumno" Command="{Binding SetFiltroRolCommand}" CommandParameter="Alumno"
+                            Style="{Binding FiltroRolAlumnoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="👨‍🏫 Profesor" Command="{Binding SetFiltroRolCommand}" CommandParameter="Profesor"
+                            Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="🏢 Personal" Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
+                            Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                </HorizontalStackLayout>
+            </ScrollView>
             <!-- Chips Estado -->
-            <HorizontalStackLayout Spacing="8">
-                <Button Text="Todos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Todos"
-                        Style="{Binding FiltroEstadoTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="✅ Activos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
-                        Style="{Binding FiltroEstadoActivoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="⏳ Pendientes" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
-                        Style="{Binding FiltroEstadoPendienteActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
-                        Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-            </HorizontalStackLayout>
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="Todos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Todos"
+                            Style="{Binding FiltroEstadoTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="✅ Activos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
+                            Style="{Binding FiltroEstadoActivoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="⏳ Pendientes" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
+                            Style="{Binding FiltroEstadoPendienteActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
+                            Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                </HorizontalStackLayout>
+            </ScrollView>
         </VerticalStackLayout>
 
         <RefreshView Grid.Row="2"

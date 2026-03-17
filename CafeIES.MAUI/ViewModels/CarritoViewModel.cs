@@ -147,7 +147,7 @@ public partial class CarritoViewModel : ObservableObject
         EstadoPago = "Confirmando con el banco...";
 
         // 3. Confirmar pago (server-side, usa secret key)
-        var pagado = await _api.ConfirmarPagoAsync(
+        var (pagado, errorStripe) = await _api.ConfirmarPagoAsync(
             intent.PaymentIntentId,
             CardNumber.Replace(" ", ""), CardExpMonth, CardExpYear, CardCvc);
 
@@ -156,7 +156,9 @@ public partial class CarritoViewModel : ObservableObject
             IsLoading = false;
             EstadoPago = string.Empty;
             HayErrorPago = true;
-            ErrorPago = "El pago fue rechazado. Comprueba los datos de tu tarjeta.";
+            ErrorPago = string.IsNullOrEmpty(errorStripe)
+                ? "El pago fue rechazado. Comprueba los datos de tu tarjeta."
+                : errorStripe;
             return;
         }
 
