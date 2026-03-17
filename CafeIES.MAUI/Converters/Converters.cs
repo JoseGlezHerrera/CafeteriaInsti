@@ -413,3 +413,19 @@ public class AlergenosVisibleConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>Convierte el enum Turno a texto con emoji: 🌅 Mañana, 🌤️ Tarde, 🌙 Noche</summary>
+public class TurnoDisplayConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value switch
+        {
+            Turno.Manana => "🌅 Mañana",
+            Turno.Tarde  => "🌤️ Tarde",
+            Turno.Noche  => "🌙 Noche",
+            _            => value?.ToString() ?? string.Empty
+        };
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

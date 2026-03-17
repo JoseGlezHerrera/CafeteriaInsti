@@ -61,11 +61,11 @@
                                     <!-- Cabecera: descripcion + badge turno + switch activa -->
                                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                         <!-- Badge turno -->
-                                        <Border Grid.Column="0" Padding="8,4"
+                                        <Border Grid.Column="0" Padding="10,5"
                                                 BackgroundColor="#1af5a623" StrokeThickness="0">
-                                            <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                            <Label Text="{Binding Turno}"
-                                                   FontFamily="SyneBold" FontSize="10"
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="10"/></Border.StrokeShape>
+                                            <Label Text="{Binding Turno, Converter={StaticResource TurnoDisplayConverter}}"
+                                                   FontFamily="SyneBold" FontSize="12"
                                                    TextColor="{StaticResource AccentColor}"/>
                                         </Border>
                                         <!-- Descripción -->

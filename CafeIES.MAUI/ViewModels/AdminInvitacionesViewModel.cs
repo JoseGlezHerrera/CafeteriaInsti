@@ -90,9 +90,9 @@ public partial class AdminInvitacionesViewModel : ObservableObject
     {
         try
         {
-            await Clipboard.Default.SetTextAsync(inv.UrlInvitacion);
-            await Shell.Current.DisplayAlert("URL copiada",
-                "La URL de invitación ha sido copiada al portapapeles.", "OK");
+            await Clipboard.Default.SetTextAsync(inv.Token);
+            await Shell.Current.DisplayAlert("Token copiado",
+                $"Token copiado:\n{inv.Token}\n\nEl nuevo usuario debe introducirlo en el campo 'Código de invitación' al registrarse.", "OK");
         }
         catch
         {
