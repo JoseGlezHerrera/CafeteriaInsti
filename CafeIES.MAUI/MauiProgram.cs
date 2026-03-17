@@ -94,6 +94,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ProductoDetallePage>();
         builder.Services.AddTransient<AdminHorariosPage>();
         builder.Services.AddTransient<AdminInvitacionesPage>();
+        builder.Services.AddTransient<AdminPerfilPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

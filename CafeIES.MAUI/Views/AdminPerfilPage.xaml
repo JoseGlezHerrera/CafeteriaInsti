@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
-             x:Class="CafeIES.MAUI.Views.PerfilPage"
+             x:Class="CafeIES.MAUI.Views.AdminPerfilPage"
              x:DataType="vm:PerfilViewModel"
              BackgroundColor="{StaticResource BgColor}">
 
@@ -16,7 +16,37 @@
 
             <!-- Header -->
             <Label Text="Perfil" FontFamily="SyneBold" FontSize="22"
-                   TextColor="{StaticResource TextColor}" Margin="0,16,0,28"/>
+                   TextColor="{StaticResource TextColor}" Margin="0,16,0,20"/>
+
+            <!-- Acceso rápido: Horarios e Invitaciones -->
+            <Label Text="ADMINISTRACIÓN" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,10"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,28">
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="14,16">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrHorariosCommand}"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                        <Label Text="⏰" FontSize="26" HorizontalOptions="Center"/>
+                        <Label Text="Horarios" FontFamily="SyneBold" FontSize="13"
+                               TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                        <Label Text="Franjas horarias" FontFamily="DMSans" FontSize="11"
+                               TextColor="{StaticResource MutedColor}" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Padding="14,16">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrInvitacionesCommand}"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                        <Label Text="✉️" FontSize="26" HorizontalOptions="Center"/>
+                        <Label Text="Invitaciones" FontFamily="SyneBold" FontSize="13"
+                               TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                        <Label Text="Profesores y personal" FontFamily="DMSans" FontSize="11"
+                               TextColor="{StaticResource MutedColor}" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
 
             <!-- Avatar + nombre -->
             <VerticalStackLayout HorizontalOptions="Center" Spacing="10" Margin="0,0,0,32">
@@ -31,7 +61,6 @@
                 <Label Text="{Binding Email}" Style="{StaticResource SubtitleLabel}"
                        HorizontalOptions="Center"/>
 
-                <!-- Rol + turno pills -->
                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" Margin="0,4,0,0">
                     <Border Padding="10,5" BackgroundColor="#1af5a623"
                             StrokeThickness="1" Stroke="#40f5a623">
@@ -39,61 +68,10 @@
                         <Label Text="{Binding RolTexto}" FontFamily="SyneBold" FontSize="12"
                                TextColor="{StaticResource AccentColor}"/>
                     </Border>
-                    <Border Padding="10,5" BackgroundColor="{StaticResource Surface2Color}"
-                            StrokeThickness="1" Stroke="{StaticResource BorderColor}"
-                            IsVisible="{Binding TieneTurno}">
-                        <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
-                        <Label Text="{Binding TurnoTexto}" FontFamily="SyneBold" FontSize="12"
-                               TextColor="{StaticResource MutedColor}"/>
-                    </Border>
                 </HorizontalStackLayout>
             </VerticalStackLayout>
 
-            <!-- Info estado horario -->
-            <Border BackgroundColor="{StaticResource Surface2Color}"
-                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
-                    Padding="18,16" Margin="0,0,0,16">
-                <Border.StrokeShape><RoundRectangle CornerRadius="18"/></Border.StrokeShape>
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                    <Label Grid.Column="0" Text="⏰" FontSize="22" VerticalOptions="Center"/>
-                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                        <Label Text="Horario de pedidos" FontFamily="SyneBold" FontSize="14"
-                               TextColor="{StaticResource TextColor}"/>
-                        <Label Text="{Binding ResumenHorario}" Style="{StaticResource CaptionLabel}"
-                               LineBreakMode="WordWrap"/>
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
-
-            <!-- Estadísticas -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,16">
-                <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}" Padding="16">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="{Binding TotalPedidos}" FontFamily="SyneBold" FontSize="28"
-                               TextColor="{StaticResource AccentColor}"/>
-                        <Label Text="Pedidos totales" Style="{StaticResource CaptionLabel}"/>
-                    </VerticalStackLayout>
-                </Border>
-                <Border Grid.Column="1" BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}" Padding="16">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
-                    <VerticalStackLayout Spacing="4">
-                        <Label FontFamily="SyneBold" FontSize="28" TextColor="{StaticResource AccentColor}">
-                            <Label.FormattedText>
-                                <FormattedString>
-                                    <Span Text="{Binding TotalGastado, StringFormat='{0:F0}'}"/>
-                                    <Span Text="€"/>
-                                </FormattedString>
-                            </Label.FormattedText>
-                        </Label>
-                        <Label Text="Total gastado" Style="{StaticResource CaptionLabel}"/>
-                    </VerticalStackLayout>
-                </Border>
-            </Grid>
-
-            <!-- Cambiar contraseña (#6) -->
+            <!-- Cambiar contraseña -->
             <Button Text="🔑 Cambiar contraseña" Margin="0,8,0,0"
                     Style="{StaticResource SecondaryButton}"
                     Command="{Binding ToggleCambioPasswordCommand}"/>
