@@ -19,17 +19,27 @@ public partial class RegistroInvitacionViewModel : ObservableObject
         _push = push;
     }
 
-    [ObservableProperty] private string _tokenInvitacion = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TokenVerificado))]
+    private string _tokenInvitacion = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RolTexto))]
+    [NotifyPropertyChangedFor(nameof(TokenVerificado))]
     private string _tipoInvitacion = string.Empty;
+
+    // Código que el usuario escribe manualmente (si llega sin token via query param)
+    [ObservableProperty] private string _codigoManual = string.Empty;
+
     [ObservableProperty] private string _nombre   = string.Empty;
     [ObservableProperty] private string _email    = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private bool   _isLoading;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hayError;
+
+    // true cuando tenemos token + tipo validados → muestra el formulario de registro
+    public bool TokenVerificado => !string.IsNullOrEmpty(TokenInvitacion) && !string.IsNullOrEmpty(TipoInvitacion);
 
     public string RolTexto => TipoInvitacion == "Profesor"
         ? "👨‍🏫 Profesor"
@@ -48,6 +58,35 @@ public partial class RegistroInvitacionViewModel : ObservableObject
         Institutos.Clear();
         foreach (var i in lista) Institutos.Add(i);
         if (Institutos.Count == 1) InstitutoSeleccionado = Institutos[0];
+    }
+
+    [RelayCommand]
+    private async Task VerificarCodigoAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CodigoManual))
+        {
+            HayError     = true;
+            ErrorMessage = "Introduce el código de invitación.";
+            return;
+        }
+
+        IsLoading = true;
+        HayError  = false;
+
+        var (valida, tipo, token) = await _api.ValidarInvitacionAsync(CodigoManual.Trim());
+
+        IsLoading = false;
+
+        if (!valida)
+        {
+            HayError     = true;
+            ErrorMessage = "El código no es válido o ha expirado. Solicita uno nuevo al administrador.";
+            return;
+        }
+
+        TokenInvitacion = token;
+        TipoInvitacion  = tipo;
+        await CargarInstitutosAsync();
     }
 
     [RelayCommand]

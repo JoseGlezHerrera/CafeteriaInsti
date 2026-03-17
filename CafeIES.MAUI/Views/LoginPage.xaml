@@ -82,13 +82,22 @@
                     <BoxView Grid.Column="2" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center"/>
                 </Grid>
 
-                <!-- Botón registro -->
+                <!-- Botón registro alumno -->
                 <Button Text="Crear cuenta →" Style="{StaticResource SecondaryButton}"
                         Command="{Binding IrARegistroCommand}"/>
 
+                <!-- Botón invitación (profesor / personal) -->
+                <Button Text="🔗 Tengo un código de invitación"
+                        BackgroundColor="Transparent"
+                        TextColor="{StaticResource MutedColor}"
+                        FontFamily="DMSans" FontSize="13"
+                        HeightRequest="44"
+                        Command="{Binding IrARegistroInvitacionCommand}"
+                        Margin="0,8,0,0"/>
+
                 <Label Text="¿Problemas? Contacta con secretaría"
                        TextColor="{StaticResource MutedColor}" FontSize="12"
-                       HorizontalOptions="Center" Margin="0,20,0,0"/>
+                       HorizontalOptions="Center" Margin="0,12,0,0"/>
             </VerticalStackLayout>
 
         </Grid>

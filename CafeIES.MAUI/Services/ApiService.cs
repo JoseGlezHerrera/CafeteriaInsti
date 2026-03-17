@@ -802,6 +802,25 @@ public class ApiService
         }
     }
 
+    public async Task<(bool Valida, string Tipo, string Token)> ValidarInvitacionAsync(string token)
+    {
+        try
+        {
+            var resp = await _http.GetAsync($"api/invitaciones/validar/{token}");
+            if (!resp.IsSuccessStatusCode) return (false, string.Empty, string.Empty);
+            var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var valida = json.GetProperty("valida").GetBoolean();
+            var tipo   = json.GetProperty("tipo").GetString() ?? string.Empty;
+            var tok    = json.GetProperty("token").GetString() ?? string.Empty;
+            return (valida, tipo, tok);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al validar token de invitación.");
+            return (false, string.Empty, string.Empty);
+        }
+    }
+
     // ── Notificaciones push ───────────────────────────────────────────────────
     public async Task RegistrarTokenPushAsync(string token, string plataforma)
     {
