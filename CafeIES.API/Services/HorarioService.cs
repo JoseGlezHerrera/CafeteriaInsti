@@ -48,7 +48,8 @@ public class HorarioService
         if (franjaBloquedaActiva is not null)
         {
             return HorarioResult.Denegado(
-                $"No puedes pedir durante tu horario de clase. Disponible a partir de las {franjaBloquedaActiva.HoraFin}.",
+                $"Ahora estás en clase ({franjaBloquedaActiva.HoraInicio}–{franjaBloquedaActiva.HoraFin}). " +
+                $"Puedes pedir fuera de ese horario.",
                 franjaBloquedaActiva);
         }
 

@@ -55,6 +55,7 @@
             <conv:StockToOpacityConverter x:Key="StockToOpacityConverter"/>
             <conv:InvitacionEstadoConverter x:Key="InvitacionEstadoConverter"/>
             <conv:TurnoDisplayConverter x:Key="TurnoDisplayConverter"/>
+            <conv:BoolToChipStyleConverter x:Key="BoolToChipStyleConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

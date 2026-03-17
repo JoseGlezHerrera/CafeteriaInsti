@@ -35,6 +35,28 @@ public partial class AdminHorariosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task RestaurarDefaultsAsync()
+    {
+        var confirmar = await Shell.Current.DisplayAlert(
+            "Restaurar predeterminadas",
+            "Se crearán las 3 franjas de bloqueo por defecto (Mañana 08:00–14:00, Tarde 14:30–20:30, Noche 21:00–03:00). ¿Continuar?",
+            "Sí, restaurar", "Cancelar");
+        if (!confirmar) return;
+
+        IsLoading = true;
+        var defaults = new[]
+        {
+            new UpsertFranjaRequest(Turno.Manana, "Horario de clase", "08:00", "14:00", true),
+            new UpsertFranjaRequest(Turno.Tarde,  "Horario de clase", "14:30", "20:30", true),
+            new UpsertFranjaRequest(Turno.Noche,  "Horario de clase", "21:00", "03:00", true),
+        };
+        foreach (var req in defaults)
+            await _api.CrearFranjaAsync(req);
+
+        await CargarAsync();
+    }
+
+    [RelayCommand]
     private async Task NuevaFranjaAsync()
     {
         // Pedir descripción
