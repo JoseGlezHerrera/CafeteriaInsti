@@ -48,6 +48,8 @@
             <conv:ActivoBgConverter x:Key="ActivoBgConverter"/>
             <conv:ActivoTextColorConverter x:Key="ActivoTextColorConverter"/>
             <conv:RolNoEsAdminConverter x:Key="RolNoEsAdminConverter"/>
+            <conv:AlergenosToEmojiConverter x:Key="AlergenosToEmojiConverter"/>
+            <conv:AlergenosVisibleConverter x:Key="AlergenosVisibleConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

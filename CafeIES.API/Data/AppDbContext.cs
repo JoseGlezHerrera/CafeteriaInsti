@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<Pedido>       Pedidos       => Set<Pedido>();
     public DbSet<LineaPedido>       LineasPedido      => Set<LineaPedido>();
     public DbSet<DispositivoToken>  DispositivoTokens => Set<DispositivoToken>();
+    public DbSet<Alergeno>          Alergenos         => Set<Alergeno>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -53,6 +54,14 @@ public class AppDbContext : DbContext
         {
             e.HasIndex(i => i.Token).IsUnique();
             e.Property(i => i.Tipo).HasConversion<int>();
+        });
+
+        // ── Alergeno ─────────────────────────────────────────────────────────
+        mb.Entity<Alergeno>(e =>
+        {
+            e.HasMany(a => a.Productos)
+             .WithMany(p => p.Alergenos)
+             .UsingEntity(j => j.ToTable("ProductoAlergeno"));
         });
 
         // ── Producto ─────────────────────────────────────────────────────────
@@ -121,17 +130,29 @@ public class AppDbContext : DbContext
             new Categoria { Id = 5, Nombre = "Café",        Emoji = "☕", Orden = 5 }
         );
 
-        // ── Seed: Franjas horarias por defecto ───────────────────────────────
+        // ── Seed: Franjas horarias bloqueadas (horarios de clase) ───────────
         mb.Entity<FranjaHoraria>().HasData(
-            // Mañana: antes de entrar + recreo
-            new FranjaHoraria { Id = 1, Turno = Turno.Manana, Descripcion = "Antes de entrar", HoraInicio = "07:30", HoraFin = "08:00" },
-            new FranjaHoraria { Id = 2, Turno = Turno.Manana, Descripcion = "Recreo",          HoraInicio = "11:00", HoraFin = "11:30" },
-            // Tarde
-            new FranjaHoraria { Id = 3, Turno = Turno.Tarde,  Descripcion = "Antes de entrar", HoraInicio = "13:45", HoraFin = "14:00" },
-            new FranjaHoraria { Id = 4, Turno = Turno.Tarde,  Descripcion = "Recreo",          HoraInicio = "17:00", HoraFin = "17:30" },
-            // Noche
-            new FranjaHoraria { Id = 5, Turno = Turno.Noche,  Descripcion = "Antes de entrar", HoraInicio = "20:45", HoraFin = "21:00" },
-            new FranjaHoraria { Id = 6, Turno = Turno.Noche,  Descripcion = "Recreo",          HoraInicio = "23:00", HoraFin = "23:20" }
+            new FranjaHoraria { Id = 1, Turno = Turno.Manana, Descripcion = "Horario de clase", HoraInicio = "08:00", HoraFin = "14:00", EsBloqueada = true },
+            new FranjaHoraria { Id = 2, Turno = Turno.Tarde,  Descripcion = "Horario de clase", HoraInicio = "14:30", HoraFin = "20:30", EsBloqueada = true },
+            new FranjaHoraria { Id = 3, Turno = Turno.Noche,  Descripcion = "Horario de clase", HoraInicio = "21:00", HoraFin = "03:00", EsBloqueada = true }
+        );
+
+        // ── Seed: 14 alérgenos UE (Reglamento 1169/2011) ─────────────────────
+        mb.Entity<Alergeno>().HasData(
+            new Alergeno { Id = 1,  Nombre = "Gluten",       Emoji = "🌾" },
+            new Alergeno { Id = 2,  Nombre = "Crustáceos",   Emoji = "🦐" },
+            new Alergeno { Id = 3,  Nombre = "Huevo",        Emoji = "🥚" },
+            new Alergeno { Id = 4,  Nombre = "Pescado",      Emoji = "🐟" },
+            new Alergeno { Id = 5,  Nombre = "Cacahuetes",   Emoji = "🥜" },
+            new Alergeno { Id = 6,  Nombre = "Soja",         Emoji = "🫘" },
+            new Alergeno { Id = 7,  Nombre = "Lácteos",      Emoji = "🥛" },
+            new Alergeno { Id = 8,  Nombre = "Frutos secos", Emoji = "🌰" },
+            new Alergeno { Id = 9,  Nombre = "Apio",         Emoji = "🌿" },
+            new Alergeno { Id = 10, Nombre = "Mostaza",      Emoji = "🌻" },
+            new Alergeno { Id = 11, Nombre = "Sésamo",       Emoji = "🌱" },
+            new Alergeno { Id = 12, Nombre = "Sulfitos",     Emoji = "🍷" },
+            new Alergeno { Id = 13, Nombre = "Altramuces",   Emoji = "🌼" },
+            new Alergeno { Id = 14, Nombre = "Moluscos",     Emoji = "🦑" }
         );
     }
 }

@@ -15,6 +15,14 @@ public static class DtoMapperExtensions
     public static FranjaHorariaDto ToDto(this FranjaHoraria f) => new(
         f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa);
 
+    public static AlergenoDto ToDto(this Alergeno a) => new(a.Id, a.Nombre, a.Emoji);
+
+    public static ProductoDto ToDto(this Producto p) => new(
+        p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
+        p.ImagenUrl, p.Activo, p.NivelStock,
+        p.CategoriaId, p.Categoria?.Nombre ?? string.Empty, p.Categoria?.Emoji ?? string.Empty,
+        p.Alergenos.Select(a => a.ToDto()).ToList());
+
     public static PedidoDto ToDto(this Pedido p) => new(
         p.Id, p.NumeroPedido,
         p.Usuario?.NombreCompleto ?? "Desconocido",

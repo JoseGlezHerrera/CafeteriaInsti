@@ -300,4 +300,14 @@ public class AdminController : ControllerBase
             .ToListAsync();
         return Ok(institutos);
     }
+
+    // ── GET /api/admin/alergenos ───────────────────────────────────────────────
+    [HttpGet("alergenos")]
+    public async Task<ActionResult<List<AlergenoDto>>> GetAlergenos()
+    {
+        var alergenos = await _db.Alergenos
+            .OrderBy(a => a.Id)
+            .ToListAsync();
+        return Ok(alergenos.Select(a => a.ToDto()).ToList());
+    }
 }

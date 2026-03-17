@@ -59,6 +59,8 @@ public record InstitutoDto(int Id, string Nombre, string CodigoCorto);
 
 public record CategoriaDto(int Id, string Nombre, string Emoji);
 
+public record AlergenoDto(int Id, string Nombre, string Emoji);
+
 public record ProductoDto(
     int      Id,
     string   Nombre,
@@ -70,7 +72,8 @@ public record ProductoDto(
     string   NivelStock,
     int      CategoriaId,
     string   CategoriaNombre,
-    string   CategoriaEmoji
+    string   CategoriaEmoji,
+    IReadOnlyList<AlergenoDto> Alergenos
 );
 
 public record CrearProductoRequest(
@@ -79,7 +82,8 @@ public record CrearProductoRequest(
     [Required]                 decimal Precio,
                                int     Stock,
     [Required]                 int     CategoriaId,
-                               string? ImagenUrl
+                               string? ImagenUrl,
+                               List<int>? AlergenoIds = null
 );
 
 public record ActualizarStockRequest([Required] int NuevoStock);
