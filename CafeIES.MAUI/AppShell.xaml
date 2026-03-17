@@ -25,7 +25,7 @@
             <ShellContent ContentTemplate="{DataTemplate views:AdminUsuariosPage}"/>
         </Tab>
         <Tab Title="Perfil" Icon="icon_profile.png" Route="AdminPerfil">
-            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
+            <ShellContent ContentTemplate="{DataTemplate views:AdminPerfilPage}"/>
         </Tab>
     </TabBar>
 
