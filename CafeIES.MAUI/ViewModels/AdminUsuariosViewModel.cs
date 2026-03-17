@@ -83,6 +83,8 @@ public partial class AdminUsuariosViewModel : ObservableObject
         {
             "Activa"     => query.Where(u => u.Estado == EstadoCuenta.Activa),
             "Suspendida" => query.Where(u => u.Estado == EstadoCuenta.Suspendida),
+            // Pendientes se muestran en la sección superior; aquí la lista queda vacía
+            "Pendiente"  => Enumerable.Empty<UsuarioDto>(),
             _            => query
         };
 

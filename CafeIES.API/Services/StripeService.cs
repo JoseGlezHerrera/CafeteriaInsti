@@ -54,29 +54,44 @@ public class StripeService
         string paymentIntentId,
         string cardNumber, string expMonth, string expYear, string cvc)
     {
-        // 1. Crear PaymentMethod con los datos de tarjeta
-        var pmOptions = new PaymentMethodCreateOptions
+        try
         {
-            Type = "card",
-            Card = new PaymentMethodCardOptions
+            if (!long.TryParse(expMonth, out var mes) || !long.TryParse(expYear, out var anio))
+                return (false, "Formato de fecha de caducidad incorrecto (MM / AA).");
+
+            // 1. Crear PaymentMethod con los datos de tarjeta
+            var pmOptions = new PaymentMethodCreateOptions
             {
-                Number   = cardNumber,
-                ExpMonth = long.Parse(expMonth),
-                ExpYear  = long.Parse(expYear),
-                Cvc      = cvc,
-            },
-        };
-        var pm     = await new PaymentMethodService().CreateAsync(pmOptions);
+                Type = "card",
+                Card = new PaymentMethodCardOptions
+                {
+                    Number   = cardNumber,
+                    ExpMonth = mes,
+                    ExpYear  = anio,
+                    Cvc      = cvc,
+                },
+            };
+            var pm = await new PaymentMethodService().CreateAsync(pmOptions);
 
-        // 2. Confirmar el PaymentIntent adjuntando el PaymentMethod
-        var piOptions = new PaymentIntentConfirmOptions
+            // 2. Confirmar el PaymentIntent adjuntando el PaymentMethod
+            var piOptions = new PaymentIntentConfirmOptions
+            {
+                PaymentMethod = pm.Id,
+            };
+            var intent = await new PaymentIntentService().ConfirmAsync(paymentIntentId, piOptions);
+
+            return (intent.Status == "succeeded",
+                    intent.LastPaymentError?.Message ?? string.Empty);
+        }
+        catch (StripeException ex)
         {
-            PaymentMethod = pm.Id,
-        };
-        var intent = await new PaymentIntentService().ConfirmAsync(paymentIntentId, piOptions);
-
-        return (intent.Status == "succeeded",
-                intent.LastPaymentError?.Message ?? string.Empty);
+            // Devolver el mensaje de Stripe (p.ej. "No such api_key", "card was declined"…)
+            return (false, ex.StripeError?.Message ?? ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Error interno: {ex.Message}");
+        }
     }
 
     /// <summary>

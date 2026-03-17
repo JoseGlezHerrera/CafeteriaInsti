@@ -242,7 +242,11 @@ public class ApiService
     /// Confirma el PaymentIntent delegando al servidor (secret key).
     /// Evita las restricciones de Stripe al llamar desde cliente con publishable key.
     /// </summary>
-    public async Task<bool> ConfirmarPagoAsync(
+    /// <summary>
+    /// Devuelve (true, null) si el pago tuvo éxito,
+    /// o (false, "mensaje de error de Stripe") si falló.
+    /// </summary>
+    public async Task<(bool Ok, string? Error)> ConfirmarPagoAsync(
         string paymentIntentId,
         string cardNumber, string expMonth, string expYear, string cvc)
     {
@@ -251,18 +255,25 @@ public class ApiService
             var req = new ConfirmarPagoRequest(paymentIntentId, cardNumber, expMonth, expYear, cvc);
             var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/pagos/confirmar",
                 JsonContent.Create(req));
-            if (!resp.IsSuccessStatusCode)
+
+            if (resp.IsSuccessStatusCode) return (true, null);
+
+            // Leer el mensaje de error que devuelve el servidor (viene de Stripe)
+            string? errorMsg = null;
+            try
             {
-                var body = await resp.Content.ReadAsStringAsync();
-                _logger.LogWarning("Pago rechazado por el servidor. Status: {Status} Body: {Body}",
-                    resp.StatusCode, body);
+                var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                errorMsg = body?.GetValueOrDefault("error");
             }
-            return resp.IsSuccessStatusCode;
+            catch { /* ignorar si el body no es JSON */ }
+
+            _logger.LogWarning("Pago rechazado. Status: {Status} Error: {Error}", resp.StatusCode, errorMsg);
+            return (false, errorMsg);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inesperado al confirmar el pago.");
-            return false;
+            return (false, null);
         }
     }
 
