@@ -79,22 +79,87 @@ public class PagosController : ControllerBase
     }
 
     /// <summary>
-    /// Confirma un PaymentIntent server-side con los datos de tarjeta.
-    /// Evita llamadas directas a Stripe desde el cliente (requeriría SDK nativo).
+    /// Página HTML con Stripe.js para recoger datos de tarjeta sin manipular
+    /// números de tarjeta en bruto. El JS lee pk y cs de los query params.
     /// </summary>
-    [HttpPost("confirmar")]
-    [Authorize]
-    public async Task<IActionResult> ConfirmarPago([FromBody] ConfirmarPagoRequest req)
-    {
-        var (succeeded, error) = await _stripe.ConfirmarPagoAsync(
-            req.PaymentIntentId,
-            req.CardNumber, req.ExpMonth, req.ExpYear, req.Cvc);
+    [HttpGet("stripe-form")]
+    [AllowAnonymous]
+    public ContentResult StripeForm()
+        => Content(StripeFormHtml, "text/html");
 
-        if (!succeeded)
-            return BadRequest(new { error });
+    private const string StripeFormHtml = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+          <title>Pago seguro</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { background: #1a1916; color: #f0ede6; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+            .wrap { padding: 28px 20px; max-width: 480px; margin: 0 auto; }
+            h2 { color: #f5a623; font-size: 18px; font-weight: 700; margin-bottom: 22px; }
+            .card-box { background: #252320; border: 1.5px solid #3a3835; border-radius: 14px; padding: 16px 14px; margin-bottom: 20px; }
+            #error { color: #e05252; font-size: 14px; margin-bottom: 14px; line-height: 1.4; min-height: 18px; }
+            #status { color: #f5a623; font-size: 14px; text-align: center; margin-bottom: 14px; min-height: 18px; }
+            #pay-btn { background: #f5a623; color: #1a1916; border: none; border-radius: 14px; padding: 16px 24px; width: 100%; font-size: 16px; font-weight: 700; cursor: pointer; }
+            #pay-btn:disabled { opacity: .55; cursor: default; }
+            .secure { color: #7a7468; font-size: 11px; text-align: center; margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <div class="wrap">
+            <h2>💳 Datos de tarjeta</h2>
+            <div class="card-box"><div id="card-element"></div></div>
+            <div id="error"></div>
+            <div id="status"></div>
+            <button id="pay-btn">Confirmar pago</button>
+            <p class="secure">🔒 Encriptado y procesado por Stripe.<br>CaféIES nunca accede a los datos de tu tarjeta.</p>
+          </div>
+          <script src="https://js.stripe.com/v3/"></script>
+          <script>
+            (function () {
+              var p = new URLSearchParams(location.search);
+              var pk = p.get('pk'), cs = p.get('cs');
+              if (!pk || !cs) { document.getElementById('error').textContent = 'Error de configuración.'; return; }
 
-        return Ok();
-    }
+              var stripe = Stripe(pk);
+              var card = stripe.elements().create('card', {
+                style: {
+                  base: { color: '#f0ede6', fontFamily: '-apple-system, sans-serif', fontSize: '16px', '::placeholder': { color: '#7a7468' } },
+                  invalid: { color: '#e05252' }
+                }
+              });
+              card.mount('#card-element');
+
+              var btn = document.getElementById('pay-btn');
+              var errDiv = document.getElementById('error');
+              var statusDiv = document.getElementById('status');
+
+              btn.addEventListener('click', async function () {
+                btn.disabled = true;
+                errDiv.textContent = '';
+                statusDiv.textContent = 'Procesando…';
+
+                var result = await stripe.confirmCardPayment(cs, { payment_method: { card: card } });
+
+                if (result.error) {
+                  errDiv.textContent = result.error.message;
+                  statusDiv.textContent = '';
+                  btn.disabled = false;
+                } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                  statusDiv.textContent = '✓ Pago confirmado';
+                  btn.disabled = true;
+                  setTimeout(function () {
+                    window.location.href = 'cafeies://success/' + result.paymentIntent.id;
+                  }, 700);
+                }
+              });
+            })();
+          </script>
+        </body>
+        </html>
+        """;
 
     /// <summary>
     /// Webhook de Stripe — recibe notificaciones de pago completado/fallido.
