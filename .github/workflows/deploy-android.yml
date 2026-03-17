@@ -84,13 +84,15 @@ jobs:
 
       - name: Localizar APK generado
         run: |
-          APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | grep -v 'Signed' | head -1)
+          # Buscar el APK firmado (debug-signed) — Android rechaza APKs sin firma
+          APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*-Signed.apk' | head -1)
           if [ -z "$APK" ]; then
+            # Fallback: cualquier APK disponible
             APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | head -1)
           fi
           if [ -z "$APK" ]; then echo "ERROR: APK no encontrado" && exit 1; fi
-          echo "APK: $APK  ($(du -sh "$APK" | cut -f1))"
-          # Renombrar con version para el release
+          echo "APK encontrado: $APK  ($(du -sh "$APK" | cut -f1))"
+          find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | sort
           DEST="cafeies-${{ steps.version.outputs.name }}.apk"
           cp "$APK" "$DEST"
           echo "apk_path=$DEST" >> $GITHUB_ENV
