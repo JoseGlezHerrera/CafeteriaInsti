@@ -19,6 +19,9 @@ public partial class AdminHorariosViewModel : ObservableObject
     public ObservableCollection<FranjaHorariaDto> Franjas { get; } = new();
 
     [RelayCommand]
+    private async Task VolverAsync() => await Shell.Current.GoToAsync("..");
+
+    [RelayCommand]
     public async Task CargarAsync()
     {
         IsLoading = true;
