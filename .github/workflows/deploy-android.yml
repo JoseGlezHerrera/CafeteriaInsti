@@ -1,15 +1,11 @@
-name: Deploy Android → Google Play
+name: Deploy Android → GitHub Releases
 
-# Secrets necesarios en GitHub → Settings → Secrets and variables → Actions:
-#   ANDROID_KEYSTORE_BASE64       — keystore codificado en base64
-#                                   (genera con: infra/configurar-play-store-secrets.ps1)
-#   ANDROID_KEYSTORE_PASSWORD     — contraseña del keystore
-#   ANDROID_KEY_PASSWORD          — contraseña de la clave (normalmente igual)
-#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON — JSON del service account de Google Play API
-#                                   (ver infra/configurar-play-store-secrets.ps1 para instrucciones)
+# Distribuye la app como APK de debug adjunto a un GitHub Release.
+# No requiere cuenta Google Play Developer ni keystore de firma.
+# Los testers descargan el APK e instalan manualmente (fuentes desconocidas).
 #
-# IMPORTANTE: la primera versión debe subirse MANUALMENTE a Play Console.
-#             A partir de la segunda, este pipeline la sube automáticamente.
+# Cuando se disponga de cuenta Google Play Developer, usar el workflow
+# deploy-android-play.yml (renombrar este o crear uno nuevo con firma release).
 
 on:
   push:
@@ -20,31 +16,23 @@ on:
       - '.github/workflows/deploy-android.yml'
   workflow_dispatch:
     inputs:
-      track:
-        description: 'Play Store track donde subir el AAB'
-        required: true
-        default: 'internal'
-        type: choice
-        options:
-          - internal
-          - alpha
-          - beta
-          - production
       version_name:
         description: 'Nombre de versión visible (ej: 1.1.0)'
         required: false
         default: ''
 
 env:
-  DOTNET_VERSION:     '9.x'
-  PROJECT_PATH:       'CafeIES.MAUI/CafeIES.MAUI.csproj'
-  PACKAGE_NAME:       'es.cafeies.app'
-  DOTNET_NOLOGO:      'true'
+  DOTNET_VERSION:              '9.x'
+  PROJECT_PATH:                'CafeIES.MAUI/CafeIES.MAUI.csproj'
+  DOTNET_NOLOGO:               'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
 
 jobs:
-  build-and-deploy:
+  build-and-release:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # necesario para crear GitHub Releases
 
     steps:
       - name: Checkout
@@ -55,10 +43,8 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # Forzar SDK 9.x antes de instalar el workload: el runner tiene
-      # .NET 10 preinstalado que toma precedencia sobre el .NET 9
-      # instalado por actions/setup-dotnet. El workload debe instalarse
-      # en el mismo SDK que se usará para restore y publish.
+      # El runner tiene .NET 10 preinstalado. Forzar SDK 9.x antes de
+      # instalar el workload para que ambos usen la misma versión.
       - name: Fijar SDK 9.x (global.json)
         run: |
           echo '{"sdk":{"version":"9.0.0","rollForward":"latestFeature"}}' > global.json
@@ -72,76 +58,56 @@ jobs:
           dotnet restore ${{ env.PROJECT_PATH }} -p:TargetFramework=net9.0-android
           dotnet restore CafeIES.Shared/CafeIES.Shared.csproj
 
-      # Decodifica el keystore almacenado en base64 en el secret
-      - name: Decodificar keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ runner.temp }}/cafeies-release.keystore
-
-      # El versionCode debe ser único y creciente en cada subida a Play Store.
-      # Usamos github.run_number + offset (1000) para evitar colisiones con
-      # el versionCode=1 de la primera versión subida manualmente.
       - name: Calcular versionCode y versionName
         id: version
         run: |
           VERSION_CODE=$(( 1000 + ${{ github.run_number }} ))
           VERSION_NAME="${{ inputs.version_name }}"
           if [ -z "$VERSION_NAME" ]; then
-            # Formato automático: año.mes.run (ej: 2026.03.42)
             VERSION_NAME="$(date +'%Y.%m').${{ github.run_number }}"
           fi
-          echo "code=$VERSION_CODE"    >> $GITHUB_OUTPUT
-          echo "name=$VERSION_NAME"    >> $GITHUB_OUTPUT
+          echo "code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VersionCode: $VERSION_CODE  VersionName: $VERSION_NAME"
 
-      - name: Verificar secrets de firma
-        env:
-          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          SP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: |
-          if [ -z "$KP" ]; then echo "ERROR: ANDROID_KEY_PASSWORD no configurado o vacio" && exit 1; fi
-          if [ -z "$SP" ]; then echo "ERROR: ANDROID_KEYSTORE_PASSWORD no configurado o vacio" && exit 1; fi
-          echo "Secrets de firma OK (${#KP} chars / ${#SP} chars)"
-          keytool -list \
-            -keystore ${{ runner.temp }}/cafeies-release.keystore \
-            -storepass "$SP" \
-            -alias cafeies 2>&1 || (echo "ERROR: contrasena del keystore incorrecta" && exit 1)
-
-      - name: Build & Sign AAB
-        env:
-          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      - name: Build APK (debug)
         run: |
           dotnet publish ${{ env.PROJECT_PATH }} \
             -f net9.0-android \
             -p:TargetFrameworks=net9.0-android \
             --no-restore \
-            -c Release \
-            -p:AndroidPackageFormat=aab \
-            -p:AndroidKeyStore=true \
-            -p:AndroidSigningKeyStore=${{ runner.temp }}/cafeies-release.keystore \
-            -p:AndroidSigningKeyAlias=cafeies \
-            -p:AndroidSigningKeyPass="$KEY_PASS" \
-            -p:AndroidSigningStorePass="$STORE_PASS" \
+            -c Debug \
+            -p:AndroidPackageFormat=apk \
             -p:ApplicationVersion=${{ steps.version.outputs.code }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.name }}
 
-      - name: Verificar AAB generado
+      - name: Localizar APK generado
         run: |
-          AAB=$(find CafeIES.MAUI/bin/Release/net9.0-android/publish -name '*-Signed.aab' | head -1)
-          if [ -z "$AAB" ]; then echo "ERROR: AAB no encontrado" && exit 1; fi
-          echo "AAB: $AAB  ($(du -sh "$AAB" | cut -f1))"
-          echo "aab_path=$AAB" >> $GITHUB_ENV
+          APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | grep -v 'Signed' | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | head -1)
+          fi
+          if [ -z "$APK" ]; then echo "ERROR: APK no encontrado" && exit 1; fi
+          echo "APK: $APK  ($(du -sh "$APK" | cut -f1))"
+          # Renombrar con version para el release
+          DEST="cafeies-${{ steps.version.outputs.name }}.apk"
+          cp "$APK" "$DEST"
+          echo "apk_path=$DEST" >> $GITHUB_ENV
 
-      - name: Subir a Google Play (${{ inputs.track || 'internal' }})
-        uses: r0adkll/upload-google-play@v1
+      - name: Crear GitHub Release y subir APK
+        uses: softprops/action-gh-release@v2
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName:   ${{ env.PACKAGE_NAME }}
-          releaseFiles:  ${{ env.aab_path }}
-          track:         ${{ inputs.track || 'internal' }}
-          status:        completed
-          releaseName:   "v${{ steps.version.outputs.name }} (build ${{ steps.version.outputs.code }})"
+          tag_name: v${{ steps.version.outputs.name }}
+          name: CaféIES v${{ steps.version.outputs.name }}
+          body: |
+            ## CaféIES v${{ steps.version.outputs.name }} (build ${{ steps.version.outputs.code }})
 
-      - name: Limpiar keystore temporal
-        if: always()
-        run: rm -f ${{ runner.temp }}/cafeies-release.keystore
+            ### Instalación
+            1. Descarga `cafeies-${{ steps.version.outputs.name }}.apk`
+            2. En el móvil: **Ajustes → Seguridad → Instalar apps desconocidas** → activar para el navegador/gestor de archivos
+            3. Abre el APK descargado e instala
+
+            > ⚠️ Build de prueba interna — no apto para producción.
+          files: ${{ env.apk_path }}
+          draft: false
+          prerelease: true
