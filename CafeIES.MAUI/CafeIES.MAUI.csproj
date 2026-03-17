@@ -46,27 +46,33 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
 	</ItemGroup>
 
-	<!-- Push notifications: Firebase Cloud Messaging (Android + iOS vía APNS) -->
+	<!-- Push notifications: deshabilitado hasta configurar Firebase
+	     Para activar: crear proyecto en Firebase Console, reemplazar google-services.json y
+	     descomentar la siguiente sección.
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android')) OR $(TargetFramework.StartsWith('net9.0-ios'))">
 		<PackageReference Include="Plugin.Firebase.CloudMessaging" Version="3.0.2" />
 	</ItemGroup>
+	-->
 
 	<ItemGroup>
 		<ProjectReference Include="..\CafeIES.Shared\CafeIES.Shared.csproj" />
 	</ItemGroup>
 
-	<!-- Firebase configuration files — replace placeholders with real files from Firebase Console -->
+	<!-- Firebase configuration files — descomentar cuando google-services.json sea real
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android'))">
 		<GoogleServicesJson Include="Platforms\Android\google-services.json" />
 	</ItemGroup>
+	-->
 
 	<!-- ProGuard / R8 para Release Android -->
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-android'))">
 		<ProguardConfiguration Include="Platforms\Android\proguard.cfg" />
 	</ItemGroup>
+	<!-- iOS Firebase config — descomentar cuando GoogleService-Info.plist sea real
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net9.0-ios'))">
 		<BundleResource Include="Platforms\iOS\GoogleService-Info.plist" />
 	</ItemGroup>
+	-->
 
 	<!-- Fonts: explicit declaration ensures they are bundled on all targets -->
 	<ItemGroup>

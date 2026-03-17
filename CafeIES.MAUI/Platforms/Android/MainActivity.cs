@@ -2,7 +2,6 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
-using Plugin.Firebase.CloudMessaging;
 
 namespace CafeIES.MAUI;
 
@@ -15,13 +14,11 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
-        // Pasa los extras del Intent (deep link desde notificación tap) a Firebase plugin
-        FirebaseCloudMessagingImplementation.OnNewIntent(Intent);
+        // Firebase/FCM pendiente de configurar — ver Platforms/Android/google-services.json
     }
 
     protected override void OnNewIntent(Intent? intent)
     {
         base.OnNewIntent(intent);
-        FirebaseCloudMessagingImplementation.OnNewIntent(intent);
     }
 }

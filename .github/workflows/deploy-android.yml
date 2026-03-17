@@ -70,29 +70,31 @@ jobs:
           echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VersionCode: $VERSION_CODE  VersionName: $VERSION_NAME"
 
-      - name: Build APK (debug)
+      - name: Build APK (release, sin keystore — firmado con debug key)
         run: |
           dotnet publish ${{ env.PROJECT_PATH }} \
             -f net9.0-android \
             -p:TargetFrameworks=net9.0-android \
             --no-restore \
-            -c Debug \
+            -c Release \
             -p:AndroidPackageFormat=apk \
             "-p:AndroidSupportedAbis=armeabi-v7a%3Barm64-v8a" \
+            -p:AndroidKeyStore=false \
+            -p:MauiLinkMode=None \
             -p:ApplicationVersion=${{ steps.version.outputs.code }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.name }}
 
       - name: Localizar APK generado
         run: |
-          # Buscar el APK firmado (debug-signed) — Android rechaza APKs sin firma
-          APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*-Signed.apk' | head -1)
+          # Buscar el APK firmado (Signed) en Release — Android rechaza APKs sin firma
+          APK=$(find CafeIES.MAUI/bin/Release/net9.0-android -name '*-Signed.apk' | head -1)
           if [ -z "$APK" ]; then
             # Fallback: cualquier APK disponible
-            APK=$(find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | head -1)
+            APK=$(find CafeIES.MAUI/bin/Release/net9.0-android -name '*.apk' | head -1)
           fi
           if [ -z "$APK" ]; then echo "ERROR: APK no encontrado" && exit 1; fi
           echo "APK encontrado: $APK  ($(du -sh "$APK" | cut -f1))"
-          find CafeIES.MAUI/bin/Debug/net9.0-android -name '*.apk' | sort
+          find CafeIES.MAUI/bin/Release/net9.0-android -name '*.apk' | sort
           DEST="cafeies-${{ steps.version.outputs.name }}.apk"
           cp "$APK" "$DEST"
           echo "apk_path=$DEST" >> $GITHUB_ENV
