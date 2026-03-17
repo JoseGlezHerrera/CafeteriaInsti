@@ -47,6 +47,39 @@ public class StripeService
     }
 
     /// <summary>
+    /// Crea un PaymentMethod y confirma el PaymentIntent server-side usando la secret key.
+    /// Más fiable que la confirmación client-side, que requiere SDK nativo de Stripe.
+    /// </summary>
+    public async Task<(bool Succeeded, string Error)> ConfirmarPagoAsync(
+        string paymentIntentId,
+        string cardNumber, string expMonth, string expYear, string cvc)
+    {
+        // 1. Crear PaymentMethod con los datos de tarjeta
+        var pmOptions = new PaymentMethodCreateOptions
+        {
+            Type = "card",
+            Card = new PaymentMethodCardOptions
+            {
+                Number   = cardNumber,
+                ExpMonth = long.Parse(expMonth),
+                ExpYear  = long.Parse(expYear),
+                Cvc      = cvc,
+            },
+        };
+        var pm     = await new PaymentMethodService().CreateAsync(pmOptions);
+
+        // 2. Confirmar el PaymentIntent adjuntando el PaymentMethod
+        var piOptions = new PaymentIntentConfirmOptions
+        {
+            PaymentMethod = pm.Id,
+        };
+        var intent = await new PaymentIntentService().ConfirmAsync(paymentIntentId, piOptions);
+
+        return (intent.Status == "succeeded",
+                intent.LastPaymentError?.Message ?? string.Empty);
+    }
+
+    /// <summary>
     /// Construye un evento Stripe a partir del body y la firma del webhook.
     /// </summary>
     public Event? ConstruirEvento(string json, string signature, string webhookSecret)

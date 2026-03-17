@@ -79,6 +79,24 @@ public class PagosController : ControllerBase
     }
 
     /// <summary>
+    /// Confirma un PaymentIntent server-side con los datos de tarjeta.
+    /// Evita llamadas directas a Stripe desde el cliente (requeriría SDK nativo).
+    /// </summary>
+    [HttpPost("confirmar")]
+    [Authorize]
+    public async Task<IActionResult> ConfirmarPago([FromBody] ConfirmarPagoRequest req)
+    {
+        var (succeeded, error) = await _stripe.ConfirmarPagoAsync(
+            req.PaymentIntentId,
+            req.CardNumber, req.ExpMonth, req.ExpYear, req.Cvc);
+
+        if (!succeeded)
+            return BadRequest(new { error });
+
+        return Ok();
+    }
+
+    /// <summary>
     /// Webhook de Stripe — recibe notificaciones de pago completado/fallido.
     /// Endpoint público (Stripe no envía JWT).
     /// </summary>

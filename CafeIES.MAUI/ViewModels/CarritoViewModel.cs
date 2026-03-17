@@ -144,22 +144,11 @@ public partial class CarritoViewModel : ObservableObject
             return;
         }
 
-        // 2. Obtener publishable key
-        var config = await _api.GetStripeConfigAsync();
-        if (config is null || string.IsNullOrEmpty(config.PublishableKey))
-        {
-            IsLoading = false;
-            EstadoPago = string.Empty;
-            HayErrorPago = true;
-            ErrorPago = "Error de configuración de pago. Contacta con el administrador.";
-            return;
-        }
-
         EstadoPago = "Confirmando con el banco...";
 
-        // 3. Confirmar pago con Stripe
-        var pagado = await _api.ConfirmarPagoStripeAsync(
-            intent.ClientSecret, config.PublishableKey,
+        // 3. Confirmar pago (server-side, usa secret key)
+        var pagado = await _api.ConfirmarPagoAsync(
+            intent.PaymentIntentId,
             CardNumber.Replace(" ", ""), CardExpMonth, CardExpYear, CardCvc);
 
         if (!pagado)
