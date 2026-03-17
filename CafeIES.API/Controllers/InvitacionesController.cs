@@ -75,14 +75,14 @@ public class InvitacionesController : ControllerBase
         return File(qrBytes, "image/png", $"invitacion-{invitacion.Tipo}-{invitacion.Token[..8]}.png");
     }
 
-    // ── DELETE /api/invitaciones/{id}  → revocar ─────────────────────────────
+    // ── DELETE /api/invitaciones/{id}  → eliminar definitivamente ────────────
     [HttpDelete("{id}")]
     public async Task<ActionResult> Revocar(int id)
     {
         var invitacion = await _db.Invitaciones.FindAsync(id);
         if (invitacion is null) return NotFound();
 
-        invitacion.Activa = false;
+        _db.Invitaciones.Remove(invitacion);
         await _db.SaveChangesAsync();
         return NoContent();
     }

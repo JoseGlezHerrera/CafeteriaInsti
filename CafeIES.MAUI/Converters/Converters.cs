@@ -429,3 +429,19 @@ public class TurnoDisplayConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>true → ChipButtonActive style, false → ChipButton style</summary>
+public class BoolToChipStyleConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var active = value is bool b && b;
+        var key = active ? "ChipButtonActive" : "ChipButton";
+        if (Application.Current?.Resources.TryGetValue(key, out var style) == true)
+            return style;
+        return null;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

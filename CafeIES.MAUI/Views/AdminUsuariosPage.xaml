@@ -12,7 +12,7 @@
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
@@ -20,7 +20,42 @@
                    TextColor="{StaticResource TextColor}"/>
         </Grid>
 
-        <RefreshView Grid.Row="1"
+        <!-- Filtros -->
+        <VerticalStackLayout Grid.Row="1" BackgroundColor="{StaticResource SurfaceColor}"
+                             Padding="16,0,16,14" Spacing="10">
+            <!-- Búsqueda -->
+            <Border StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                <Entry Style="{StaticResource InputEntry}" HeightRequest="42"
+                       Placeholder="🔍  Buscar por nombre o email"
+                       Text="{Binding TextoBusqueda}"/>
+            </Border>
+            <!-- Chips Rol -->
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Todos" Command="{Binding SetFiltroRolCommand}" CommandParameter="Todos"
+                        Style="{Binding FiltroRolTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="🎓 Alumno" Command="{Binding SetFiltroRolCommand}" CommandParameter="Alumno"
+                        Style="{Binding FiltroRolAlumnoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="👨‍🏫 Profesor" Command="{Binding SetFiltroRolCommand}" CommandParameter="Profesor"
+                        Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="🏢 Personal" Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
+                        Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+            </HorizontalStackLayout>
+            <!-- Chips Estado -->
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Todos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Todos"
+                        Style="{Binding FiltroEstadoTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="✅ Activos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
+                        Style="{Binding FiltroEstadoActivoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="⏳ Pendientes" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
+                        Style="{Binding FiltroEstadoPendienteActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
+                        Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <RefreshView Grid.Row="2"
                      IsRefreshing="{Binding IsLoading}"
                      Command="{Binding CargarCommand}">
             <ScrollView>

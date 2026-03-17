@@ -57,3 +57,12 @@ jobs:
             --src-path publish/app.zip \
             --type zip \
             --async false
+
+      - name: Configure Azure App Settings (secrets)
+        run: |
+          az webapp config appsettings set \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              "Stripe__SecretKey=${{ secrets.STRIPE_SECRET_KEY }}" \
+              "Stripe__PublishableKey=${{ secrets.STRIPE_PUBLISHABLE_KEY }}"
