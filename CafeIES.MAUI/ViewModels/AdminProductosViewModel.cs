@@ -58,6 +58,13 @@ public partial class AdminProductosViewModel : ObservableObject
 
 // ── AdminEditProductoViewModel ────────────────────────────────────────────────
 
+/// <summary>Alérgeno con estado de selección para el formulario de producto.</summary>
+public partial class AlergenoSeleccionable : ObservableObject
+{
+    public AlergenoDto Alergeno { get; init; } = null!;
+    [ObservableProperty] private bool _seleccionado;
+}
+
 public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttributable
 {
     private readonly ApiService _api;
@@ -90,6 +97,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
     private CategoriaDto? _categoriaSeleccionada;
 
     public ObservableCollection<CategoriaDto> Categorias { get; } = new();
+    public ObservableCollection<AlergenoSeleccionable> Alergenos { get; } = new();
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
@@ -108,6 +116,8 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         Categorias.Clear();
         foreach (var c in cats) Categorias.Add(c);
 
+        var alergenos = await _api.GetAlergenosAsync();
+
         if (ProductoId > 0)
         {
             Titulo = "Editar producto";
@@ -122,6 +132,14 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                     ? _api.BuildImageUrl(prod.ImagenUrl)
                     : null;
                 CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
+
+                Alergenos.Clear();
+                foreach (var a in alergenos)
+                    Alergenos.Add(new AlergenoSeleccionable
+                    {
+                        Alergeno = a,
+                        Seleccionado = prod.Alergenos.Any(pa => pa.Id == a.Id)
+                    });
             }
         }
         else
@@ -133,6 +151,10 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
             Stock        = -1;
             ImagenUrl    = null;
             CategoriaSeleccionada = Categorias.FirstOrDefault();
+
+            Alergenos.Clear();
+            foreach (var a in alergenos)
+                Alergenos.Add(new AlergenoSeleccionable { Alergeno = a, Seleccionado = false });
         }
 
         IsLoading = false;
@@ -155,8 +177,13 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         IsSaving = true;
         Error    = string.Empty;
 
+        var alergenoIds = Alergenos
+            .Where(a => a.Seleccionado)
+            .Select(a => a.Alergeno.Id)
+            .ToList();
+
         var req = new CrearProductoRequest(
-            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null);
+            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds);
 
         bool ok = ProductoId > 0
             ? await _api.ActualizarProductoAsync(ProductoId, req)
