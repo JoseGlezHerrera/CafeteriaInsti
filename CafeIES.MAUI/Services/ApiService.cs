@@ -315,6 +315,23 @@ public class ApiService
         }
     }
 
+    // ── Alérgenos ─────────────────────────────────────────────────────────────
+    public async Task<List<AlergenoDto>> GetAlergenosAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/admin/alergenos");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<List<AlergenoDto>>() ?? new()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener la lista de alérgenos.");
+            return new();
+        }
+    }
+
     // ── Productos ─────────────────────────────────────────────────────────────
     public async Task<List<ProductoDto>> GetProductosAsync()
     {

@@ -158,6 +158,30 @@
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Alérgenos -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Alérgenos"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <CollectionView ItemsSource="{Binding Alergenos}"
+                                    SelectionMode="None">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" VerticalItemSpacing="4" HorizontalItemSpacing="8"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="{x:Type vm:AlergenoSeleccionable}">
+                                <HorizontalStackLayout Spacing="8" Padding="0,2">
+                                    <CheckBox IsChecked="{Binding Seleccionado}" Color="{StaticResource AccentColor}"/>
+                                    <Label Text="{Binding Alergeno, StringFormat='{0.Emoji} {0.Nombre}'}"
+                                           FontFamily="DMSans" FontSize="13"
+                                           TextColor="{StaticResource TextColor}"
+                                           VerticalOptions="Center"/>
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
                 <!-- Mensaje de error -->
                 <Border BackgroundColor="#1ae05252"
                         StrokeThickness="1" Stroke="#40e05252"
