@@ -19,6 +19,9 @@ public partial class AdminInvitacionesViewModel : ObservableObject
     public ObservableCollection<InvitacionDto> Invitaciones { get; } = new();
 
     [RelayCommand]
+    private async Task VolverAsync() => await Shell.Current.GoToAsync("..");
+
+    [RelayCommand]
     public async Task CargarAsync()
     {
         IsLoading = true;
