@@ -695,6 +695,113 @@ public class ApiService
         }
     }
 
+    // ── Admin: Franjas horarias ───────────────────────────────────────────────
+    public async Task<List<FranjaHorariaDto>> GetHorariosAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/admin/horarios");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<List<FranjaHorariaDto>>() ?? new()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener las franjas horarias.");
+            return new();
+        }
+    }
+
+    public async Task<bool> CrearFranjaAsync(UpsertFranjaRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/admin/horarios",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear la franja horaria.");
+            return false;
+        }
+    }
+
+    public async Task<bool> ActualizarFranjaAsync(int id, UpsertFranjaRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Put, $"api/admin/horarios/{id}",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al actualizar la franja horaria {Id}.", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> EliminarFranjaAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/admin/horarios/{id}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar la franja horaria {Id}.", id);
+            return false;
+        }
+    }
+
+    // ── Admin: Invitaciones ───────────────────────────────────────────────────
+    public async Task<List<InvitacionDto>> GetInvitacionesAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/invitaciones");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<List<InvitacionDto>>() ?? new()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener las invitaciones.");
+            return new();
+        }
+    }
+
+    public async Task<bool> CrearInvitacionAsync(CrearInvitacionRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/invitaciones",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear la invitación.");
+            return false;
+        }
+    }
+
+    public async Task<bool> EliminarInvitacionAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/invitaciones/{id}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al revocar la invitación {Id}.", id);
+            return false;
+        }
+    }
+
     // ── Notificaciones push ───────────────────────────────────────────────────
     public async Task RegistrarTokenPushAsync(string token, string plataforma)
     {

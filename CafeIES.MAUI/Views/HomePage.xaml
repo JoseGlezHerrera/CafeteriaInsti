@@ -136,29 +136,27 @@
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="dto:ProductoDto">
-                            <Border Style="{StaticResource Card}" Padding="0">
+                            <Border Style="{StaticResource Card}" Padding="0"
+                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=VerDetalleProductoCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Border.GestureRecognizers>
                                 <Grid RowDefinitions="110,Auto">
 
                                     <!-- Imagen / Emoji -->
                                     <Grid Grid.Row="0" BackgroundColor="{StaticResource Surface2Color}">
                                         <Label Text="{Binding CategoriaEmoji}" FontSize="44"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <!-- Stock badge -->
+                                        <!-- Stock badge: solo muestra "Agotado" cuando Stock == 0 -->
                                         <Border HorizontalOptions="End" VerticalOptions="Start"
                                                 Margin="8" Padding="6,3"
                                                 BackgroundColor="#CC0f0e0c" StrokeThickness="1"
-                                                Stroke="{Binding NivelStock, Converter={StaticResource StockLevelBorderConverter}}">
+                                                Stroke="#40e05252"
+                                                IsVisible="{Binding Stock, Converter={StaticResource StockAcabadoConverter}}">
                                             <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                            <Label FontFamily="SyneBold" FontSize="10"
-                                                   TextColor="{Binding NivelStock, Converter={StaticResource StockLevelTextConverter}}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="{Binding NivelStock, Converter={StaticResource StockLevelEmojiConverter}}"/>
-                                                        <Span Text=" "/>
-                                                        <Span Text="{Binding Stock, Converter={StaticResource StockDisplayConverter}}"/>
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
+                                            <Label Text="Agotado" FontFamily="SyneBold" FontSize="10" TextColor="#e05252"/>
                                         </Border>
                                     </Grid>
 
@@ -169,12 +167,14 @@
                                                LineBreakMode="TailTruncation"/>
                                         <Label Text="{Binding Descripcion}" Style="{StaticResource CaptionLabel}"
                                                LineBreakMode="TailTruncation"/>
-                                        <!-- Alérgenos -->
-                                        <Label FontFamily="DMSans" FontSize="11"
-                                               TextColor="{StaticResource MutedColor}"
-                                               LineBreakMode="WordWrap"
-                                               IsVisible="{Binding Alergenos, Converter={StaticResource AlergenosVisibleConverter}}"
-                                               Text="{Binding Alergenos, Converter={StaticResource AlergenosToEmojiConverter}}"/>
+                                        <!-- Alérgenos con prefijo ⚠️ Contiene: -->
+                                        <HorizontalStackLayout Spacing="4" IsVisible="{Binding Alergenos, Converter={StaticResource AlergenosVisibleConverter}}">
+                                            <Label Text="⚠️" FontSize="11"/>
+                                            <Label Text="{Binding Alergenos, Converter={StaticResource AlergenosToEmojiConverter}}"
+                                                   FontFamily="DMSans" FontSize="11"
+                                                   TextColor="#e8834a"
+                                                   LineBreakMode="WordWrap"/>
+                                        </HorizontalStackLayout>
                                         <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                                             <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
                                                    TextColor="{StaticResource AccentColor}">
@@ -185,9 +185,10 @@
                                                     </FormattedString>
                                                 </Label.FormattedText>
                                             </Label>
-                                            <!-- Botón + -->
+                                            <!-- Botón + (deshabilitado si agotado) -->
                                             <Border Grid.Column="1" BackgroundColor="{StaticResource AccentColor}"
-                                                    WidthRequest="30" HeightRequest="30">
+                                                    WidthRequest="30" HeightRequest="30"
+                                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}">
                                                 <Border.StrokeShape><RoundRectangle CornerRadius="9"/></Border.StrokeShape>
                                                 <Border.GestureRecognizers>
                                                     <TapGestureRecognizer
@@ -196,7 +197,8 @@
                                                 </Border.GestureRecognizers>
                                                 <Label Text="+" FontFamily="SyneBold" FontSize="20"
                                                        TextColor="#0f0e0c" HorizontalOptions="Center"
-                                                       VerticalOptions="Center"/>
+                                                       VerticalOptions="Center"
+                                                       IsEnabled="{Binding Stock, Converter={StaticResource StockDisponibleConverter}}"/>
                                             </Border>
                                         </Grid>
                                     </VerticalStackLayout>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="CafeIES.MAUI.Views.AdminInvitacionesPage"
+             x:DataType="vm:AdminInvitacionesViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16"
+              ColumnDefinitions="*,Auto">
+            <Label Grid.Column="0" Text="Invitaciones" FontFamily="SyneBold" FontSize="22"
+                   TextColor="{StaticResource TextColor}" VerticalOptions="Center"/>
+            <Button Grid.Column="1"
+                    Text="+ Nueva"
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" Padding="14,0"
+                    Command="{Binding NuevaInvitacionCommand}"/>
+        </Grid>
+
+        <!-- Lista -->
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsLoading}"
+                     Command="{Binding CargarCommand}"
+                     RefreshColor="{StaticResource AccentColor}">
+            <CollectionView ItemsSource="{Binding Invitaciones}" Margin="16,12">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                         Spacing="10" Margin="0,80">
+                        <Label Text="🔗" FontSize="44" HorizontalOptions="Center"/>
+                        <Label Text="Sin invitaciones creadas"
+                               Style="{StaticResource SubtitleLabel}"
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:InvitacionDto">
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems>
+                                    <SwipeItem Text="Revocar"
+                                               BackgroundColor="#e8834a"
+                                               CommandParameter="{Binding .}"
+                                               Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AdminInvitacionesViewModel}}, Path=RevocarInvitacionCommand}"/>
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Border Style="{StaticResource Card}">
+                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+
+                                    <!-- Cabecera: tipo + estado -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                        <!-- Badge tipo -->
+                                        <Border Grid.Column="0" Padding="8,4"
+                                                BackgroundColor="#1a4caf82" StrokeThickness="0">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                            <Label Text="{Binding Tipo}"
+                                                   FontFamily="SyneBold" FontSize="10"
+                                                   TextColor="#4caf82"/>
+                                        </Border>
+                                        <!-- Token (primeros 12 chars) -->
+                                        <Label Grid.Column="1"
+                                               FontFamily="DMSansMedium" FontSize="13"
+                                               TextColor="{StaticResource TextColor}"
+                                               VerticalOptions="Center">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Token, StringFormat='{0}'}"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <!-- Badge activa/expirada -->
+                                        <Border Grid.Column="2" Padding="8,4" StrokeThickness="0"
+                                                BackgroundColor="{Binding EsValida, Converter={StaticResource BoolToAccentBgConverter}}">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                            <Label FontFamily="SyneBold" FontSize="10"
+                                                   TextColor="{Binding EsValida, Converter={StaticResource BoolToAccentTextConverter}}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding EsValida, Converter={StaticResource InvitacionEstadoConverter}}"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Usos + expiración -->
+                                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <Label Grid.Column="0"
+                                               Style="{StaticResource CaptionLabel}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="Usos: "/>
+                                                    <Span Text="{Binding UsosActuales}"/>
+                                                    <Span Text=" / "/>
+                                                    <Span Text="{Binding UsosMaximos, StringFormat='{0}'}"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding FechaExpiracion, StringFormat='Expira: {0:dd/MM/yyyy}'}"
+                                               Style="{StaticResource CaptionLabel}"/>
+                                    </Grid>
+
+                                    <!-- Botones -->
+                                    <HorizontalStackLayout Grid.Row="2" Spacing="8">
+                                        <Button Text="📋 Copiar URL"
+                                                FontFamily="SyneBold" FontSize="11"
+                                                BackgroundColor="#26f5a623" TextColor="{StaticResource AccentColor}"
+                                                CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                                CommandParameter="{Binding .}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AdminInvitacionesViewModel}}, Path=CopiarUrlCommand}"/>
+                                    </HorizontalStackLayout>
+
+                                </Grid>
+                            </Border>
+                        </SwipeView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <!-- Error -->
+        <Border Grid.Row="2"
+                BackgroundColor="#1ae05252"
+                StrokeThickness="1" Stroke="#40e05252"
+                Padding="16,12" Margin="16,0,16,16"
+                IsVisible="{Binding HasError}">
+            <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+            <Label Text="{Binding Error}"
+                   FontFamily="DMSans" FontSize="13"
+                   TextColor="#e05252"/>
+        </Border>
+
+    </Grid>
+</ContentPage>

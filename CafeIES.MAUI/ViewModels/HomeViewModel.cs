@@ -139,6 +139,10 @@ public partial class HomeViewModel : ObservableObject
         await Shell.Current.GoToAsync("//Main/Carrito");
     }
 
+    [RelayCommand]
+    private async Task VerDetalleProductoAsync(ProductoDto producto)
+        => await Shell.Current.GoToAsync($"ProductoDetalle?productoId={producto.Id}");
+
     // ── Añadir al carrito ─────────────────────────────────────────────────────
     [RelayCommand]
     private async Task AnadirAlCarritoAsync(ProductoDto producto)
