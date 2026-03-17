@@ -29,38 +29,13 @@ public class PushNotificationService
     /// </summary>
     public async Task RegistrarAsync()
     {
-#if ANDROID || IOS
-        try
-        {
-            await Plugin.Firebase.CloudMessaging.CrossFirebaseCloudMessaging.Current
-                .CheckIfValidAsync();
-
-            var token = await Plugin.Firebase.CloudMessaging.CrossFirebaseCloudMessaging.Current
-                .GetTokenAsync();
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogDebug("Token FCM vacío — Firebase probablemente no configurado.");
-                return;
-            }
-
-#if ANDROID
-            var plataforma = "android";
-#else
-            var plataforma = "ios";
-#endif
-            await _api.RegistrarTokenPushAsync(token, plataforma);
-            _logger.LogInformation("Token FCM registrado en la API (...{Suffix}).",
-                token.Length > 8 ? token[^8..] : token);
-        }
-        catch (Exception ex)
-        {
-            // No bloquear el login aunque falle el registro de push
-            _logger.LogWarning(ex, "No se pudo registrar el token FCM.");
-        }
-#else
+        // Push notifications pendientes de configurar:
+        // 1. Crear proyecto en Firebase Console y descargar google-services.json
+        // 2. Sustituir Platforms/Android/google-services.json con el archivo real
+        // 3. Descomentar Plugin.Firebase.CloudMessaging en CafeIES.MAUI.csproj
+        // 4. Restaurar las llamadas a CrossFirebaseCloudMessaging en este servicio
+        _logger.LogDebug("Push notifications no disponibles — Firebase sin configurar.");
         await Task.CompletedTask;
-#endif
     }
 
     /// <summary>
@@ -68,21 +43,6 @@ public class PushNotificationService
     /// </summary>
     public async Task EliminarAsync()
     {
-#if ANDROID || IOS
-        try
-        {
-            var token = await Plugin.Firebase.CloudMessaging.CrossFirebaseCloudMessaging.Current
-                .GetTokenAsync();
-
-            if (!string.IsNullOrEmpty(token))
-                await _api.EliminarTokenPushAsync(token);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo eliminar el token FCM.");
-        }
-#else
         await Task.CompletedTask;
-#endif
     }
 }
