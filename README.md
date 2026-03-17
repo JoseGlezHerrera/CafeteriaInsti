@@ -505,19 +505,25 @@ Android     iOS
 - [x] Stripe webhook configurado en producción
 - [x] Test end-to-end de pagos verificado en producción
 
-### Fase 5b — Play Store ← EN CURSO
+### Fase 5b — Distribución Android ✅ COMPLETADA (GitHub Releases)
 - [x] `AndroidManifest.xml` con permisos correctos (INTERNET, CAMERA, POST_NOTIFICATIONS, READ_MEDIA_IMAGES)
 - [x] `network_security_config.xml` — cleartext HTTP bloqueado en producción, solo CAs del sistema
 - [x] `proguard.cfg` — reglas R8 para Mono runtime, Firebase, OkHttp y SignalR
 - [x] `.csproj` — `ApplicationTitle`, firma via env vars, `AndroidPackageFormat=aab`, `MauiLinkMode=SdkAndUserAssemblies`
 - [x] `infra/generar-keystore.ps1` — genera el keystore de firma con `keytool`
 - [x] `infra/build-android-release.ps1` — build y firma del AAB con `dotnet publish` (AAB generado: ~30 MB)
-- [x] `.github/workflows/deploy-android.yml` — pipeline CI/CD: build → firma → subida automática a Google Play
-- [x] `infra/configurar-play-store-secrets.ps1` — configura los 4 secrets de GitHub con un solo script
+- [x] `.github/workflows/deploy-android.yml` — pipeline CI/CD operativo: build APK debug → GitHub Release automático en cada push
+- [x] `infra/configurar-play-store-secrets.ps1` — preparado para activar Play Store cuando se disponga de cuenta
+- [x] Política de privacidad publicada en GitHub Pages
+- [x] **Primera distribución**: `cafeies-2026.03.23.apk` (14.4 MB) disponible en [Releases](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases)
 - [ ] Sustituir `google-services.json` con el archivo real de Firebase Console
 - [ ] Diseñar icono definitivo (appicon.svg / appiconfg.svg) y capturas de pantalla
-- [ ] Crear cuenta Google Play Developer y subir primera versión (prueba interna)
-- [ ] Configurar política de privacidad pública (URL requerida por Play Store)
+
+### Fase 5c — Google Play Store (pendiente cuenta developer)
+- [ ] Registrar cuenta Google Play Developer (pago único 25 USD)
+- [ ] Cambiar pipeline a AAB firmado con keystore release
+- [ ] Subir primera versión a prueba interna en Play Console
+- [ ] Política de privacidad ya disponible en GitHub Pages
 
 ### Fase 3 — ~~Soporte multi-instituto~~ ✅ COMPLETADA
 - [x] Entidad `Instituto` con seed de 3 centros iniciales
@@ -537,16 +543,16 @@ Android     iOS
 
 ## Changelog
 
-### v0.10.0 — Preparación Google Play Store + pipeline CI/CD Android (actual)
+### v0.10.0 — Pipeline CI/CD Android operativo + distribución via GitHub Releases (actual)
 - **`AndroidManifest.xml`** (fuente): permisos explícitos (`INTERNET`, `CAMERA`, `POST_NOTIFICATIONS`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` con `maxSdkVersion="32"`), `allowBackup="false"`, referencia a `network_security_config`; iconos omitidos (MAUI resizetizer los inyecta automáticamente)
-- **`network_security_config.xml`**: cleartext HTTP bloqueado globalmente; solo CAs del sistema (Azure usa Let's Encrypt/DigiCert). El bypass de cert autofirmado sigue controlado por `#if DEBUG` en `MauiProgram.cs`
+- **`network_security_config.xml`**: cleartext HTTP bloqueado globalmente; solo CAs del sistema
 - **`proguard.cfg`**: reglas R8 para Mono/.NET MAUI runtime (`crc64**`), Firebase Cloud Messaging, OkHttp/OkIO (SignalR), enumeraciones y Parcelable
-- **`.csproj`**: `<ApplicationTitle>CaféIES</ApplicationTitle>`; bloque Release Android con `AndroidPackageFormat=aab`, signing via variables de entorno (`CAFEIES_KEYSTORE_PATH`, `CAFEIES_STORE_PASS`, `CAFEIES_KEY_PASS`), `MauiLinkMode=SdkAndUserAssemblies`
-- **`MauiProgram.cs`**: eliminada llamada `UseFirebase()` — Plugin.Firebase.CloudMessaging 3.1.0 auto-inicializa desde `google-services.json`; no requiere registro en el builder
-- **`infra/generar-keystore.ps1`**: genera keystore RSA-2048 10000 días con `keytool`; detecta JDK en rutas comunes; guarda credenciales en `keystore-credentials.local.txt` (gitignored)
-- **`infra/build-android-release.ps1`**: `dotnet publish -f net9.0-android -c Release -p:AndroidPackageFormat=aab`; valida variables, avisa si `google-services.json` tiene placeholders, imprime tamaño del AAB. AAB generado: **30.1 MB**
-- **`.github/workflows/deploy-android.yml`**: pipeline completo — checkout → setup .NET 9 → `dotnet workload install maui-android` → restore → decodifica keystore desde secret Base64 → build y firma AAB → `r0adkll/upload-google-play@v1`; `versionCode = github.run_number + 1000`; trigger automático en push a `CafeIES.MAUI/**`; `workflow_dispatch` con selector de track (internal/alpha/beta/production)
-- **`infra/configurar-play-store-secrets.ps1`**: configura automáticamente los 4 secrets de GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`) usando `gh secret set`; incluye instrucciones paso a paso para crear el service account de Google Cloud
+- **`MauiProgram.cs`**: eliminada llamada `UseFirebase()` — Plugin.Firebase.CloudMessaging 3.1.0 auto-inicializa desde `google-services.json`
+- **`infra/generar-keystore.ps1`**: genera keystore RSA-2048 10000 días; guarda credenciales en `keystore-credentials.local.txt` (gitignored)
+- **`infra/build-android-release.ps1`**: build local del AAB firmado (~30 MB)
+- **`.github/workflows/deploy-android.yml`**: pipeline **operativo** — `global.json` fija SDK 9.x antes de instalar workload (runner tiene .NET 10 preinstalado), restore separado Shared/MAUI con `--no-restore` en publish, build APK debug, crea GitHub Release con el APK adjunto; `versionCode = github.run_number + 1000`; trigger automático en push a `CafeIES.MAUI/**`
+- **`docs/politica-privacidad.html`**: página RGPD completa alojada en GitHub Pages — `https://JoseGlezHerrera.github.io/CafeteriaInsti/politica-privacidad.html`
+- **Primera distribución**: `cafeies-2026.03.23.apk` (14.4 MB) publicado como GitHub Release pre-release
 
 ### v0.9.0 — Despliegue Azure completo y pagos verificados en producción
 - **Recursos Azure** creados: App Service `cafeies-api` (B1, Linux, .NET 9), Azure SQL `cafeies-sql2/cafeiesdb` (Basic 5 DTU, northeurope), Blob Storage `cafeiesimgs` (contenedor `productos`, LRS), Static Web App (free tier)
