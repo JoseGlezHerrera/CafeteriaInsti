@@ -40,40 +40,20 @@ public class HorarioService
             .ToListAsync();
 
         if (!franjas.Any())
-            return HorarioResult.Denegado("No hay franjas horarias configuradas para tu turno.");
+            return HorarioResult.Permitido("Pedidos disponibles.");
 
-        // ¿Alguna franja está activa ahora mismo?
-        var franjaActiva = franjas.FirstOrDefault(f => f.EstaActiva);
+        // ¿Hay alguna franja bloqueada activa ahora mismo?
+        var franjaBloquedaActiva = franjas.FirstOrDefault(f => f.EsBloqueada && f.EstaActiva);
 
-        if (franjaActiva is not null)
+        if (franjaBloquedaActiva is not null)
         {
-            // Calcular cuánto queda de la franja
-            var fin = TimeOnly.Parse(franjaActiva.HoraFin);
-            var ahora = TimeOnly.FromDateTime(DateTime.Now);
-            var minutosRestantes = (int)(fin - ahora).TotalMinutes;
-
-            return HorarioResult.Permitido(
-                $"Pedidos disponibles hasta las {franjaActiva.HoraFin} ({minutosRestantes} min restantes).",
-                franjaActiva);
+            return HorarioResult.Denegado(
+                $"No puedes pedir durante tu horario de clase. Disponible a partir de las {franjaBloquedaActiva.HoraFin}.",
+                franjaBloquedaActiva);
         }
 
-        // No hay franja activa → calcular la próxima
-        var proxima = ObtenerProximaFranja(franjas);
-        if (proxima is null)
-            return HorarioResult.Denegado("No hay más franjas horarias hoy para tu turno.");
-
-        return HorarioResult.Denegado(
-            $"Pedidos no disponibles ahora. Próxima ventana: {proxima.Descripcion} a las {proxima.HoraInicio}.",
-            proxima);
-    }
-
-    private static FranjaHoraria? ObtenerProximaFranja(IEnumerable<FranjaHoraria> franjas)
-    {
-        var ahora = TimeOnly.FromDateTime(DateTime.Now);
-        return franjas
-            .Where(f => TimeOnly.Parse(f.HoraInicio) > ahora)
-            .OrderBy(f => TimeOnly.Parse(f.HoraInicio))
-            .FirstOrDefault();
+        // No hay franja de bloqueo activa → pedidos permitidos
+        return HorarioResult.Permitido("Pedidos disponibles.");
     }
 }
 

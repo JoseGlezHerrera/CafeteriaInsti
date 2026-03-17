@@ -158,6 +158,29 @@
                     }
                 </div>
 
+                <!-- Alérgenos -->
+                @if (_alergenos.Count > 0)
+                {
+                    <div class="form-group">
+                        <label>Alérgenos</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+                            @foreach (var alergeno in _alergenos)
+                            {
+                                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
+                                              padding:4px 10px;border-radius:20px;font-size:13px;
+                                              border:1px solid var(--border);
+                                              background:@(_form.AlergenoIds.Contains(alergeno.Id) ? "var(--accent-bg, #1a2a1a)" : "var(--surface2)")">
+                                    <input type="checkbox"
+                                           checked="@_form.AlergenoIds.Contains(alergeno.Id)"
+                                           @onchange="e => ToggleAlergeno(alergeno.Id, (bool)e.Value!)"
+                                           style="accent-color:var(--accent)"/>
+                                    <span>@alergeno.Emoji @alergeno.Nombre</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <!-- Imagen (solo disponible al editar un producto ya existente) -->
                 @if (_editandoId.HasValue)
                 {
@@ -220,6 +243,7 @@
 @code {
     private List<ProductoDto>  _productos  = new();
     private List<CategoriaDto> _categorias = new();
+    private List<AlergenoDto>  _alergenos  = new();
     private string  _busqueda        = string.Empty;
     private string  _categoriaFiltro = string.Empty;
     private bool    _mostrarOcultos  = false;
@@ -246,6 +270,7 @@
     {
         _categorias = await Api.GetCategoriasAsync();
         _productos  = await Api.GetProductosAsync();
+        _alergenos  = await Api.GetAlergenosAsync();
     }
 
     private void AbrirNuevoProducto()
@@ -263,17 +288,31 @@
         _editandoId = p.Id;
         _form = new ProductoForm
         {
-            Nombre      = p.Nombre,
-            Descripcion = p.Descripcion,
-            Precio      = p.Precio,
-            Stock       = p.Stock,
-            CategoriaId = p.CategoriaId,
-            ImagenUrl   = p.ImagenUrl
+            Nombre        = p.Nombre,
+            Descripcion   = p.Descripcion,
+            Precio        = p.Precio,
+            Stock         = p.Stock,
+            CategoriaId   = p.CategoriaId,
+            ImagenUrl     = p.ImagenUrl,
+            AlergenoIds   = p.Alergenos.Select(a => a.Id).ToList()
         };
         _errorModal    = string.Empty;
         _imagenArchivo = null;
         _errorImagen   = string.Empty;
         _mostrarModal  = true;
+    }
+
+    private void ToggleAlergeno(int alergenoId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_form.AlergenoIds.Contains(alergenoId))
+                _form.AlergenoIds.Add(alergenoId);
+        }
+        else
+        {
+            _form.AlergenoIds.Remove(alergenoId);
+        }
     }
 
     private async Task GuardarProducto()
@@ -293,7 +332,7 @@
         _errorModal = string.Empty;
 
         var req = new CrearProductoRequest(_form.Nombre, _form.Descripcion,
-            _form.Precio, _form.Stock, _form.CategoriaId, _form.ImagenUrl);
+            _form.Precio, _form.Stock, _form.CategoriaId, _form.ImagenUrl, _form.AlergenoIds);
 
         bool ok = _editandoId.HasValue
             ? await Api.ActualizarProductoAsync(_editandoId.Value, req)
@@ -369,11 +408,12 @@
 
     private class ProductoForm
     {
-        public string  Nombre      { get; set; } = string.Empty;
-        public string  Descripcion { get; set; } = string.Empty;
-        public decimal Precio      { get; set; }
-        public int     Stock       { get; set; } = -1;
-        public int     CategoriaId { get; set; }
-        public string? ImagenUrl   { get; set; }
+        public string    Nombre      { get; set; } = string.Empty;
+        public string    Descripcion { get; set; } = string.Empty;
+        public decimal   Precio      { get; set; }
+        public int       Stock       { get; set; } = -1;
+        public int       CategoriaId { get; set; }
+        public string?   ImagenUrl   { get; set; }
+        public List<int> AlergenoIds { get; set; } = new();
     }
 }

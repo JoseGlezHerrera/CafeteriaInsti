@@ -159,6 +159,10 @@ public class AdminApiService
     public async Task<List<InstitutoDto>> GetInstitutosAsync()
         => await GetListAsync<InstitutoDto>("api/admin/institutos");
 
+    // ── Alérgenos ──────────────────────────────────────────────────────────────
+    public async Task<List<AlergenoDto>> GetAlergenosAsync()
+        => await GetListAsync<AlergenoDto>("api/admin/alergenos");
+
     // ── Horarios ──────────────────────────────────────────────────────────────
     public async Task<List<FranjaHorariaDto>> GetHorariosAsync()
         => await GetListAsync<FranjaHorariaDto>("api/admin/horarios");

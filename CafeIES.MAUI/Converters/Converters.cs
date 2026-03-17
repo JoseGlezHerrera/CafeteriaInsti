@@ -343,3 +343,30 @@ public class RolNoEsAdminConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+// ── Alérgenos: IReadOnlyList<AlergenoDto> → string de emojis ─────────────────
+
+public class AlergenosToEmojiConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not IEnumerable<AlergenoDto> alergenos) return string.Empty;
+        var lista = alergenos.ToList();
+        return lista.Count == 0 ? string.Empty : string.Join(" ", lista.Select(a => a.Emoji));
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class AlergenosVisibleConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not IEnumerable<AlergenoDto> alergenos) return false;
+        return alergenos.Any();
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

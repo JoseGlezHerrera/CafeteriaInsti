@@ -1,4 +1,5 @@
 using CafeIES.API.Data;
+using CafeIES.API.Extensions;
 using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +30,7 @@ public class ProductosController : ControllerBase
     {
         var query = _db.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Alergenos)
             .AsQueryable();
 
         if (soloActivos == true)
@@ -42,7 +44,7 @@ public class ProductosController : ControllerBase
             .ThenBy(p => p.Nombre)
             .ToListAsync();
 
-        return Ok(productos.Select(MapDto).ToList());
+        return Ok(productos.Select(p => p.ToDto()).ToList());
     }
 
     // ── GET /api/productos/{id} ───────────────────────────────────────────────
@@ -50,8 +52,11 @@ public class ProductosController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ProductoDto>> GetById(int id)
     {
-        var p = await _db.Productos.Include(p => p.Categoria).FirstOrDefaultAsync(p => p.Id == id);
-        return p is null ? NotFound() : Ok(MapDto(p));
+        var p = await _db.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.Alergenos)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        return p is null ? NotFound() : Ok(p.ToDto());
     }
 
     // ── POST /api/productos  (solo Admin) ────────────────────────────────────
@@ -73,11 +78,21 @@ public class ProductosController : ControllerBase
             Activo      = true
         };
 
+        // Vincular alérgenos
+        if (req.AlergenoIds is { Count: > 0 })
+        {
+            var alergenos = await _db.Alergenos
+                .Where(a => req.AlergenoIds.Contains(a.Id))
+                .ToListAsync();
+            foreach (var a in alergenos) producto.Alergenos.Add(a);
+        }
+
         _db.Productos.Add(producto);
         await _db.SaveChangesAsync();
 
         await _db.Entry(producto).Reference(p => p.Categoria).LoadAsync();
-        return CreatedAtAction(nameof(GetById), new { id = producto.Id }, MapDto(producto));
+        await _db.Entry(producto).Collection(p => p.Alergenos).LoadAsync();
+        return CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto.ToDto());
     }
 
     // ── PUT /api/productos/{id}  (solo Admin) ────────────────────────────────
@@ -85,7 +100,10 @@ public class ProductosController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductoDto>> Actualizar(int id, [FromBody] CrearProductoRequest req)
     {
-        var producto = await _db.Productos.Include(p => p.Categoria).FirstOrDefaultAsync(p => p.Id == id);
+        var producto = await _db.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.Alergenos)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (producto is null) return NotFound();
 
         if (!await _db.Categorias.AnyAsync(c => c.Id == req.CategoriaId))
@@ -98,9 +116,19 @@ public class ProductosController : ControllerBase
         producto.CategoriaId = req.CategoriaId;
         producto.ImagenUrl   = req.ImagenUrl;
 
+        // Reemplazar alérgenos
+        producto.Alergenos.Clear();
+        if (req.AlergenoIds is { Count: > 0 })
+        {
+            var alergenos = await _db.Alergenos
+                .Where(a => req.AlergenoIds.Contains(a.Id))
+                .ToListAsync();
+            foreach (var a in alergenos) producto.Alergenos.Add(a);
+        }
+
         await _db.SaveChangesAsync();
         await _db.Entry(producto).Reference(p => p.Categoria).LoadAsync();
-        return Ok(MapDto(producto));
+        return Ok(producto.ToDto());
     }
 
     // ── PATCH /api/productos/{id}/stock  (Admin) ─────────────────────────────
@@ -173,8 +201,4 @@ public class ProductosController : ControllerBase
         return Ok(new { imagenUrl = url });
     }
 
-    private static ProductoDto MapDto(Producto p) => new(
-        p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
-        p.ImagenUrl, p.Activo, p.NivelStock,
-        p.CategoriaId, p.Categoria.Nombre, p.Categoria.Emoji);
 }

@@ -104,8 +104,12 @@ public class FranjaHoraria
 
     public bool Activa { get; set; } = true;
 
+    /// <summary>Si true, los pedidos están BLOQUEADOS durante esta franja (en clase). Si false, son PERMITIDOS.</summary>
+    public bool EsBloqueada { get; set; } = false;
+
     /// <summary>
     /// Comprueba si DateTime.Now cae dentro de esta franja.
+    /// Soporta franjas que cruzan medianoche (ej: 21:00-03:00).
     /// </summary>
     [NotMapped]
     public bool EstaActiva
@@ -115,7 +119,10 @@ public class FranjaHoraria
             if (!Activa) return false;
             var ahora = TimeOnly.FromDateTime(DateTime.Now);
             var inicio = TimeOnly.Parse(HoraInicio);
-            var fin = TimeOnly.Parse(HoraFin);
+            var fin    = TimeOnly.Parse(HoraFin);
+            // Soporte franjas que cruzan medianoche (ej: 21:00-03:00)
+            if (inicio > fin)
+                return ahora >= inicio || ahora <= fin;
             return ahora >= inicio && ahora <= fin;
         }
     }
@@ -166,6 +173,17 @@ public class Invitacion
 //  CATÁLOGO
 // ─────────────────────────────────────────────
 
+/// <summary>Alérgeno según el Reglamento (UE) 1169/2011 (14 alérgenos de declaración obligatoria).</summary>
+public class Alergeno
+{
+    public int Id { get; set; }
+    [Required, MaxLength(60)]
+    public string Nombre { get; set; } = string.Empty;
+    [MaxLength(10)]
+    public string Emoji { get; set; } = string.Empty;
+    public ICollection<Producto> Productos { get; set; } = new List<Producto>();
+}
+
 /// <summary>Categoría de producto (Bocadillos, Bebidas, Postres, etc.)</summary>
 public class Categoria
 {
@@ -214,6 +232,7 @@ public class Producto
 
     // Navegación
     public ICollection<LineaPedido> Lineas { get; set; } = new List<LineaPedido>();
+    public ICollection<Alergeno> Alergenos { get; set; } = new List<Alergeno>();
 
     /// <summary>Nivel de stock: "ok" / "bajo" / "agotado"</summary>
     [NotMapped]

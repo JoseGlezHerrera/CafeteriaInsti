@@ -169,6 +169,12 @@
                                                LineBreakMode="TailTruncation"/>
                                         <Label Text="{Binding Descripcion}" Style="{StaticResource CaptionLabel}"
                                                LineBreakMode="TailTruncation"/>
+                                        <!-- Alérgenos -->
+                                        <Label FontFamily="DMSans" FontSize="11"
+                                               TextColor="{StaticResource MutedColor}"
+                                               LineBreakMode="WordWrap"
+                                               IsVisible="{Binding Alergenos, Converter={StaticResource AlergenosVisibleConverter}}"
+                                               Text="{Binding Alergenos, Converter={StaticResource AlergenosToEmojiConverter}}"/>
                                         <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                                             <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
                                                    TextColor="{StaticResource AccentColor}">
