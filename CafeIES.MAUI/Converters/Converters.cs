@@ -344,6 +344,49 @@ public class RolNoEsAdminConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+// ── Stock: nuevos converters para ocultar cantidad al usuario ─────────────────
+
+/// <summary>Devuelve true si Stock == 0 (mostrar badge "Agotado").</summary>
+public class StockAcabadoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int stock && stock == 0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>Devuelve true si Stock != 0 (el botón + está habilitado).</summary>
+public class StockDisponibleConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int stock && stock != 0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>Devuelve 0.4 si Stock == 0, 1.0 si no.</summary>
+public class StockToOpacityConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int stock && stock == 0 ? 0.4 : 1.0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+// ── Invitación: estado (válida/expirada) ──────────────────────────────────────
+
+public class InvitacionEstadoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? (b ? "Activa" : "Inválida") : "—";
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Alérgenos: IReadOnlyList<AlergenoDto> → string de emojis ─────────────────
 
 public class AlergenosToEmojiConverter : IValueConverter

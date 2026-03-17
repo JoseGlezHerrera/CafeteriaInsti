@@ -73,6 +73,9 @@ public static class MauiProgram
         builder.Services.AddTransient<AdminUsuariosViewModel>();
         builder.Services.AddTransient<AdminProductosViewModel>();
         builder.Services.AddTransient<AdminEditProductoViewModel>();
+        builder.Services.AddTransient<ProductoDetalleViewModel>();
+        builder.Services.AddTransient<AdminHorariosViewModel>();
+        builder.Services.AddTransient<AdminInvitacionesViewModel>();
 
         // â”€â”€ PÃ¡ginas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         builder.Services.AddTransient<LoginPage>();
@@ -88,6 +91,9 @@ public static class MauiProgram
         builder.Services.AddTransient<AdminUsuariosPage>();
         builder.Services.AddTransient<AdminProductosPage>();
         builder.Services.AddTransient<AdminEditProductoPage>();
+        builder.Services.AddTransient<ProductoDetallePage>();
+        builder.Services.AddTransient<AdminHorariosPage>();
+        builder.Services.AddTransient<AdminInvitacionesPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

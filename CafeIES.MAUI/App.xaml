@@ -50,6 +50,10 @@
             <conv:RolNoEsAdminConverter x:Key="RolNoEsAdminConverter"/>
             <conv:AlergenosToEmojiConverter x:Key="AlergenosToEmojiConverter"/>
             <conv:AlergenosVisibleConverter x:Key="AlergenosVisibleConverter"/>
+            <conv:StockAcabadoConverter x:Key="StockAcabadoConverter"/>
+            <conv:StockDisponibleConverter x:Key="StockDisponibleConverter"/>
+            <conv:StockToOpacityConverter x:Key="StockToOpacityConverter"/>
+            <conv:InvitacionEstadoConverter x:Key="InvitacionEstadoConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
