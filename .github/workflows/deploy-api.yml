@@ -59,6 +59,7 @@ jobs:
             --async false
 
       - name: Configure Azure App Settings (secrets)
+        if: ${{ secrets.STRIPE_SECRET_KEY != '' }}
         run: |
           az webapp config appsettings set \
             --name ${{ secrets.AZURE_WEBAPP_NAME }} \
