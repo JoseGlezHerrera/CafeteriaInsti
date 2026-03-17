@@ -64,6 +64,7 @@ public partial class PerfilViewModel : ObservableObject
     [ObservableProperty] private string _rolTexto        = string.Empty;
     [ObservableProperty] private string _turnoTexto      = string.Empty;
     [ObservableProperty] private bool   _tieneTurno;
+    [ObservableProperty] private bool   _esAdmin;
     [ObservableProperty] private string _resumenHorario  = string.Empty;
     [ObservableProperty] private int    _totalPedidos;
     [ObservableProperty] private decimal _totalGastado;
@@ -100,6 +101,7 @@ public partial class PerfilViewModel : ObservableObject
                 Turno.Noche  => "🌙 Noche",
                 _            => string.Empty
             };
+            EsAdmin = usuario.Rol == RolUsuario.Admin;
         }
 
         var status = await _api.GetHorarioStatusAsync();
@@ -182,4 +184,11 @@ public partial class PerfilViewModel : ObservableObject
         await Shell.Current.GoToAsync("//Login");
     }
 
+    [RelayCommand]
+    private async Task IrHorariosAsync() =>
+        await Shell.Current.GoToAsync("AdminHorarios");
+
+    [RelayCommand]
+    private async Task IrInvitacionesAsync() =>
+        await Shell.Current.GoToAsync("AdminInvitaciones");
     }

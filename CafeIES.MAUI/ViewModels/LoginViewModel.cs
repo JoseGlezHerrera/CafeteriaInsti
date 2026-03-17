@@ -84,4 +84,10 @@ public partial class LoginViewModel : ObservableObject
     {
         await Shell.Current.GoToAsync("Registro");
     }
+
+    [RelayCommand]
+    private async Task IrARegistroInvitacionAsync()
+    {
+        await Shell.Current.GoToAsync("RegistroInvitacion");
+    }
 }

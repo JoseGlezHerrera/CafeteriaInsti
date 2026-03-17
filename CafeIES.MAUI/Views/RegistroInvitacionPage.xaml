@@ -32,6 +32,33 @@
                 </VerticalStackLayout>
             </Grid>
 
+            <!-- Introducir código manualmente (cuando no viene por query param) -->
+            <VerticalStackLayout IsVisible="{Binding TokenVerificado, Converter={StaticResource InvertBoolConverter}}"
+                                 Margin="0,0,0,20" Spacing="10">
+                <Label Text="CÓDIGO DE INVITACIÓN" FontFamily="SyneBold" FontSize="11"
+                       TextColor="{StaticResource MutedColor}" CharacterSpacing="1.5"/>
+                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Entry Style="{StaticResource InputEntry}"
+                           Placeholder="Pega aquí tu código"
+                           Text="{Binding CodigoManual}"/>
+                </Border>
+                <Button Text="Verificar código →"
+                        Command="{Binding VerificarCodigoCommand}"
+                        HeightRequest="52" CornerRadius="16"
+                        FontFamily="SyneBold" FontSize="15"
+                        TextColor="#0F0E0C"
+                        BackgroundColor="{StaticResource AccentColor}"/>
+                <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                                   Color="{StaticResource AccentColor}" HorizontalOptions="Center"/>
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource RedColor}"
+                       FontSize="13" IsVisible="{Binding HayError}"/>
+            </VerticalStackLayout>
+
+            <!-- Formulario de registro (visible solo tras verificar) -->
+            <VerticalStackLayout IsVisible="{Binding TokenVerificado}" Spacing="0">
+
             <!-- Invite badge -->
             <Border Padding="14,12" Margin="0,0,0,24"
                     BackgroundColor="#0D2B18"
@@ -138,6 +165,8 @@
                    Style="{StaticResource Caption}"
                    HorizontalOptions="Center"
                    Margin="0,16,0,0"/>
+
+            </VerticalStackLayout><!-- fin VerticalStackLayout TokenVerificado -->
 
         </VerticalStackLayout>
     </ScrollView>
