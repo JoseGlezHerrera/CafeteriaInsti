@@ -18,13 +18,13 @@
         <Tab Title="Pedidos" Icon="icon_orders.png" Route="AdminPedidos">
             <ShellContent ContentTemplate="{DataTemplate views:AdminPedidosPage}"/>
         </Tab>
-        <Tab Title="Productos" Icon="icon_home.png" Route="AdminProductos">
+        <Tab Title="Productos" Icon="icon_productos.png" Route="AdminProductos">
             <ShellContent ContentTemplate="{DataTemplate views:AdminProductosPage}"/>
         </Tab>
-        <Tab Title="Usuarios" Icon="icon_profile.png" Route="AdminUsuarios">
+        <Tab Title="Usuarios" Icon="icon_usuarios.png" Route="AdminUsuarios">
             <ShellContent ContentTemplate="{DataTemplate views:AdminUsuariosPage}"/>
         </Tab>
-        <Tab Title="Perfil" Icon="icon_profile.png" Route="AdminPerfil">
+        <Tab Title="Perfil" Icon="icon_admin.png" Route="AdminPerfil">
             <ShellContent ContentTemplate="{DataTemplate views:AdminPerfilPage}"/>
         </Tab>
     </TabBar>
