@@ -239,63 +239,29 @@ public class ApiService
     }
 
     /// <summary>
-    /// Confirma un PaymentIntent con tarjeta usando la API REST de Stripe directamente.
-    /// Stripe acepta publishable keys con Bearer auth para operaciones de cliente.
-    /// NOTA: El manejo de números de tarjeta en texto plano requiere cumplimiento
-    /// PCI-DSS SAQ D. Para producción, considerar Stripe SDK nativo de iOS/Android.
+    /// Confirma el PaymentIntent delegando al servidor (secret key).
+    /// Evita las restricciones de Stripe al llamar desde cliente con publishable key.
     /// </summary>
-    public async Task<bool> ConfirmarPagoStripeAsync(
-        string clientSecret, string publishableKey,
+    public async Task<bool> ConfirmarPagoAsync(
+        string paymentIntentId,
         string cardNumber, string expMonth, string expYear, string cvc)
     {
         try
         {
-            using var stripeHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-            stripeHttp.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", publishableKey);
-
-            // 1. Crear PaymentMethod
-            var pmContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            var req = new ConfirmarPagoRequest(paymentIntentId, cardNumber, expMonth, expYear, cvc);
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/pagos/confirmar",
+                JsonContent.Create(req));
+            if (!resp.IsSuccessStatusCode)
             {
-                ["type"]            = "card",
-                ["card[number]"]    = cardNumber,
-                ["card[exp_month]"] = expMonth,
-                ["card[exp_year]"]  = expYear,
-                ["card[cvc]"]       = cvc
-            });
-            var pmResp = await stripeHttp.PostAsync("https://api.stripe.com/v1/payment_methods", pmContent);
-            if (!pmResp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Stripe rechazó la creación del PaymentMethod. Status: {Status}", pmResp.StatusCode);
-                return false;
+                var body = await resp.Content.ReadAsStringAsync();
+                _logger.LogWarning("Pago rechazado por el servidor. Status: {Status} Body: {Body}",
+                    resp.StatusCode, body);
             }
-
-            var pmJson = await pmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            var pmId = pmJson?["id"]?.ToString();
-            if (string.IsNullOrEmpty(pmId)) return false;
-
-            // 2. Confirmar PaymentIntent
-            var piId = clientSecret.Split("_secret_")[0];
-            var confirmContent = new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["payment_method"] = pmId,
-                ["client_secret"]  = clientSecret
-            });
-            var confirmResp = await stripeHttp.PostAsync(
-                $"https://api.stripe.com/v1/payment_intents/{piId}/confirm", confirmContent);
-
-            if (!confirmResp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Stripe rechazó la confirmación del PaymentIntent. Status: {Status}", confirmResp.StatusCode);
-                return false;
-            }
-
-            var confirmJson = await confirmResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            return confirmJson?["status"]?.ToString() == "succeeded";
+            return resp.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error inesperado al confirmar el pago con Stripe.");
+            _logger.LogError(ex, "Error inesperado al confirmar el pago.");
             return false;
         }
     }

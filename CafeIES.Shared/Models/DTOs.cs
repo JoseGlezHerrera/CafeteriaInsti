@@ -220,6 +220,14 @@ public record PagoIntentResponse(
 
 public record StripeConfigDto(string PublishableKey);
 
+public record ConfirmarPagoRequest(
+    [Required] string PaymentIntentId,
+    [Required] string CardNumber,
+    [Required] string ExpMonth,
+    [Required] string ExpYear,
+    [Required] string Cvc
+);
+
 // ── Notificaciones push ───────────────────────────────────────────────────────
 
 /// <summary>Registra o actualiza el token FCM del dispositivo.</summary>
