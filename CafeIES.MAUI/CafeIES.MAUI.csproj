@@ -81,4 +81,15 @@
 		<MauiFont Include="Resources\Fonts\DMSans-Regular.ttf" />
 		<MauiFont Include="Resources\Fonts\DMSans-Medium.ttf" />
 	</ItemGroup>
+
+	<!-- Tab bar icons: explicit BaseSize required for correct SVG→PNG conversion -->
+	<ItemGroup>
+		<MauiImage Include="Resources\Images\icon_home.svg"      BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_cart.svg"      BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_orders.svg"    BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_profile.svg"   BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_productos.svg" BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_usuarios.svg"  BaseSize="24,24" />
+		<MauiImage Include="Resources\Images\icon_admin.svg"     BaseSize="24,24" />
+	</ItemGroup>
 </Project>

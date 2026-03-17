@@ -21,14 +21,12 @@ public class StripeService
     {
         var options = new PaymentIntentCreateOptions
         {
-            Amount      = (long)(total * 100), // Stripe trabaja en céntimos
-            Currency    = _currency,
-            Description = descripcion,
-            Metadata    = metadata ?? new(),
-            AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
-            {
-                Enabled = true
-            }
+            Amount             = (long)(total * 100), // Stripe trabaja en céntimos
+            Currency           = _currency,
+            Description        = descripcion,
+            Metadata           = metadata ?? new(),
+            PaymentMethodTypes = new List<string> { "card" },
+            ConfirmationMethod = "manual",
         };
 
         var service = new PaymentIntentService();
