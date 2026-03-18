@@ -128,6 +128,10 @@ public record CambiarEstadoRequest([Required] EstadoPedido NuevoEstado);
 
 public record CambiarTurnoRequest(Turno? Turno);
 
+public record CambiarInstitutoRequest(int? InstitutoId);
+
+public record CambiarRolRequest([Required] RolUsuario Rol);
+
 // ── Invitaciones ──────────────────────────────────────────────────────────────
 
 public record CrearInvitacionRequest(

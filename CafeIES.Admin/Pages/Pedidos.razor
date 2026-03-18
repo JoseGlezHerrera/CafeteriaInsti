@@ -150,10 +150,7 @@ else
     private DateTime?       _hasta;
 
     private IEnumerable<PedidoDto> PedidosFiltrados =>
-        _pedidos
-            .Where(p => string.IsNullOrEmpty(_estadoFiltro) || p.Estado.ToString() == _estadoFiltro)
-            .Where(p => string.IsNullOrEmpty(_institutoFiltro) ||
-                        p.InstitutoNombre == _institutos.FirstOrDefault(i => i.Id.ToString() == _institutoFiltro)?.Nombre);
+        _pedidos.Where(p => string.IsNullOrEmpty(_estadoFiltro) || p.Estado.ToString() == _estadoFiltro);
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,7 +161,8 @@ else
     private async Task Recargar()
     {
         _cargando = true;
-        _pedidos  = await Api.GetPedidosAsync(_desde, _hasta);
+        int? institutoId = int.TryParse(_institutoFiltro, out var id) ? id : null;
+        _pedidos  = await Api.GetPedidosAsync(_desde, _hasta, institutoId: institutoId);
         _cargando = false;
     }
 

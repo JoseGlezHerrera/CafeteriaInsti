@@ -175,6 +175,44 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    // ── PATCH /api/admin/usuarios/{id}/instituto ──────────────────────────────
+    [HttpPatch("usuarios/{id}/instituto")]
+    public async Task<ActionResult> CambiarInstituto(int id, [FromBody] CambiarInstitutoRequest req)
+    {
+        var user = await _db.Usuarios.FindAsync(id);
+        if (user is null) return NotFound();
+
+        if (req.InstitutoId.HasValue && !await _db.Institutos.AnyAsync(i => i.Id == req.InstitutoId))
+            return BadRequest(new { mensaje = "Instituto no encontrado." });
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        user.InstitutoId = req.InstitutoId;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} cambió el instituto del usuario {UserId} ({Email}) a {InstitutoId}",
+            adminEmail, id, user.Email, req.InstitutoId?.ToString() ?? "ninguno");
+
+        return NoContent();
+    }
+
+    // ── PATCH /api/admin/usuarios/{id}/rol ────────────────────────────────────
+    [HttpPatch("usuarios/{id}/rol")]
+    public async Task<ActionResult> CambiarRol(int id, [FromBody] CambiarRolRequest req)
+    {
+        var user = await _db.Usuarios.FindAsync(id);
+        if (user is null) return NotFound();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        var rolAnterior = user.Rol;
+        user.Rol = req.Rol;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} cambió el rol del usuario {UserId} ({Email}) de {Anterior} a {Nuevo}",
+            adminEmail, id, user.Email, rolAnterior, req.Rol);
+
+        return NoContent();
+    }
+
     // ── DELETE /api/admin/usuarios/{id} ───────────────────────────────────────
     [HttpDelete("usuarios/{id}")]
     public async Task<ActionResult> EliminarUsuario(int id)
