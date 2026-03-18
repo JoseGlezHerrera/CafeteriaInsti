@@ -26,7 +26,7 @@ public class StripeService
             Description        = descripcion,
             Metadata           = metadata ?? new(),
             PaymentMethodTypes = new List<string> { "card" },
-            ConfirmationMethod = "manual",
+            ConfirmationMethod = "automatic",
         };
 
         var service = new PaymentIntentService();
