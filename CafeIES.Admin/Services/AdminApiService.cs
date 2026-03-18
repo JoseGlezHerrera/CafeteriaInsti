@@ -114,6 +114,14 @@ public class AdminApiService
     public async Task<bool> ReactivarUsuarioAsync(int id)
         => await SendBoolAsync(() => _http.PatchAsync($"api/admin/usuarios/{id}/reactivar", null));
 
+    public async Task<bool> CambiarInstitutoAsync(int id, int? institutoId)
+        => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/admin/usuarios/{id}/instituto",
+               new CambiarInstitutoRequest(institutoId)));
+
+    public async Task<bool> CambiarRolAsync(int id, RolUsuario rol)
+        => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/admin/usuarios/{id}/rol",
+               new CambiarRolRequest(rol)));
+
     public async Task<(bool Ok, string? Error)> EliminarUsuarioAsync(int id)
     {
         try
@@ -174,14 +182,14 @@ public class AdminApiService
         => await SendBoolAsync(() => _http.DeleteAsync($"api/admin/horarios/{id}"));
 
     // ── Pedidos (paginado — fix #1) ───────────────────────────────────────────
-    public async Task<List<PedidoDto>> GetPedidosAsync(DateTime? desde = null, DateTime? hasta = null, int pageSize = 500)
+    public async Task<List<PedidoDto>> GetPedidosAsync(DateTime? desde = null, DateTime? hasta = null, int pageSize = 500, int? institutoId = null)
     {
         try
         {
-            var query = desde.HasValue
-                ? $"?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}&pageSize={pageSize}"
-                : $"?pageSize={pageSize}";
-            var resp = await SendAsync(() => _http.GetAsync($"api/admin/pedidos{query}"));
+            var qs = $"?pageSize={pageSize}";
+            if (desde.HasValue)      qs += $"&desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}";
+            if (institutoId.HasValue) qs += $"&institutoId={institutoId}";
+            var resp = await SendAsync(() => _http.GetAsync($"api/admin/pedidos{qs}"));
             if (!resp.IsSuccessStatusCode) return new();
             var paginated = await resp.Content.ReadFromJsonAsync<PaginatedResponse<PedidoDto>>();
             return paginated?.Items ?? new();
