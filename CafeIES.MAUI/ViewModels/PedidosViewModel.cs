@@ -29,6 +29,8 @@ public partial class PedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        // Limpiar ANTES del await para que nunca se vean datos de otra sesión
+        Pedidos.Clear();
         IsLoading = true;
         var pedidos = await _api.GetMisPedidosAsync();
         Pedidos.Clear();

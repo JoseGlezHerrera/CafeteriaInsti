@@ -12,10 +12,11 @@ public partial class RegistroViewModel : ObservableObject
 
     public RegistroViewModel(ApiService api) => _api = api;
 
-    [ObservableProperty] private string _nombreCompleto = string.Empty;
-    [ObservableProperty] private string _email          = string.Empty;
-    [ObservableProperty] private string _password       = string.Empty;
-    [ObservableProperty] private string _errorMessage   = string.Empty;
+    [ObservableProperty] private string _nombreCompleto     = string.Empty;
+    [ObservableProperty] private string _email              = string.Empty;
+    [ObservableProperty] private string _password           = string.Empty;
+    [ObservableProperty] private string _confirmarPassword  = string.Empty;
+    [ObservableProperty] private string _errorMessage       = string.Empty;
     [ObservableProperty] private bool   _hayError;
     [ObservableProperty] private bool   _isLoading;
 
@@ -77,6 +78,13 @@ public partial class RegistroViewModel : ObservableObject
         {
             HayError     = true;
             ErrorMessage = "La contraseña debe tener al menos 8 caracteres.";
+            return;
+        }
+
+        if (Password != ConfirmarPassword)
+        {
+            HayError     = true;
+            ErrorMessage = "Las contraseñas no coinciden. Compruébalas e inténtalo de nuevo.";
             return;
         }
 

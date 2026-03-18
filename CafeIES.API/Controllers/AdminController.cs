@@ -24,18 +24,29 @@ public class AdminController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Devuelve el institutoId del admin autenticado extraído del JWT.
+    /// Si el admin no tiene instituto asignado (admin global), devuelve null → puede ver todo.
+    /// Si tiene instituto, ese es el único que puede ver.
+    /// </summary>
+    private int? GetAdminInstitutoId() =>
+        int.TryParse(User.FindFirst("institutoId")?.Value, out var id) && id > 0 ? id : null;
+
     // ── GET /api/admin/dashboard ─────────────────────────────────────────────
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> Dashboard([FromQuery] int? institutoId)
     {
         var hoy = DateTime.UtcNow.Date;
 
+        // El instituto del admin en JWT tiene prioridad — un admin de instituto A no puede ver el B
+        var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
+
         var pedidosQuery = _db.Pedidos.AsQueryable();
         var usuariosQuery = _db.Usuarios.AsQueryable();
-        if (institutoId.HasValue)
+        if (institutoEfectivo.HasValue)
         {
-            pedidosQuery = pedidosQuery.Where(p => p.Usuario.InstitutoId == institutoId);
-            usuariosQuery = usuariosQuery.Where(u => u.InstitutoId == institutoId);
+            pedidosQuery = pedidosQuery.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
+            usuariosQuery = usuariosQuery.Where(u => u.InstitutoId == institutoEfectivo);
         }
 
         var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion.Date == hoy);
@@ -52,8 +63,8 @@ public class AdminController : ControllerBase
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion);
-        if (institutoId.HasValue)
-            enCursoQuery = enCursoQuery.Where(p => p.Usuario.InstitutoId == institutoId);
+        if (institutoEfectivo.HasValue)
+            enCursoQuery = enCursoQuery.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
 
         var pedidosEnCurso = await enCursoQuery
             .OrderBy(p => p.FechaCreacion)
@@ -76,10 +87,12 @@ public class AdminController : ControllerBase
         [FromQuery] string?       busqueda,
         [FromQuery] int?          institutoId)
     {
+        var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
+
         var query = _db.Usuarios.Include(u => u.Instituto).AsQueryable();
-        if (estado.HasValue)      query = query.Where(u => u.Estado == estado);
-        if (rol.HasValue)         query = query.Where(u => u.Rol    == rol);
-        if (institutoId.HasValue) query = query.Where(u => u.InstitutoId == institutoId);
+        if (estado.HasValue)             query = query.Where(u => u.Estado == estado);
+        if (rol.HasValue)                query = query.Where(u => u.Rol    == rol);
+        if (institutoEfectivo.HasValue)  query = query.Where(u => u.InstitutoId == institutoEfectivo);
         if (!string.IsNullOrWhiteSpace(busqueda))
             query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
@@ -270,15 +283,17 @@ public class AdminController : ControllerBase
         pageSize = Math.Clamp(pageSize, 1, 500);
         page = Math.Max(1, page);
 
+        var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
+
         var query = _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .AsQueryable();
 
-        if (desde.HasValue)       query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
-        if (hasta.HasValue)       query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
-        if (estado.HasValue)      query = query.Where(p => p.Estado == estado);
-        if (institutoId.HasValue) query = query.Where(p => p.Usuario.InstitutoId == institutoId);
+        if (desde.HasValue)            query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
+        if (hasta.HasValue)            query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
+        if (estado.HasValue)           query = query.Where(p => p.Estado == estado);
+        if (institutoEfectivo.HasValue) query = query.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
 
         var totalCount = await query.CountAsync();
         var pedidos = await query
