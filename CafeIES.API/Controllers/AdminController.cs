@@ -4,6 +4,7 @@ using CafeIES.API.Extensions;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
@@ -11,6 +12,7 @@ namespace CafeIES.API.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting("general")]
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -26,7 +28,7 @@ public class AdminController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> Dashboard([FromQuery] int? institutoId)
     {
-        var hoy = DateTime.Now.Date;
+        var hoy = DateTime.UtcNow.Date;
 
         var pedidosQuery = _db.Pedidos.AsQueryable();
         var usuariosQuery = _db.Usuarios.AsQueryable();
@@ -96,7 +98,7 @@ public class AdminController : ControllerBase
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
 
         user.Estado          = aprobar ? EstadoCuenta.Activa : EstadoCuenta.Rechazada;
-        user.FechaValidacion = DateTime.Now;
+        user.FechaValidacion = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("[AUDIT] {Admin} {Accion} la cuenta del usuario {UserId} ({Email})",

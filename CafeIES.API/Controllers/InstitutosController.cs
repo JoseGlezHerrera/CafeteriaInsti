@@ -1,12 +1,14 @@
 using CafeIES.API.Data;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("general")]
 public class InstitutosController : ControllerBase
 {
     private readonly AppDbContext _db;

@@ -4,12 +4,14 @@ using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("general")]
 public class ProductosController : ControllerBase
 {
     private readonly AppDbContext        _db;
@@ -136,6 +138,9 @@ public class ProductosController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> ActualizarStock(int id, [FromBody] ActualizarStockRequest req)
     {
+        if (req.NuevoStock < -1)
+            return BadRequest(new { mensaje = "El stock no puede ser menor que -1 (ilimitado)." });
+
         var producto = await _db.Productos.FindAsync(id);
         if (producto is null) return NotFound();
 

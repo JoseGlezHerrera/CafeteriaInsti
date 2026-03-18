@@ -47,54 +47,6 @@ public class StripeService
     }
 
     /// <summary>
-    /// Crea un PaymentMethod y confirma el PaymentIntent server-side usando la secret key.
-    /// Más fiable que la confirmación client-side, que requiere SDK nativo de Stripe.
-    /// </summary>
-    public async Task<(bool Succeeded, string Error)> ConfirmarPagoAsync(
-        string paymentIntentId,
-        string cardNumber, string expMonth, string expYear, string cvc)
-    {
-        try
-        {
-            if (!long.TryParse(expMonth, out var mes) || !long.TryParse(expYear, out var anio))
-                return (false, "Formato de fecha de caducidad incorrecto (MM / AA).");
-
-            // 1. Crear PaymentMethod con los datos de tarjeta
-            var pmOptions = new PaymentMethodCreateOptions
-            {
-                Type = "card",
-                Card = new PaymentMethodCardOptions
-                {
-                    Number   = cardNumber,
-                    ExpMonth = mes,
-                    ExpYear  = anio,
-                    Cvc      = cvc,
-                },
-            };
-            var pm = await new PaymentMethodService().CreateAsync(pmOptions);
-
-            // 2. Confirmar el PaymentIntent adjuntando el PaymentMethod
-            var piOptions = new PaymentIntentConfirmOptions
-            {
-                PaymentMethod = pm.Id,
-            };
-            var intent = await new PaymentIntentService().ConfirmAsync(paymentIntentId, piOptions);
-
-            return (intent.Status == "succeeded",
-                    intent.LastPaymentError?.Message ?? string.Empty);
-        }
-        catch (StripeException ex)
-        {
-            // Devolver el mensaje de Stripe (p.ej. "No such api_key", "card was declined"…)
-            return (false, ex.StripeError?.Message ?? ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return (false, $"Error interno: {ex.Message}");
-        }
-    }
-
-    /// <summary>
     /// Construye un evento Stripe a partir del body y la firma del webhook.
     /// </summary>
     public Event? ConstruirEvento(string json, string signature, string webhookSecret)

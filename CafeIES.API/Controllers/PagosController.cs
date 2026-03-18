@@ -4,6 +4,7 @@ using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 
@@ -11,6 +12,7 @@ namespace CafeIES.API.Controllers;
 
 [ApiController]
 [Route("api/pagos")]
+[EnableRateLimiting("general")]
 public class PagosController : ControllerBase
 {
     private readonly AppDbContext   _db;

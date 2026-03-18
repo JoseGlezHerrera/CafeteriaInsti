@@ -39,6 +39,9 @@ builder.Services.AddHttpClient("fcm", c =>
 // ── Health check ──────────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks();
 
+// ── Compresión de respuestas ──────────────────────────────────────────────────
+builder.Services.AddResponseCompression(opts => { opts.EnableForHttps = true; });
+
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -76,6 +79,7 @@ builder.Services.AddAuthorization();
 // Máximo 10 intentos por IP por minuto. Responde con 429 si se supera.
 builder.Services.AddRateLimiter(options =>
 {
+    // Política auth: 10 req/min/IP — para login, registro, refresh
     options.AddFixedWindowLimiter("auth", opt =>
     {
         opt.PermitLimit          = 10;
@@ -83,11 +87,34 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit           = 0;
     });
+
+    // Política general: 60 req/min/IP — para el resto de endpoints
+    options.AddFixedWindowLimiter("general", opt =>
+    {
+        opt.PermitLimit          = 60;
+        opt.Window               = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit           = 0;
+    });
+
+    // Política invitaciones: 5 req/min/IP — para validar tokens de invitación
+    options.AddFixedWindowLimiter("invitaciones", opt =>
+    {
+        opt.PermitLimit          = 5;
+        opt.Window               = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit           = 0;
+    });
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
 // ── SignalR ───────────────────────────────────────────────────────────────────
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval   = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // En desarrollo: acepta cualquier origen localhost.
@@ -158,6 +185,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseStaticFiles();   // Sirve wwwroot/uploads/productos/
 app.UseCors("AllowAdmin");
