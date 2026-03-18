@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 
 namespace CafeIES.MAUI.ViewModels;
@@ -12,11 +13,14 @@ public partial class RegistroInvitacionViewModel : ObservableObject
 {
     private readonly ApiService              _api;
     private readonly PushNotificationService _push;
+    private readonly ILogger<RegistroInvitacionViewModel> _logger;
 
-    public RegistroInvitacionViewModel(ApiService api, PushNotificationService push)
+    public RegistroInvitacionViewModel(ApiService api, PushNotificationService push,
+        ILogger<RegistroInvitacionViewModel> logger)
     {
-        _api  = api;
-        _push = push;
+        _api    = api;
+        _push   = push;
+        _logger = logger;
     }
 
     [ObservableProperty]
@@ -130,6 +134,7 @@ public partial class RegistroInvitacionViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error de navegación a //Main tras el registro por invitación.");
             HayError     = true;
             ErrorMessage = $"Error al abrir la aplicación: {ex.Message}";
         }

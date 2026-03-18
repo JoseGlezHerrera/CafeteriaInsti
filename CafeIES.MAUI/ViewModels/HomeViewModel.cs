@@ -17,7 +17,7 @@ public partial class HomeViewModel : ObservableObject
     private List<ProductoDto>?  _cacheProductos;
     private List<CategoriaDto>? _cacheCategorias;
     private DateTime _cacheTimestamp = DateTime.MinValue;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
 
     public HomeViewModel(ApiService api, CarritoViewModel carrito)
     {
@@ -62,7 +62,7 @@ public partial class HomeViewModel : ObservableObject
 
         var usarCache = _cacheProductos is not null
                      && _cacheCategorias is not null
-                     && DateTime.Now - _cacheTimestamp < CacheDuration;
+                     && DateTime.UtcNow - _cacheTimestamp < CacheDuration;
 
         var horarioTask = _api.GetHorarioStatusAsync();
         var categoriasTask = usarCache ? Task.FromResult(_cacheCategorias!) : _api.GetCategoriasAsync();
@@ -78,7 +78,7 @@ public partial class HomeViewModel : ObservableObject
         {
             _cacheCategorias  = categorias;
             _cacheProductos   = productos;
-            _cacheTimestamp   = DateTime.Now;
+            _cacheTimestamp   = DateTime.UtcNow;
         }
 
         // Estado horario

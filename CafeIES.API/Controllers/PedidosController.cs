@@ -7,6 +7,7 @@ using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ namespace CafeIES.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class PedidosController : ControllerBase
 {
     private readonly AppDbContext    _db;
@@ -65,8 +67,12 @@ public class PedidosController : ControllerBase
         if (!horario.Puede)
             return BadRequest(new { mensaje = horario.Mensaje });
 
-        // Usar transacción SERIALIZABLE para evitar race conditions de stock y numeración
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        // Validar método de pago
+        if (!Enum.IsDefined(typeof(MetodoPago), req.MetodoPago))
+            return BadRequest(new { mensaje = "Método de pago inválido." });
+
+        // Usar transacción ReadCommitted; el control de stock se hace via EF ConcurrencyCheck en Producto
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
         try
         {
             // 2. Calcular total y validar stock
@@ -105,7 +111,7 @@ public class PedidosController : ControllerBase
             }
 
             // 4. Número de pedido secuencial del día
-            var hoy = DateTime.Now.Date;
+            var hoy = DateTime.UtcNow.Date;
             var ultimoNumero = await _db.Pedidos
                 .Where(p => p.FechaCreacion.Date == hoy)
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
@@ -116,7 +122,7 @@ public class PedidosController : ControllerBase
                 NumeroPedido   = ultimoNumero + 1,
                 MetodoPago     = req.MetodoPago,
                 Total          = total,
-                Notas          = req.Notas,
+                Notas          = req.Notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;"),
                 Lineas         = lineas,
                 ReferenciasPago = referenciaPago
             };

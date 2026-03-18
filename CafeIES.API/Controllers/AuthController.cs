@@ -49,9 +49,11 @@ public class AuthController : ControllerBase
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
 
+        await using var tx = await _db.Database.BeginTransactionAsync();
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return Ok(new LoginResponse(
             accessToken,
@@ -64,9 +66,6 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("auth")]
     public async Task<ActionResult> RegistroAlumno([FromBody] RegistroAlumnoRequest req)
     {
-        if (!req.Email.Contains('@'))
-            return BadRequest(new { mensaje = "El email no tiene un formato válido. Ejemplo: nombre@ies.edu" });
-
         if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
             return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
 
@@ -123,7 +122,7 @@ public class AuthController : ControllerBase
             Rol             = rol,
             Turno           = null,  // Sin restricción horaria
             Estado          = EstadoCuenta.Activa,
-            FechaValidacion = DateTime.Now,
+            FechaValidacion = DateTime.UtcNow,
             InstitutoId     = req.InstitutoId,
             Instituto       = instituto
         };
@@ -141,7 +140,7 @@ public class AuthController : ControllerBase
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();
 
         return Ok(new LoginResponse(accessToken, refreshToken, usuario.ToDto()));
@@ -155,7 +154,7 @@ public class AuthController : ControllerBase
         var usuario = await _db.Usuarios
             .Include(u => u.Instituto)
             .FirstOrDefaultAsync(u => u.RefreshToken == req.RefreshToken
-                                   && u.RefreshTokenExpiry > DateTime.Now);
+                                   && u.RefreshTokenExpiry > DateTime.UtcNow);
 
         if (usuario is null)
             return Unauthorized(new { mensaje = "Refresh token inválido o expirado." });
@@ -163,7 +162,7 @@ public class AuthController : ControllerBase
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
         usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.Now.AddDays(30);
+        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();
 
         return Ok(new LoginResponse(accessToken, refreshToken, usuario.ToDto()));

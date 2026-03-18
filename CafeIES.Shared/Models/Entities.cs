@@ -59,7 +59,7 @@ public class Usuario
 
     public EstadoCuenta Estado { get; set; } = EstadoCuenta.PendienteValidacion;
 
-    public DateTime FechaRegistro { get; set; } = DateTime.Now;
+    public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
     public DateTime? FechaValidacion { get; set; }
 
@@ -117,9 +117,10 @@ public class FranjaHoraria
         get
         {
             if (!Activa) return false;
-            var ahora = TimeOnly.FromDateTime(DateTime.Now);
-            var inicio = TimeOnly.Parse(HoraInicio);
-            var fin    = TimeOnly.Parse(HoraFin);
+            var ahora = TimeOnly.FromDateTime(DateTime.UtcNow);
+            if (!TimeOnly.TryParse(HoraInicio, out var inicio) ||
+                !TimeOnly.TryParse(HoraFin,    out var fin))
+                return false; // Formato de hora inválido — franja inactiva por seguridad
             // Soporte franjas que cruzan medianoche (ej: 21:00-03:00)
             if (inicio > fin)
                 return ahora >= inicio || ahora <= fin;
@@ -149,9 +150,9 @@ public class Invitacion
 
     public bool Activa { get; set; } = true;
 
-    public DateTime FechaCreacion { get; set; } = DateTime.Now;
+    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
-    public DateTime FechaExpiracion { get; set; } = DateTime.Now.AddDays(7);
+    public DateTime FechaExpiracion { get; set; } = DateTime.UtcNow.AddDays(7);
 
     /// <summary>Cuántas veces se puede usar. Null = ilimitado mientras esté activa.</summary>
     public int? UsosMaximos { get; set; }
@@ -160,10 +161,13 @@ public class Invitacion
 
     [NotMapped]
     public bool EsValida => Activa
-                         && DateTime.Now <= FechaExpiracion
+                         && DateTime.UtcNow <= FechaExpiracion
                          && (UsosMaximos == null || UsosActuales < UsosMaximos);
 
-    /// <summary>URL completa que se mostrará en el QR.</summary>
+    /// <summary>
+    /// Ruta relativa del enlace de invitación — el cliente debe anteponer la BaseUrl de la API.
+    /// Ejemplo completo: https://cafeies-api.azurewebsites.net/registro/invitacion/{Token}
+    /// </summary>
     [NotMapped]
     public string UrlInvitacion => $"/registro/invitacion/{Token}";
 }
@@ -219,6 +223,7 @@ public class Producto
     public decimal Precio { get; set; }
 
     /// <summary>Unidades disponibles. -1 = sin control de stock.</summary>
+    [ConcurrencyCheck]
     public int Stock { get; set; } = -1;
 
     /// <summary>Ruta o URL de la imagen del producto.</summary>
@@ -261,7 +266,7 @@ public class Pedido
     public int UsuarioId { get; set; }
     public Usuario Usuario { get; set; } = null!;
 
-    public DateTime FechaCreacion { get; set; } = DateTime.Now;
+    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
     public EstadoPedido Estado { get; set; } = EstadoPedido.Pendiente;
 
@@ -308,6 +313,9 @@ public class LineaPedido
 //  TOKEN DE NOTIFICACIONES PUSH
 // ─────────────────────────────────────────────
 
+/// <summary>Plataforma de dispositivo para notificaciones push.</summary>
+public enum PlataformaDispositivo { Android, iOS, Web }
+
 /// <summary>
 /// Token FCM registrado por el dispositivo móvil de un usuario.
 /// Se almacena para enviar notificaciones push (p. ej. pedido listo).
@@ -324,7 +332,11 @@ public class DispositivoToken
     [Required, MaxLength(512)]
     public string Token { get; set; } = string.Empty;
 
-    /// <summary>"android" | "ios"</summary>
+    /// <summary>
+    /// Plataforma del dispositivo. Almacenada como string para compatibilidad con la BD existente.
+    /// Valores válidos: "android" | "ios". Ver enum <see cref="PlataformaDispositivo"/>.
+    /// NOTA: Cambiar la propiedad a enum requeriría una migración de BD (nvarchar → int).
+    /// </summary>
     [MaxLength(10)]
     public string Plataforma { get; set; } = string.Empty;
 

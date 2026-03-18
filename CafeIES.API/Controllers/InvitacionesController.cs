@@ -2,6 +2,7 @@ using CafeIES.API.Data;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using QRCoder;
 
@@ -10,6 +11,7 @@ namespace CafeIES.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting("general")]
 public class InvitacionesController : ControllerBase
 {
     private readonly AppDbContext   _db;
@@ -36,6 +38,9 @@ public class InvitacionesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<InvitacionDto>> Crear([FromBody] CrearInvitacionRequest req)
     {
+        if (req.DiasValidez < 1 || req.DiasValidez > 365)
+            return BadRequest("DiasValidez debe estar entre 1 y 365 días.");
+
         // Desactivar invitaciones anteriores del mismo tipo
         var anteriores = await _db.Invitaciones
             .Where(i => i.Tipo == req.Tipo && i.Activa)
@@ -46,7 +51,7 @@ public class InvitacionesController : ControllerBase
         {
             Tipo             = req.Tipo,
             Activa           = true,
-            FechaExpiracion  = DateTime.Now.AddDays(req.DiasValidez),
+            FechaExpiracion  = DateTime.UtcNow.AddDays(req.DiasValidez),
             UsosMaximos      = req.UsosMaximos
         };
 
@@ -90,6 +95,7 @@ public class InvitacionesController : ControllerBase
     // ── GET /api/invitaciones/validar/{token}  (público, sin auth) ───────────
     [HttpGet("validar/{token}")]
     [AllowAnonymous]
+    [EnableRateLimiting("invitaciones")]
     public async Task<ActionResult> Validar(string token)
     {
         var inv = await _db.Invitaciones.FirstOrDefaultAsync(i => i.Token == token);
@@ -104,8 +110,13 @@ public class InvitacionesController : ControllerBase
         });
     }
 
-    private static InvitacionDto MapDto(Invitacion i) => new(
-        i.Id, i.Token, i.Tipo, i.Activa,
-        i.FechaExpiracion, i.UsosMaximos, i.UsosActuales,
-        i.UrlInvitacion, i.EsValida);
+    private InvitacionDto MapDto(Invitacion i)
+    {
+        // Construir URL completa usando el host de la request actual
+        var urlCompleta = $"{Request.Scheme}://{Request.Host}/registro/invitacion/{i.Token}";
+        return new InvitacionDto(
+            i.Id, i.Token, i.Tipo, i.Activa,
+            i.FechaExpiracion, i.UsosMaximos, i.UsosActuales,
+            urlCompleta, i.EsValida);
+    }
 }

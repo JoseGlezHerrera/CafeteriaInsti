@@ -3,6 +3,7 @@ using CafeIES.API.Extensions;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
@@ -10,6 +11,7 @@ namespace CafeIES.API.Controllers;
 [ApiController]
 [Route("api/notificaciones")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class NotificacionesController : ControllerBase
 {
     private readonly AppDbContext _db;

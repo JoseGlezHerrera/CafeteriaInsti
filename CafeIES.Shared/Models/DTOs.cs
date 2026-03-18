@@ -77,7 +77,7 @@ public record ProductoDto(
 );
 
 public record CrearProductoRequest(
-    [Required, MaxLength(120)] string  Nombre,
+    [Required, MinLength(3), MaxLength(120)] string  Nombre,
     [MaxLength(300)]           string  Descripcion,
     [Required]                 decimal Precio,
                                int     Stock,

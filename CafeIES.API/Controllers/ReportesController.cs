@@ -3,6 +3,7 @@ using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CafeIES.API.Controllers;
@@ -10,6 +11,7 @@ namespace CafeIES.API.Controllers;
 [ApiController]
 [Route("api/reportes")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting("general")]
 public class ReportesController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -31,7 +33,7 @@ public class ReportesController : ControllerBase
         var pedidos = await CargarPedidosAsync(desde, hasta);
         var bytes   = ReporteExcelService.Generar(pedidos, desde, hasta);
 
-        var nombre = $"reporte-cafeies-{DateTime.Now:yyyyMMdd}.xlsx";
+        var nombre = $"reporte-cafeies-{DateTime.UtcNow:yyyyMMdd}.xlsx";
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             nombre);
@@ -49,7 +51,7 @@ public class ReportesController : ControllerBase
         var pedidos = await CargarPedidosAsync(desde, hasta);
         var bytes   = ReportePdfService.Generar(pedidos, desde, hasta);
 
-        var nombre = $"reporte-cafeies-{DateTime.Now:yyyyMMdd}.pdf";
+        var nombre = $"reporte-cafeies-{DateTime.UtcNow:yyyyMMdd}.pdf";
         return File(bytes, "application/pdf", nombre);
     }
 
