@@ -5,6 +5,7 @@ using CafeIES.Shared.Models;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 
 namespace CafeIES.MAUI.Services;
 
@@ -77,8 +78,32 @@ public class ApiService
         {
             // Sesión expirada definitivamente: limpiar estado y notificar
             await DesconectarSignalRAsync();
+            _logger.LogWarning("Sesión expirada definitivamente. Enviando SesionExpiradaMessage y forzando navegación al login.");
             WeakReferenceMessenger.Default.Send(new SesionExpiradaMessage());
+
+            // Fallback: navegar directamente al login por si nadie procesa el mensaje
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                try { await Shell.Current.GoToAsync("//LoginPage"); }
+                catch (Exception ex) { _logger.LogError(ex, "Error navegando a login tras sesión expirada."); }
+            });
+
             return response;
+        }
+
+        // Refresh exitoso: reconectar SignalR si se había desconectado o eliminado
+        if (_hub is null || _hub.State == HubConnectionState.Disconnected)
+        {
+            try
+            {
+                _hub = null; // asegurar limpieza antes de reconectar
+                await ConectarSignalRAsync();
+                _logger.LogInformation("SignalR reconectado tras refresh de token.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo reconectar SignalR tras refresh de token.");
+            }
         }
 
         // Re-intentar con nuevo token

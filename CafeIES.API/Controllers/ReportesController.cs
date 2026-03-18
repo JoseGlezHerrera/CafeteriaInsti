@@ -15,10 +15,12 @@ namespace CafeIES.API.Controllers;
 public class ReportesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<ReportesController> _logger;
 
-    public ReportesController(AppDbContext db)
+    public ReportesController(AppDbContext db, ILogger<ReportesController> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     // ── GET /api/reportes/excel ───────────────────────────────────────────────
@@ -68,6 +70,12 @@ public class ReportesController : ControllerBase
         if (hasta.HasValue)
             query = query.Where(p => p.FechaCreacion.Date <= hasta.Value.Date);
 
-        return await query.OrderBy(p => p.FechaCreacion).ToListAsync();
+        // Contar antes de aplicar el límite para poder advertir
+        var total = await query.CountAsync();
+        const int MaxPedidos = 1000;
+        if (total > MaxPedidos)
+            _logger.LogWarning("Reporte solicitado con {Total} pedidos; se truncará a {Max} en la query.", total, MaxPedidos);
+
+        return await query.OrderBy(p => p.FechaCreacion).Take(MaxPedidos).ToListAsync();
     }
 }
