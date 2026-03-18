@@ -35,9 +35,10 @@ public partial class RegistroInvitacionViewModel : ObservableObject
     // Código que el usuario escribe manualmente (si llega sin token via query param)
     [ObservableProperty] private string _codigoManual = string.Empty;
 
-    [ObservableProperty] private string _nombre   = string.Empty;
-    [ObservableProperty] private string _email    = string.Empty;
-    [ObservableProperty] private string _password = string.Empty;
+    [ObservableProperty] private string _nombre             = string.Empty;
+    [ObservableProperty] private string _email              = string.Empty;
+    [ObservableProperty] private string _password           = string.Empty;
+    [ObservableProperty] private string _confirmarPassword  = string.Empty;
     [ObservableProperty] private bool   _isLoading;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hayError;
@@ -98,8 +99,15 @@ public partial class RegistroInvitacionViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(Nombre) || string.IsNullOrWhiteSpace(Email) || Password.Length < 8)
         {
-            HayError = true;
+            HayError     = true;
             ErrorMessage = "Completa todos los campos (contraseña mínimo 8 caracteres).";
+            return;
+        }
+
+        if (Password != ConfirmarPassword)
+        {
+            HayError     = true;
+            ErrorMessage = "Las contraseñas no coinciden. Compruébalas e inténtalo de nuevo.";
             return;
         }
 

@@ -64,6 +64,16 @@
                    Margin="2,6,2,0"
                    LineBreakMode="WordWrap"/>
 
+            <!-- Confirmar contraseña -->
+            <Label Text="CONFIRMAR CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
+                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
+                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                <Entry Style="{StaticResource InputEntry}"
+                       Text="{Binding ConfirmarPassword}" Placeholder="Repite la contraseña" IsPassword="True"/>
+            </Border>
+
             <!-- Turno selector -->
             <Label Text="TURNO" FontFamily="SyneBold" FontSize="11"
                    TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,12"/>
