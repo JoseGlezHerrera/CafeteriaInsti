@@ -20,6 +20,7 @@ public enum RolUsuario
     Alumno      = 0,   // Se registra solo, requiere validación del admin
     Profesor    = 1,   // Se registra mediante enlace/QR generado por el admin
     Personal    = 2,   // Se registra mediante enlace/QR generado por el admin
+    Empleado    = 3,   // Empleado de cafetería, requiere validación del admin
     Admin       = 99   // Creado directamente, acceso total
 }
 

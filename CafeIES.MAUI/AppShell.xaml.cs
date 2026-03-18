@@ -10,6 +10,7 @@ public partial class AppShell : Shell
 
         // Rutas para navegación programática (push navigation)
         Routing.RegisterRoute("Registro",              typeof(RegistroPage));
+        Routing.RegisterRoute("RegistroEmpleado",      typeof(RegistroEmpleadoPage));
         Routing.RegisterRoute("RegistroInvitacion",    typeof(RegistroInvitacionPage));
         Routing.RegisterRoute("ConfirmacionPedido",    typeof(ConfirmacionPedidoPage));
         Routing.RegisterRoute("DetallePedido",         typeof(DetallePedidoPage));

@@ -29,6 +29,19 @@
         </Tab>
     </TabBar>
 
+    <!-- Panel de empleado de cafetería -->
+    <TabBar Route="Empleado">
+        <Tab Title="Pedidos" Icon="icon_orders.png" Route="EmpleadoPedidos">
+            <ShellContent ContentTemplate="{DataTemplate views:EmpleadoPedidosPage}"/>
+        </Tab>
+        <Tab Title="Productos" Icon="icon_productos.png" Route="EmpleadoProductos">
+            <ShellContent ContentTemplate="{DataTemplate views:EmpleadoProductosPage}"/>
+        </Tab>
+        <Tab Title="Perfil" Icon="icon_profile.png" Route="EmpleadoPerfil">
+            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}"/>
+        </Tab>
+    </TabBar>
+
     <!-- App principal con Tab Bar -->
     <TabBar Route="Main">
         <Tab Title="Inicio" Icon="icon_home.png" Route="Inicio">

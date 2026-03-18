@@ -12,7 +12,7 @@
 {
     <div class="alert-section">
         <div class="alert-section-title">
-            <span>⚠️ Alumnos pendientes de validar</span>
+            <span>⚠️ Usuarios pendientes de validar</span>
             <span class="badge-red">@_pendientes.Count</span>
         </div>
         <div class="pending-list">
@@ -56,6 +56,7 @@
                 <option value="Alumno">🎓 Alumno</option>
                 <option value="Profesor">👨‍🏫 Profesor</option>
                 <option value="Personal">🏢 Personal</option>
+                <option value="Empleado">☕ Empleado</option>
                 <option value="Admin">👑 Admin</option>
             </select>
         </div>
@@ -113,8 +114,6 @@
                             </span>
                         </td>
                         <td>
-                            <button class="btn-icon" title="Gestionar rol e instituto"
-                                    @onclick="() => AbrirGestionar(u)">⚙️</button>
                             @if (u.Rol != RolUsuario.Admin && u.Estado == EstadoCuenta.Activa)
                             {
                                 <button class="btn-icon btn-icon--danger" title="Suspender"
@@ -157,55 +156,6 @@
             <div class="modal-footer">
                 <button class="btn-secondary" @onclick="CancelarEliminar">Cancelar</button>
                 <button class="btn-primary" style="background:var(--red)" @onclick="EliminarUsuario">Eliminar</button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_gestionarUsuario is not null)
-{
-    <div class="modal-overlay" @onclick="CerrarGestionar">
-        <div class="modal" @onclick:stopPropagation="true" style="max-width:440px">
-            <div class="modal-header">
-                <h3>⚙️ Gestionar usuario</h3>
-                <button class="modal-close" @onclick="CerrarGestionar">✕</button>
-            </div>
-            <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
-                <p style="margin:0"><strong>@_gestionarUsuario.NombreCompleto</strong><br/>
-                   <span style="color:var(--muted);font-size:13px">@_gestionarUsuario.Email</span></p>
-
-                <div>
-                    <label style="font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:6px">ROL</label>
-                    <select class="filter-select" style="width:100%" @bind="_gestionarRol">
-                        <option value="Alumno">🎓 Alumno</option>
-                        <option value="Profesor">👨‍🏫 Profesor</option>
-                        <option value="Personal">🏢 Personal</option>
-                        <option value="Admin">👑 Admin</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:6px">INSTITUTO ASIGNADO</label>
-                    <select class="filter-select" style="width:100%" @bind="_gestionarInstitutoId">
-                        <option value="">— Sin instituto (admin global) —</option>
-                        @foreach (var i in _institutos)
-                        {
-                            <option value="@i.Id">@i.Nombre</option>
-                        }
-                    </select>
-                    <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
-                        Si asignas un instituto a un admin, solo verá datos de ese instituto.
-                    </p>
-                </div>
-
-                @if (!string.IsNullOrEmpty(_gestionarError))
-                {
-                    <p style="color:var(--red);font-size:13px;margin:0">⚠️ @_gestionarError</p>
-                }
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" @onclick="CerrarGestionar">Cancelar</button>
-                <button class="btn-primary" @onclick="GuardarGestion">Guardar cambios</button>
             </div>
         </div>
     </div>
@@ -259,46 +209,6 @@
         await Recargar();
     }
 
-    // ── Modal gestionar rol e instituto ──────────────────────────────────────
-    private UsuarioDto? _gestionarUsuario;
-    private string      _gestionarRol        = string.Empty;
-    private string      _gestionarInstitutoId = string.Empty;
-    private string      _gestionarError      = string.Empty;
-
-    private void AbrirGestionar(UsuarioDto u)
-    {
-        _gestionarUsuario    = u;
-        _gestionarRol        = u.Rol.ToString();
-        _gestionarInstitutoId = u.InstitutoId?.ToString() ?? string.Empty;
-        _gestionarError      = string.Empty;
-    }
-
-    private void CerrarGestionar() => _gestionarUsuario = null;
-
-    private async Task GuardarGestion()
-    {
-        if (_gestionarUsuario is null) return;
-        _gestionarError = string.Empty;
-
-        // Cambiar rol si cambió
-        if (Enum.TryParse<RolUsuario>(_gestionarRol, out var nuevoRol) && nuevoRol != _gestionarUsuario.Rol)
-        {
-            var ok = await Api.CambiarRolAsync(_gestionarUsuario.Id, nuevoRol);
-            if (!ok) { _gestionarError = "Error al cambiar el rol."; return; }
-        }
-
-        // Cambiar instituto si cambió
-        var nuevoInstitutoId = int.TryParse(_gestionarInstitutoId, out var iid) ? (int?)iid : null;
-        if (nuevoInstitutoId != _gestionarUsuario.InstitutoId)
-        {
-            var ok = await Api.CambiarInstitutoAsync(_gestionarUsuario.Id, nuevoInstitutoId);
-            if (!ok) { _gestionarError = "Error al cambiar el instituto."; return; }
-        }
-
-        _gestionarUsuario = null;
-        await Recargar();
-    }
-
     // ── Modal eliminar ────────────────────────────────────────────────────────
     private bool _confirmarEliminar;
     private UsuarioDto? _usuarioEliminar;
@@ -347,6 +257,7 @@
         RolUsuario.Alumno   => "🎓 Alumno",
         RolUsuario.Profesor => "👨‍🏫 Profesor",
         RolUsuario.Personal => "🏢 Personal",
+        RolUsuario.Empleado => "☕ Empleado",
         RolUsuario.Admin    => "👑 Admin",
         _                   => r.ToString()
     };

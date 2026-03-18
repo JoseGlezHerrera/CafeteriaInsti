@@ -205,9 +205,9 @@ public class PedidosController : ControllerBase
         [EstadoPedido.Cancelado]     = []
     };
 
-    // ── PATCH /api/pedidos/{id}/estado  (Admin / Cafetería) ──────────────────
+    // ── PATCH /api/pedidos/{id}/estado  (Admin / Cafetería / Empleado) ────────
     [HttpPatch("{id}/estado")]
-    [Authorize(Roles = "Admin,Personal")]
+    [Authorize(Roles = "Admin,Personal,Empleado")]
     public async Task<ActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest req)
     {
         var pedido = await _db.Pedidos
@@ -258,18 +258,25 @@ public class PedidosController : ControllerBase
         return NoContent();
     }
 
-    // ── GET /api/pedidos/en-curso  (Admin / Cafetería) ───────────────────────
+    // ── GET /api/pedidos/en-curso  (Admin / Cafetería / Empleado) ────────────
     [HttpGet("en-curso")]
-    [Authorize(Roles = "Admin,Personal")]
+    [Authorize(Roles = "Admin,Personal,Empleado")]
     public async Task<ActionResult<List<PedidoDto>>> EnCurso()
     {
-        var pedidos = await _db.Pedidos
+        var esEmpleado = User.IsInRole("Empleado");
+        var institutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
+
+        var query = _db.Pedidos
             .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
             .OrderBy(p => p.FechaCreacion)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
-            .ToListAsync();
+            .AsQueryable();
 
+        if (esEmpleado && institutoId.HasValue)
+            query = query.Where(p => p.Usuario.InstitutoId == institutoId);
+
+        var pedidos = await query.ToListAsync();
         return Ok(pedidos.Select(p => p.ToDto()).ToList());
     }
 

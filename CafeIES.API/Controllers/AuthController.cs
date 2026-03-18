@@ -90,6 +90,35 @@ public class AuthController : ControllerBase
         return Ok(new { mensaje = "Registro completado. Tu cuenta está pendiente de validación por el administrador." });
     }
 
+    // ── POST /api/auth/registro/empleado ────────────────────────────────────
+    [HttpPost("registro/empleado")]
+    [EnableRateLimiting("auth")]
+    public async Task<ActionResult> RegistroEmpleado([FromBody] RegistroEmpleadoRequest req)
+    {
+        if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
+            return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
+
+        var instituto = await _db.Institutos.FindAsync(req.InstitutoId);
+        if (instituto is null || !instituto.Activo)
+            return BadRequest(new { mensaje = "El instituto seleccionado no es válido." });
+
+        var usuario = new Usuario
+        {
+            NombreCompleto = req.NombreCompleto,
+            Email          = req.Email.ToLower(),
+            PasswordHash   = _auth.HashPassword(req.Password),
+            Rol            = RolUsuario.Empleado,
+            Turno          = null,
+            Estado         = EstadoCuenta.PendienteValidacion,
+            InstitutoId    = req.InstitutoId
+        };
+
+        _db.Usuarios.Add(usuario);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { mensaje = "Registro completado. Tu cuenta está pendiente de validación por el administrador." });
+    }
+
     // ── POST /api/auth/registro/invitacion ───────────────────────────────────
     [HttpPost("registro/invitacion")]
     [EnableRateLimiting("auth")]

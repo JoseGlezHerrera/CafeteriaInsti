@@ -114,14 +114,6 @@ public class AdminApiService
     public async Task<bool> ReactivarUsuarioAsync(int id)
         => await SendBoolAsync(() => _http.PatchAsync($"api/admin/usuarios/{id}/reactivar", null));
 
-    public async Task<bool> CambiarInstitutoAsync(int id, int? institutoId)
-        => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/admin/usuarios/{id}/instituto",
-               new CambiarInstitutoRequest(institutoId)));
-
-    public async Task<bool> CambiarRolAsync(int id, RolUsuario rol)
-        => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/admin/usuarios/{id}/rol",
-               new CambiarRolRequest(rol)));
-
     public async Task<(bool Ok, string? Error)> EliminarUsuarioAsync(int id)
     {
         try

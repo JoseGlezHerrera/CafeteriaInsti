@@ -97,9 +97,9 @@ public class ProductosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto.ToDto());
     }
 
-    // ── PUT /api/productos/{id}  (solo Admin) ────────────────────────────────
+    // ── PUT /api/productos/{id}  (Admin / Empleado) ──────────────────────────
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<ProductoDto>> Actualizar(int id, [FromBody] CrearProductoRequest req)
     {
         var producto = await _db.Productos
@@ -133,9 +133,9 @@ public class ProductosController : ControllerBase
         return Ok(producto.ToDto());
     }
 
-    // ── PATCH /api/productos/{id}/stock  (Admin) ─────────────────────────────
+    // ── PATCH /api/productos/{id}/stock  (Admin / Empleado) ──────────────────
     [HttpPatch("{id}/stock")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult> ActualizarStock(int id, [FromBody] ActualizarStockRequest req)
     {
         if (req.NuevoStock < -1)
@@ -149,9 +149,9 @@ public class ProductosController : ControllerBase
         return NoContent();
     }
 
-    // ── PATCH /api/productos/{id}/toggle  (Admin) ────────────────────────────
+    // ── PATCH /api/productos/{id}/toggle  (Admin / Empleado) ─────────────────
     [HttpPatch("{id}/toggle")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult> ToggleActivo(int id)
     {
         var producto = await _db.Productos.FindAsync(id);
