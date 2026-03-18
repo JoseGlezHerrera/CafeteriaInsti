@@ -70,7 +70,12 @@ public partial class LoginViewModel : ObservableObject
         _ = _push.RegistrarAsync();
 
         // Navegar al TabBar según el rol
-        var destino = resultado.Usuario.Rol == RolUsuario.Admin ? "//Admin" : "//Main";
+        var destino = resultado.Usuario.Rol switch
+        {
+            RolUsuario.Admin    => "//Admin",
+            RolUsuario.Empleado => "//Empleado",
+            _                   => "//Main"
+        };
         try
         {
             await Shell.Current.GoToAsync(destino);
@@ -93,5 +98,11 @@ public partial class LoginViewModel : ObservableObject
     private async Task IrARegistroInvitacionAsync()
     {
         await Shell.Current.GoToAsync("RegistroInvitacion");
+    }
+
+    [RelayCommand]
+    private async Task IrARegistroEmpleadoAsync()
+    {
+        await Shell.Current.GoToAsync("RegistroEmpleado");
     }
 }

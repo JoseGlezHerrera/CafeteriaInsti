@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="CafeIES.MAUI.Views.EmpleadoProductosPage"
+             x:DataType="vm:EmpleadoProductosViewModel"
+             BackgroundColor="{StaticResource BgColor}">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
+    </ContentPage.Behaviors>
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
+            <Label Text="Productos" FontFamily="SyneBold" FontSize="22" TextColor="{StaticResource TextColor}"/>
+        </Grid>
+        <RefreshView Grid.Row="1" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
+            <CollectionView ItemsSource="{Binding Productos}" Margin="16,12">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Margin="0,80">
+                        <Label Text="No hay productos" Style="{StaticResource SubtitleLabel}" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:ProductoDto">
+                        <Border Style="{StaticResource Card}">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="12">
+                                <!-- Nombre + categoría -->
+                                <VerticalStackLayout Grid.Column="0" Grid.Row="0" Spacing="2">
+                                    <Label Text="{Binding Nombre}" FontFamily="SyneBold" FontSize="15" TextColor="{StaticResource TextColor}"/>
+                                    <Label FontFamily="DMSans" FontSize="12" TextColor="{StaticResource MutedColor}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding CategoriaEmoji}"/>
+                                                <Span Text=" "/>
+                                                <Span Text="{Binding CategoriaNombre}"/>
+                                                <Span Text=" · "/>
+                                                <Span Text="{Binding Precio, StringFormat='{0:F2}€'}"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </VerticalStackLayout>
+                                <!-- Stock badge -->
+                                <Border Grid.Column="1" Grid.Row="0" Padding="10,5" StrokeThickness="0"
+                                        BackgroundColor="{Binding NivelStock, Converter={StaticResource StockLevelBorderConverter}}">
+                                    <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                    <Label FontFamily="SyneBold" FontSize="11"
+                                           TextColor="{Binding NivelStock, Converter={StaticResource StockLevelTextConverter}}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="Stock: "/>
+                                                <Span Text="{Binding Stock, Converter={StaticResource StockDisplayConverter}}"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </Border>
+                                <!-- Acciones -->
+                                <HorizontalStackLayout Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Spacing="8">
+                                    <Button Text="✏️ Stock" FontFamily="SyneBold" FontSize="11"
+                                            BackgroundColor="{StaticResource Surface2Color}" TextColor="{StaticResource TextColor}"
+                                            CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                            CommandParameter="{Binding .}" Clicked="OnEditarStockClicked"/>
+                                    <Button FontFamily="SyneBold" FontSize="11" CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                            BackgroundColor="{Binding Activo, Converter={StaticResource ActivoBgConverter}}"
+                                            TextColor="{Binding Activo, Converter={StaticResource ActivoTextColorConverter}}"
+                                            Text="{Binding Activo, Converter={StaticResource ActivoTextoConverter}}"
+                                            CommandParameter="{Binding .}" Clicked="OnToggleActivoClicked"/>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

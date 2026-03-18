@@ -292,6 +292,7 @@ public class RolTextoConverter : IValueConverter
             RolUsuario.Alumno   => "🎓 Alumno",
             RolUsuario.Profesor => "👨‍🏫 Profesor",
             RolUsuario.Personal => "🏢 Personal",
+            RolUsuario.Empleado => "☕ Empleado",
             RolUsuario.Admin    => "👑 Admin",
             _                  => r.ToString()
         } : "";

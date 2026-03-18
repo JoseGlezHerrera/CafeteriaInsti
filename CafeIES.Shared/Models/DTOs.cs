@@ -29,6 +29,14 @@ public record RegistroAlumnoRequest(
     [Required]                                    int    InstitutoId
 );
 
+// Registro de empleado de cafetería (autoregistro)
+public record RegistroEmpleadoRequest(
+    [Required, MaxLength(100)]                    string NombreCompleto,
+    [Required, EmailAddress]                      string Email,
+    [Required, MinLength(8), PasswordComplexity]  string Password,
+    [Required]                                    int    InstitutoId
+);
+
 // Registro mediante invitación (profe/personal)
 public record RegistroInvitadoRequest(
     [Required]                                    string TokenInvitacion,

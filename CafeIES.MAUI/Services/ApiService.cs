@@ -218,6 +218,22 @@ public class ApiService
         }
     }
 
+    public async Task<RegistroResultado> RegistroEmpleadoAsync(RegistroEmpleadoRequest req)
+    {
+        try
+        {
+            var resp = await _http.PostAsJsonAsync("api/auth/registro/empleado", req);
+            if (resp.IsSuccessStatusCode) return RegistroResultado.Ok;
+            if (resp.StatusCode == HttpStatusCode.Conflict) return RegistroResultado.EmailDuplicado;
+            return RegistroResultado.ErrorServidor;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en RegistroEmpleadoAsync.");
+            return RegistroResultado.ErrorServidor;
+        }
+    }
+
     public async Task<bool> CambiarPasswordAsync(CambiarPasswordRequest req)
     {
         try
@@ -409,6 +425,22 @@ public class ApiService
         {
             _logger.LogWarning(ex, "Error al obtener el pedido {Id}.", id);
             return null;
+        }
+    }
+
+    // ── Empleado: Pedidos en curso ────────────────────────────────────────────
+    public async Task<List<PedidoDto>> GetPedidosEnCursoAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/pedidos/en-curso");
+            if (!resp.IsSuccessStatusCode) return new();
+            return await resp.Content.ReadFromJsonAsync<List<PedidoDto>>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en GetPedidosEnCursoAsync.");
+            return new();
         }
     }
 
