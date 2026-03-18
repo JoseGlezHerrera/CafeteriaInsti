@@ -130,7 +130,7 @@ public partial class HomeViewModel : ObservableObject
         foreach (var p in filtrados) ProductosFiltrados.Add(p);
     }
 
-    partial void OnBusquedaChanged(string _) => FiltrarProductos();
+    partial void OnBusquedaChanged(string value) => FiltrarProductos();
 
     // ── Navegación ──────────────────────────────────────────────────────────────
     [RelayCommand]

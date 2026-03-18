@@ -9,6 +9,12 @@ public static class ReportePdfService
 {
     public static byte[] Generar(List<Pedido> pedidos, DateTime? desde, DateTime? hasta)
     {
+        // Seguridad: limitar a 1000 pedidos para evitar PDFs excesivos en memoria
+        bool truncado = pedidos.Count > 1000;
+        int totalOriginal = pedidos.Count;
+        if (truncado)
+            pedidos = pedidos.Take(1000).ToList();
+
         var completados = pedidos.Where(p => p.Estado != EstadoPedido.Cancelado).ToList();
         var ingresos    = completados.Sum(p => p.Total);
         var ticketMedio = completados.Count > 0 ? completados.Average(p => p.Total) : 0m;
@@ -44,6 +50,10 @@ public static class ReportePdfService
                     col.Item().PaddingTop(4)
                         .Text($"Período: {desde:dd/MM/yyyy} – {hasta:dd/MM/yyyy}")
                         .FontSize(10).Italic().FontColor(Color.FromHex("#6B7280"));
+                    if (truncado)
+                        col.Item().PaddingTop(4)
+                            .Text($"⚠ Mostrando primeros 1.000 de {totalOriginal} pedidos")
+                            .FontSize(9).Bold().FontColor(Color.FromHex("#DC2626"));
                 });
 
                 // ── Contenido ─────────────────────────────────────────────────
