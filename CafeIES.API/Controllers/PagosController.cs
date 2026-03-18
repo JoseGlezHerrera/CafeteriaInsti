@@ -1,10 +1,15 @@
+using System.Data;
 using System.Security.Claims;
+using System.Text.Json;
 using CafeIES.API.Data;
+using CafeIES.API.Extensions;
+using CafeIES.API.Hubs;
 using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 
@@ -15,15 +20,20 @@ namespace CafeIES.API.Controllers;
 [EnableRateLimiting("general")]
 public class PagosController : ControllerBase
 {
-    private readonly AppDbContext   _db;
-    private readonly StripeService  _stripe;
-    private readonly IConfiguration _config;
+    private readonly AppDbContext              _db;
+    private readonly StripeService             _stripe;
+    private readonly IConfiguration            _config;
+    private readonly IHubContext<CafeteriaHub> _hub;
+    private readonly ILogger<PagosController>  _logger;
 
-    public PagosController(AppDbContext db, StripeService stripe, IConfiguration config)
+    public PagosController(AppDbContext db, StripeService stripe, IConfiguration config,
+        IHubContext<CafeteriaHub> hub, ILogger<PagosController> logger)
     {
         _db     = db;
         _stripe = stripe;
         _config = config;
+        _hub    = hub;
+        _logger = logger;
     }
 
     /// <summary>
@@ -65,11 +75,17 @@ public class PagosController : ControllerBase
             return BadRequest(new { mensaje = "El importe mínimo es 0.50€." });
 
         // 2. Crear PaymentIntent en Stripe
+        // Guardamos en metadata todo lo necesario para reconstruir el pedido
+        // desde el webhook si el usuario cierra la app antes de confirmarlo.
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anon";
+        var lineasJson = JsonSerializer.Serialize(
+            req.Lineas.Select(l => new { l.ProductoId, l.Cantidad }));
         var metadata = new Dictionary<string, string>
         {
-            ["userId"] = userId,
-            ["notas"]  = req.Notas ?? ""
+            ["userId"]      = userId,
+            ["notas"]       = req.Notas ?? "",
+            ["metodo_pago"] = ((int)MetodoPago.Tarjeta).ToString(),
+            ["lineas"]      = lineasJson   // ej: [{"ProductoId":1,"Cantidad":2}]
         };
 
         var (clientSecret, paymentIntentId) = await _stripe.CrearPaymentIntentAsync(
@@ -165,6 +181,8 @@ public class PagosController : ControllerBase
 
     /// <summary>
     /// Webhook de Stripe — recibe notificaciones de pago completado/fallido.
+    /// Si el pago se completó pero no existe pedido (usuario cerró la app),
+    /// reconstruye el pedido automáticamente desde los metadatos del PaymentIntent.
     /// Endpoint público (Stripe no envía JWT).
     /// </summary>
     [HttpPost("webhook")]
@@ -182,8 +200,6 @@ public class PagosController : ControllerBase
         if (stripeEvent is null)
             return BadRequest("Firma inválida.");
 
-        var logger = HttpContext.RequestServices.GetRequiredService<ILogger<PagosController>>();
-
         switch (stripeEvent.Type)
         {
             case EventTypes.PaymentIntentSucceeded:
@@ -191,21 +207,15 @@ public class PagosController : ControllerBase
                 var intent = stripeEvent.Data.Object as PaymentIntent;
                 if (intent is not null)
                 {
-                    logger.LogInformation(
+                    _logger.LogInformation(
                         "✅ Webhook: PaymentIntent {Id} succeeded — {Amount} céntimos",
                         intent.Id, intent.Amount);
 
-                    // Comprobar si ya existe un pedido con esta referencia
                     var existePedido = await _db.Pedidos
                         .AnyAsync(p => p.ReferenciasPago == intent.Id);
 
                     if (!existePedido)
-                    {
-                        logger.LogWarning(
-                            "⚠️ Pago {Id} completado pero sin pedido asociado. " +
-                            "El usuario puede haber cerrado la app antes de confirmar.",
-                            intent.Id);
-                    }
+                        await ReconstruirPedidoAsync(intent);
                 }
                 break;
             }
@@ -215,7 +225,7 @@ public class PagosController : ControllerBase
                 var intent = stripeEvent.Data.Object as PaymentIntent;
                 if (intent is not null)
                 {
-                    logger.LogWarning(
+                    _logger.LogWarning(
                         "❌ Webhook: PaymentIntent {Id} failed — {Error}",
                         intent.Id,
                         intent.LastPaymentError?.Message ?? "sin detalle");
@@ -224,10 +234,158 @@ public class PagosController : ControllerBase
             }
 
             default:
-                logger.LogDebug("Webhook Stripe: evento {Type} ignorado", stripeEvent.Type);
+                _logger.LogDebug("Webhook Stripe: evento {Type} ignorado", stripeEvent.Type);
                 break;
         }
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Reconstruye un pedido desde los metadatos de un PaymentIntent cuyo pago
+    /// ya se cobró pero el cliente cerró la app antes de llamar a POST /api/pedidos.
+    /// </summary>
+    private async Task ReconstruirPedidoAsync(PaymentIntent intent)
+    {
+        _logger.LogWarning(
+            "⚠️ Webhook: pago {Id} sin pedido asociado — intentando reconstruir desde metadatos.",
+            intent.Id);
+
+        // Leer metadatos guardados al crear el PaymentIntent
+        if (!intent.Metadata.TryGetValue("userId",  out var userIdStr) ||
+            !intent.Metadata.TryGetValue("lineas",   out var lineasJson) ||
+            !int.TryParse(userIdStr, out var userId))
+        {
+            _logger.LogError(
+                "❌ Webhook: no se puede reconstruir el pedido {Id} — faltan metadatos (userId/lineas).",
+                intent.Id);
+            return;
+        }
+
+        intent.Metadata.TryGetValue("notas", out var notas);
+        intent.Metadata.TryGetValue("metodo_pago", out var metodoPagoStr);
+        var metodo = int.TryParse(metodoPagoStr, out var mp) && Enum.IsDefined(typeof(MetodoPago), mp)
+            ? (MetodoPago)mp
+            : MetodoPago.Tarjeta;
+
+        // Parsear las líneas del pedido
+        List<(int ProductoId, int Cantidad)> lineas;
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<List<JsonElement>>(lineasJson);
+            if (parsed is null || parsed.Count == 0)
+            {
+                _logger.LogError("❌ Webhook: metadatos de líneas vacíos para {Id}.", intent.Id);
+                return;
+            }
+            lineas = parsed.Select(e => (
+                e.GetProperty("ProductoId").GetInt32(),
+                e.GetProperty("Cantidad").GetInt32()
+            )).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Webhook: error al parsear líneas del pedido {Id}.", intent.Id);
+            return;
+        }
+
+        // Crear el pedido con transacción
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            var lineasPedido = new List<LineaPedido>();
+            decimal total = 0;
+
+            foreach (var (productoId, cantidad) in lineas)
+            {
+                var producto = await _db.Productos.FindAsync(productoId);
+                if (producto is null || !producto.Activo)
+                {
+                    _logger.LogWarning(
+                        "⚠️ Webhook: producto {PId} no disponible al reconstruir pedido {IntentId}.",
+                        productoId, intent.Id);
+                    continue;
+                }
+
+                if (producto.Stock != -1)
+                {
+                    if (producto.Stock < cantidad)
+                    {
+                        _logger.LogWarning(
+                            "⚠️ Webhook: stock insuficiente para producto {PId} — ajustando cantidad.",
+                            productoId);
+                        if (producto.Stock <= 0) continue;
+                        // Usar el stock disponible si no alcanza para la cantidad original
+                        var cantidadReal = Math.Min(cantidad, producto.Stock);
+                        producto.Stock -= cantidadReal;
+                        lineasPedido.Add(new LineaPedido
+                        {
+                            ProductoId = productoId, Cantidad = cantidadReal,
+                            PrecioUnitario = producto.Precio
+                        });
+                        total += producto.Precio * cantidadReal;
+                        continue;
+                    }
+                    producto.Stock -= cantidad;
+                }
+
+                lineasPedido.Add(new LineaPedido
+                {
+                    ProductoId = productoId, Cantidad = cantidad,
+                    PrecioUnitario = producto.Precio
+                });
+                total += producto.Precio * cantidad;
+            }
+
+            if (lineasPedido.Count == 0)
+            {
+                _logger.LogError(
+                    "❌ Webhook: no se pudo reconstruir ninguna línea para el pedido {Id}.",
+                    intent.Id);
+                await transaction.RollbackAsync();
+                return;
+            }
+
+            var hoy = DateTime.UtcNow.Date;
+            var ultimoNumero = await _db.Pedidos
+                .Where(p => p.FechaCreacion.Date == hoy)
+                .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
+
+            var pedido = new Pedido
+            {
+                UsuarioId       = userId,
+                NumeroPedido    = ultimoNumero + 1,
+                MetodoPago      = metodo,
+                Total           = total,
+                Notas           = notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;"),
+                Lineas          = lineasPedido,
+                ReferenciasPago = intent.Id
+            };
+
+            _db.Pedidos.Add(pedido);
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "✅ Webhook: pedido #{Num} reconstruido para usuario {UserId} desde PaymentIntent {IntentId}.",
+                pedido.NumeroPedido, userId, intent.Id);
+
+            // Notificar a la cafetería en tiempo real
+            var dto = await _db.Pedidos
+                .Where(p => p.Id == pedido.Id)
+                .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+                .Include(p => p.Usuario).ThenInclude(u => u!.Instituto)
+                .Select(p => p.ToDto())
+                .FirstOrDefaultAsync();
+
+            if (dto is not null)
+                await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "❌ Webhook: error al reconstruir el pedido desde PaymentIntent {Id}.", intent.Id);
+            await transaction.RollbackAsync();
+        }
     }
 }
