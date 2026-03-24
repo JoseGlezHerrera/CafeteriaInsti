@@ -160,6 +160,8 @@ public class Invitacion
     /// <summary>Cuántas veces se puede usar. Null = ilimitado mientras esté activa.</summary>
     public int? UsosMaximos { get; set; }
 
+    /// <summary>ConcurrencyCheck evita que dos registros simultáneos superen UsosMaximos.</summary>
+    [ConcurrencyCheck]
     public int UsosActuales { get; set; } = 0;
 
     [NotMapped]
