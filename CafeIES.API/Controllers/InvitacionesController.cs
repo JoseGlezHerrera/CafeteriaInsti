@@ -69,11 +69,12 @@ public class InvitacionesController : ControllerBase
         if (invitacion is null || !invitacion.EsValida)
             return NotFound(new { mensaje = "Invitación no válida." });
 
-        var baseUrl  = _config["App:BaseUrl"] ?? "https://cafeies.local";
-        var urlCompleta = $"{baseUrl}/registro/invitacion/{invitacion.Token}";
+        // FIX-25: El QR muestra el codigo corto de la invitacion directamente.
+        // El usuario abre la app y escribe el codigo, en lugar de navegar a una URL inexistente.
+        var qrContent = invitacion.Token;
 
         using var qrGenerator = new QRCodeGenerator();
-        var qrData   = qrGenerator.CreateQrCode(urlCompleta, QRCodeGenerator.ECCLevel.Q);
+        var qrData   = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
         var qrCode   = new PngByteQRCode(qrData);
         var qrBytes  = qrCode.GetGraphic(10);
 

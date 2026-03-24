@@ -63,6 +63,13 @@ public record UsuarioDto(
 
 public record InstitutoDto(int Id, string Nombre, string CodigoCorto);
 
+/// <summary>FIX-24: Request para crear/actualizar instituto.</summary>
+public record CrearInstitutoRequest(
+    [Required, MaxLength(150)] string Nombre,
+    [Required, MaxLength(20)]  string CodigoCorto,
+    [MaxLength(300)]           string? Direccion
+);
+
 // ── Catálogo ──────────────────────────────────────────────────────────────────
 
 public record CategoriaDto(int Id, string Nombre, string Emoji);
@@ -87,7 +94,7 @@ public record ProductoDto(
 public record CrearProductoRequest(
     [Required, MinLength(3), MaxLength(120)] string  Nombre,
     [MaxLength(300)]           string  Descripcion,
-    [Required]                 decimal Precio,
+    [Required, Range(0.01, 9999.99, ErrorMessage = "El precio debe estar entre 0.01€ y 9999.99€.")] decimal Precio,
                                int     Stock,
     [Required]                 int     CategoriaId,
                                string? ImagenUrl,
@@ -233,6 +240,9 @@ public record PagoIntentResponse(
 );
 
 public record StripeConfigDto(string PublishableKey);
+
+/// <summary>FIX-10: Request para cancelar un PaymentIntent al abandonar el pago.</summary>
+public record CancelarIntentRequest([Required] string PaymentIntentId);
 
 // ── Notificaciones push ───────────────────────────────────────────────────────
 

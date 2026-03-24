@@ -28,14 +28,14 @@
             <div class="qr-wrap">
                 <img src="@Api.GetQrUrl(_invProfesor.Id)" class="qr-img" alt="QR Profesores"/>
             </div>
-            <div class="invite-url">@_invProfesor.UrlInvitacion</div>
+            <div class="invite-url" title="Codigo de invitacion">Codigo: <strong>@_invProfesor.Token</strong></div>
             <div class="invite-meta">
                 Caduca: @_invProfesor.FechaExpiracion.ToString("dd/MM/yyyy") ·
                 Usos: @_invProfesor.UsosActuales@(_invProfesor.UsosMaximos.HasValue ? $"/{_invProfesor.UsosMaximos}" : "")
             </div>
             <div class="invite-actions">
-                <button class="btn-secondary" @onclick="() => CopiarUrl(_invProfesor.UrlInvitacion)">
-                    📋 Copiar enlace
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invProfesor.Token)">
+                    📋 Copiar codigo
                 </button>
                 <button class="btn-icon btn-icon--danger"
                         @onclick="() => ConfirmarRevocar(_invProfesor.Id)">
@@ -73,14 +73,14 @@
             <div class="qr-wrap">
                 <img src="@Api.GetQrUrl(_invEmpleado.Id)" class="qr-img" alt="QR Empleados"/>
             </div>
-            <div class="invite-url">@_invEmpleado.UrlInvitacion</div>
+            <div class="invite-url" title="Codigo de invitacion">Codigo: <strong>@_invEmpleado.Token</strong></div>
             <div class="invite-meta">
                 Caduca: @_invEmpleado.FechaExpiracion.ToString("dd/MM/yyyy") ·
                 Usos: @_invEmpleado.UsosActuales@(_invEmpleado.UsosMaximos.HasValue ? $"/{_invEmpleado.UsosMaximos}" : "")
             </div>
             <div class="invite-actions">
-                <button class="btn-secondary" @onclick="() => CopiarUrl(_invEmpleado.UrlInvitacion)">
-                    📋 Copiar enlace
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invEmpleado.Token)">
+                    📋 Copiar codigo
                 </button>
                 <button class="btn-icon btn-icon--danger"
                         @onclick="() => ConfirmarRevocar(_invEmpleado.Id)">
@@ -118,14 +118,14 @@
             <div class="qr-wrap">
                 <img src="@Api.GetQrUrl(_invPersonal.Id)" class="qr-img" alt="QR Personal"/>
             </div>
-            <div class="invite-url">@_invPersonal.UrlInvitacion</div>
+            <div class="invite-url" title="Codigo de invitacion">Codigo: <strong>@_invPersonal.Token</strong></div>
             <div class="invite-meta">
                 Caduca: @_invPersonal.FechaExpiracion.ToString("dd/MM/yyyy") ·
                 Usos: @_invPersonal.UsosActuales@(_invPersonal.UsosMaximos.HasValue ? $"/{_invPersonal.UsosMaximos}" : "")
             </div>
             <div class="invite-actions">
-                <button class="btn-secondary" @onclick="() => CopiarUrl(_invPersonal.UrlInvitacion)">
-                    📋 Copiar enlace
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invPersonal.Token)">
+                    📋 Copiar codigo
                 </button>
                 <button class="btn-icon btn-icon--danger"
                         @onclick="() => ConfirmarRevocar(_invPersonal.Id)">

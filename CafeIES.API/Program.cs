@@ -171,11 +171,12 @@ using (var scope = app.Services.CreateScope())
     var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var webEnv = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
     try
     {
-        await db.Database.MigrateAsync();          // Aplica migraciones pendientes
-        await DbSeeder.SeedAdminAsync(db, config); // Crea admin si no existe
+        await db.Database.MigrateAsync();                    // Aplica migraciones pendientes
+        await DbSeeder.SeedAdminAsync(db, config, webEnv);   // Crea admin si no existe (FIX-22)
     }
     catch (Exception ex)
     {

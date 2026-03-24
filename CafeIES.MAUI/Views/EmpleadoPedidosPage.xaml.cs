@@ -13,6 +13,13 @@ public partial class EmpleadoPedidosPage : ContentPage
         BindingContext = vm;
     }
 
+    // FIX-11: Desuscribir mensajes al desaparecer la página
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        Vm.Cleanup();
+    }
+
     private void OnPrepararClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is PedidoDto p) Vm.PrepararCommand.Execute(p);

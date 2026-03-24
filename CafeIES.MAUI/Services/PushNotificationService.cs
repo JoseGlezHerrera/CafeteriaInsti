@@ -3,19 +3,33 @@ using Microsoft.Extensions.Logging;
 namespace CafeIES.MAUI.Services;
 
 /// <summary>
-/// Gestiona el ciclo de vida del token FCM en el dispositivo:
-///  • Al iniciar sesión → obtiene el token y lo registra en la API.
-///  • Al cerrar sesión  → elimina el token de la API.
+/// FIX-26: Gestiona el ciclo de vida del token FCM en el dispositivo.
 ///
-/// Requisitos para activar las notificaciones push:
-///   Android — añadir google-services.json en Platforms/Android/ (build action: GoogleServicesJson)
-///   iOS     — añadir GoogleService-Info.plist en Platforms/iOS/ (build action: BundleResource)
-///             + configurar APNs en el Apple Developer Portal y en Firebase Console.
+/// Para activar las notificaciones push:
+///
+/// 1. FIREBASE SETUP:
+///    a) Crear proyecto en Firebase Console (https://console.firebase.google.com)
+///    b) Registrar la app Android con el package name (com.cafeies.app)
+///    c) Descargar google-services.json → Platforms/Android/ (build action: GoogleServicesJson)
+///    d) Para iOS: descargar GoogleService-Info.plist → Platforms/iOS/ (build action: BundleResource)
+///       + configurar APNs en Apple Developer Portal y en Firebase Console
+///
+/// 2. PAQUETE NUGET:
+///    Descomentar en CafeIES.MAUI.csproj:
+///    &lt;PackageReference Include="Plugin.Firebase.CloudMessaging" Version="3.0.0" /&gt;
+///
+/// 3. CÓDIGO:
+///    Descomentar las líneas marcadas con "// FCM:" en RegistrarAsync() y EliminarAsync()
+///
+/// 4. API:
+///    La API ya tiene los endpoints POST/DELETE en /api/notificaciones/token
+///    y envía push en PedidosController al marcar pedido como Listo.
 /// </summary>
 public class PushNotificationService
 {
     private readonly ApiService            _api;
     private readonly ILogger<PushNotificationService> _logger;
+    private string? _currentToken;
 
     public PushNotificationService(ApiService api, ILogger<PushNotificationService> logger)
     {
@@ -29,12 +43,22 @@ public class PushNotificationService
     /// </summary>
     public async Task RegistrarAsync()
     {
-        // Push notifications pendientes de configurar:
-        // 1. Crear proyecto en Firebase Console y descargar google-services.json
-        // 2. Sustituir Platforms/Android/google-services.json con el archivo real
-        // 3. Descomentar Plugin.Firebase.CloudMessaging en CafeIES.MAUI.csproj
-        // 4. Restaurar las llamadas a CrossFirebaseCloudMessaging en este servicio
-        _logger.LogDebug("Push notifications no disponibles — Firebase sin configurar.");
+        try
+        {
+            // FCM: Descomentar cuando google-services.json esté configurado:
+            // await Plugin.Firebase.CloudMessaging.CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
+            // var token = await Plugin.Firebase.CloudMessaging.CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+            // _currentToken = token;
+            // await _api.RegistrarTokenPushAsync(token, DeviceInfo.Platform == DevicePlatform.Android ? "android" : "ios");
+            // _logger.LogInformation("Token FCM registrado: {Token}", token[..20] + "...");
+
+            _logger.LogDebug("Push notifications no disponibles — Firebase sin configurar. " +
+                "Consulta los comentarios en PushNotificationService.cs para activarlas.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al registrar token FCM.");
+        }
         await Task.CompletedTask;
     }
 
@@ -43,6 +67,20 @@ public class PushNotificationService
     /// </summary>
     public async Task EliminarAsync()
     {
+        try
+        {
+            if (!string.IsNullOrEmpty(_currentToken))
+            {
+                // FCM: Descomentar cuando Firebase esté configurado:
+                // await _api.EliminarTokenPushAsync(_currentToken);
+                // _currentToken = null;
+                _logger.LogDebug("Token FCM no eliminado — Firebase sin configurar.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar token FCM.");
+        }
         await Task.CompletedTask;
     }
 }

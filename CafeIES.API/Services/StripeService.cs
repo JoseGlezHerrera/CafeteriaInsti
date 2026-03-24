@@ -37,13 +37,24 @@ public class StripeService
 
     /// <summary>
     /// Verifica que un PaymentIntent esté pagado (status = "succeeded").
+    /// Devuelve también el Amount (en céntimos) y el userId de los metadatos.
     /// </summary>
-    public async Task<(bool Pagado, string Status)> VerificarPagoAsync(string paymentIntentId)
+    public async Task<(bool Pagado, string Status, long Amount, string? MetadataUserId)> VerificarPagoAsync(string paymentIntentId)
     {
         var service = new PaymentIntentService();
         var intent  = await service.GetAsync(paymentIntentId);
 
-        return (intent.Status == "succeeded", intent.Status);
+        intent.Metadata.TryGetValue("userId", out var metaUserId);
+        return (intent.Status == "succeeded", intent.Status, intent.Amount, metaUserId);
+    }
+
+    /// <summary>
+    /// Cancela un PaymentIntent en Stripe.
+    /// </summary>
+    public async Task CancelarIntentAsync(string paymentIntentId)
+    {
+        var service = new PaymentIntentService();
+        await service.CancelAsync(paymentIntentId);
     }
 
     /// <summary>

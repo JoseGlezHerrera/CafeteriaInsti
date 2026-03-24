@@ -54,21 +54,28 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     [RelayCommand]
     private async Task PrepararAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.EnPreparacion);
+        // FIX-14: Verificar resultado y mostrar error si falla
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.EnPreparacion);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo cambiar el estado del pedido.", "OK");
         await CargarAsync();
     }
 
     [RelayCommand]
     private async Task ListoAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Listo);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Listo);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como listo.", "OK");
         await CargarAsync();
     }
 
     [RelayCommand]
     private async Task EntregarAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como entregado.", "OK");
         await CargarAsync();
     }
 
@@ -78,7 +85,13 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
         var confirmar = await Shell.Current.DisplayAlert(
             "Cancelar pedido", $"¿Cancelar el pedido #{pedido.NumeroPedido:D3}?", "Sí, cancelar", "No");
         if (!confirmar) return;
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
+        // FIX-14: Informar al usuario si falla
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo cancelar el pedido. Inténtalo de nuevo.", "OK");
         await CargarAsync();
     }
+
+    /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
+    public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 }
