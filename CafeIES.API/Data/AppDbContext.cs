@@ -86,6 +86,12 @@ public class AppDbContext : DbContext
 
             // Índice para buscar pedidos de un usuario rápido
             e.HasIndex(p => new { p.UsuarioId, p.FechaCreacion });
+
+            // Unicidad de ReferenciasPago (PaymentIntentId de Stripe) — evita doble pedido
+            // si el webhook llega dos veces antes de que el primero haga commit.
+            e.HasIndex(p => p.ReferenciasPago)
+             .IsUnique()
+             .HasFilter("[ReferenciasPago] IS NOT NULL");
         });
 
         // ── LineaPedido ──────────────────────────────────────────────────────

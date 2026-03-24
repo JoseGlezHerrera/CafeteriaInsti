@@ -372,7 +372,22 @@ public class PagosController : ControllerBase
             };
 
             _db.Pedidos.Add(pedido);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+                when (dbEx.InnerException?.Message.Contains("IX_Pedidos_ReferenciasPago") == true ||
+                      dbEx.InnerException?.Message.Contains("UNIQUE") == true)
+            {
+                // El webhook llegó dos veces antes de que el primero hiciera commit.
+                // El índice único en ReferenciasPago evitó el doble pedido — es seguro ignorar.
+                _logger.LogWarning(
+                    "⚠️ Webhook: pedido duplicado detectado para PaymentIntent {Id} — ignorando segunda inserción.",
+                    intent.Id);
+                await transaction.RollbackAsync();
+                return;
+            }
             await transaction.CommitAsync();
 
             _logger.LogInformation(
