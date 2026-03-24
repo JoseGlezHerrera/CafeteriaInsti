@@ -35,9 +35,8 @@ public static class DbSeeder
 
         Console.WriteLine("──────────────────────────────────────────");
         Console.WriteLine("  ✅ Admin creado:");
-        Console.WriteLine($"     Email:    {adminEmail}");
-        Console.WriteLine($"     Password: {adminPassword}");
-        Console.WriteLine("  ⚠️  Cambia la contraseña tras el primer login.");
+        Console.WriteLine($"     Email: {adminEmail}");
+        Console.WriteLine("  ⚠️  Usa la contraseña configurada en Admin:Password.");
         Console.WriteLine("──────────────────────────────────────────");
     }
 }

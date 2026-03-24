@@ -131,9 +131,14 @@ public class PedidosController : ControllerBase
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // 5. Notificar a la cafetería en tiempo real vía SignalR
+            // 5. Notificar a la cafetería en tiempo real vía SignalR (por instituto)
             var dto = await GetPedidoDtoAsync(pedido.Id);
-            await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
+            var institutoIdStr = User.FindFirst("institutoId")?.Value;
+            var grupoInstituto = int.TryParse(institutoIdStr, out var instId) && instId > 0
+                ? $"cafeteria-{instId}"
+                : "cafeteria-global";
+            await _hub.Clients.Groups(grupoInstituto, "cafeteria-global")
+                .SendAsync("NuevoPedido", dto);
 
             return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
         }
@@ -155,7 +160,7 @@ public class PedidosController : ControllerBase
         var pedidos = await _db.Pedidos
             .Where(p => p.UsuarioId == userId)
             .OrderByDescending(p => p.FechaCreacion)
-            .Take(20)
+            .Take(50)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();

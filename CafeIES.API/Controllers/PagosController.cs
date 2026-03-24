@@ -294,6 +294,7 @@ public class PagosController : ControllerBase
         try
         {
             var lineasPedido = new List<LineaPedido>();
+            var notasAjuste  = new List<string>();
             decimal total = 0;
 
             foreach (var (productoId, cantidad) in lineas)
@@ -317,6 +318,7 @@ public class PagosController : ControllerBase
                         if (producto.Stock <= 0) continue;
                         // Usar el stock disponible si no alcanza para la cantidad original
                         var cantidadReal = Math.Min(cantidad, producto.Stock);
+                        notasAjuste.Add($"{producto.Nombre} (pedido: {cantidad}, servido: {cantidadReal})");
                         producto.Stock -= cantidadReal;
                         lineasPedido.Add(new LineaPedido
                         {
@@ -351,13 +353,20 @@ public class PagosController : ControllerBase
                 .Where(p => p.FechaCreacion.Date == hoy)
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
 
+            var notaFinal = notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;");
+            if (notasAjuste.Count > 0)
+            {
+                var avisoStock = "⚠️ Stock ajustado: " + string.Join(", ", notasAjuste);
+                notaFinal = string.IsNullOrEmpty(notaFinal) ? avisoStock : $"{notaFinal} | {avisoStock}";
+            }
+
             var pedido = new Pedido
             {
                 UsuarioId       = userId,
                 NumeroPedido    = ultimoNumero + 1,
                 MetodoPago      = metodo,
                 Total           = total,
-                Notas           = notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;"),
+                Notas           = notaFinal,
                 Lineas          = lineasPedido,
                 ReferenciasPago = intent.Id
             };
@@ -379,7 +388,17 @@ public class PagosController : ControllerBase
                 .FirstOrDefaultAsync();
 
             if (dto is not null)
-                await _hub.Clients.Group("cafeteria").SendAsync("NuevoPedido", dto);
+            {
+                var usuarioInstitutoId = await _db.Usuarios
+                    .Where(u => u.Id == userId)
+                    .Select(u => u.InstitutoId)
+                    .FirstOrDefaultAsync();
+                var grupo = usuarioInstitutoId.HasValue
+                    ? $"cafeteria-{usuarioInstitutoId}"
+                    : "cafeteria-global";
+                await _hub.Clients.Groups(grupo, "cafeteria-global")
+                    .SendAsync("NuevoPedido", dto);
+            }
         }
         catch (Exception ex)
         {

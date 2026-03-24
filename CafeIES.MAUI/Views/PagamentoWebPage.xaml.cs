@@ -59,6 +59,17 @@ public partial class PagamentoWebPage : ContentPage
         await _carrito.FinalizarPagoAsync(piId);
     }
 
+    // Bloquear el botón "←" mientras se procesa el pago para evitar doble navegación
     private async void OnVolverClicked(object? sender, EventArgs e)
-        => await Shell.Current.GoToAsync("..");
+    {
+        if (_procesando) return;
+        await Shell.Current.GoToAsync("..");
+    }
+
+    // Bloquear el botón físico atrás de Android mientras se procesa el pago
+    protected override bool OnBackButtonPressed()
+    {
+        if (_procesando) return true; // true = no hacer nada
+        return base.OnBackButtonPressed();
+    }
 }
