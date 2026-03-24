@@ -13,12 +13,6 @@ public partial class AdminPedidosPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = Vm.CargarAsync();
-    }
-
     private void OnPrepararClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is PedidoDto p)

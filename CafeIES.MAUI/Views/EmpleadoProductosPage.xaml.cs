@@ -13,12 +13,6 @@ public partial class EmpleadoProductosPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = Vm.CargarAsync();
-    }
-
     private void OnEditarStockClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is ProductoDto p) Vm.EditarStockCommand.Execute(p);

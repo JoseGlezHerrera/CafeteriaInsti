@@ -10,9 +10,5 @@ public partial class ProductoDetallePage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = ((ProductoDetalleViewModel)BindingContext).CargarAsync();
-    }
+
 }

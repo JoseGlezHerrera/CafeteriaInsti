@@ -10,9 +10,5 @@ public partial class AdminHorariosPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = ((AdminHorariosViewModel)BindingContext).CargarAsync();
-    }
+
 }

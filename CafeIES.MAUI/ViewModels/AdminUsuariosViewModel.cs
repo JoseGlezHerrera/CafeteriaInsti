@@ -23,6 +23,7 @@ public partial class AdminUsuariosViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(FiltroRolAlumnoActivo))]
     [NotifyPropertyChangedFor(nameof(FiltroRolProfesorActivo))]
     [NotifyPropertyChangedFor(nameof(FiltroRolPersonalActivo))]
+    [NotifyPropertyChangedFor(nameof(FiltroRolEmpleadoActivo))]
     private string _filtroRol = "Todos";
 
     [ObservableProperty]
@@ -36,6 +37,7 @@ public partial class AdminUsuariosViewModel : ObservableObject
     public bool FiltroRolAlumnoActivo    => FiltroRol == "Alumno";
     public bool FiltroRolProfesorActivo  => FiltroRol == "Profesor";
     public bool FiltroRolPersonalActivo  => FiltroRol == "Personal";
+    public bool FiltroRolEmpleadoActivo  => FiltroRol == "Empleado";
 
     public bool FiltroEstadoTodosActivo      => FiltroEstado == "Todos";
     public bool FiltroEstadoActivoActivo     => FiltroEstado == "Activa";

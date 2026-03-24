@@ -10,9 +10,5 @@ public partial class AdminInvitacionesPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = ((AdminInvitacionesViewModel)BindingContext).CargarAsync();
-    }
+
 }
