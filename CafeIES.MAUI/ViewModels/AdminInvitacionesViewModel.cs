@@ -38,7 +38,7 @@ public partial class AdminInvitacionesViewModel : ObservableObject
     private async Task NuevaInvitacionAsync()
     {
         var tipoStr = await Shell.Current.DisplayActionSheet(
-            "Tipo de invitación", "Cancelar", null, "Profesor", "Personal");
+            "Tipo de invitación", "Cancelar", null, "Profesor", "Personal", "Empleado");
         if (string.IsNullOrEmpty(tipoStr) || tipoStr == "Cancelar") return;
 
         if (!Enum.TryParse<TipoInvitacion>(tipoStr, out var tipo)) return;

@@ -21,11 +21,22 @@ public partial class AdminPedidosViewModel : ObservableObject
 
     [ObservableProperty] private bool _isLoading;
 
+    // ── Filtro por estado (client-side) ───────────────────────────────────────
     private string _filtroEstado = string.Empty;
     public string FiltroEstado
     {
         get => _filtroEstado;
         set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
+    }
+
+    // ── Filtro por instituto (server-side al recargar) ────────────────────────
+    public ObservableCollection<InstitutoDto> Institutos { get; } = new();
+
+    private InstitutoDto? _filtroInstituto;
+    public InstitutoDto? FiltroInstituto
+    {
+        get => _filtroInstituto;
+        set { if (SetProperty(ref _filtroInstituto, value)) _ = CargarAsync(); }
     }
 
     public ObservableCollection<PedidoDto> Pedidos { get; } = new();
@@ -34,7 +45,18 @@ public partial class AdminPedidosViewModel : ObservableObject
     public async Task CargarAsync()
     {
         IsLoading = true;
-        _todos = await _api.GetAllPedidosAsync();
+
+        // Carga institutos la primera vez
+        if (Institutos.Count == 0)
+        {
+            var institutos = await _api.GetInstitutosAsync();
+            Institutos.Add(new InstitutoDto(0, "Todos los centros", ""));
+            foreach (var i in institutos) Institutos.Add(i);
+            if (_filtroInstituto is null) _filtroInstituto = Institutos[0];
+        }
+
+        var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
+        _todos = await _api.GetAllPedidosAsync(institutoId);
         AplicarFiltro();
         IsLoading = false;
     }
