@@ -374,7 +374,7 @@ public class AdminController : ControllerBase
     {
         var institutos = await _db.Institutos
             .OrderBy(i => i.Nombre)
-            .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto))
+            .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto, i.Activo))
             .ToListAsync();
         return Ok(institutos);
     }
@@ -401,7 +401,7 @@ public class AdminController : ControllerBase
         _logger.LogInformation("[AUDIT] {Admin} creó el instituto {Id} ({Nombre})",
             adminEmail, instituto.Id, instituto.Nombre);
 
-        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto));
+        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto, instituto.Activo));
     }
 
     // ── PUT /api/admin/institutos/{id} ──────────────────────────────────────
@@ -425,7 +425,7 @@ public class AdminController : ControllerBase
         _logger.LogInformation("[AUDIT] {Admin} actualizó el instituto {Id} ({Nombre})",
             adminEmail, id, instituto.Nombre);
 
-        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto));
+        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto, instituto.Activo));
     }
 
     // ── PATCH /api/admin/institutos/{id}/toggle ─────────────────────────────

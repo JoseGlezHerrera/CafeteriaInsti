@@ -57,7 +57,7 @@ public partial class AdminPedidosViewModel : ObservableObject
         if (Institutos.Count == 0)
         {
             var institutos = await _api.GetInstitutosAsync();
-            Institutos.Add(new InstitutoDto(0, "Todos los centros", ""));
+            Institutos.Add(new InstitutoDto(0, "Todos los centros", "", true));
             foreach (var i in institutos) Institutos.Add(i);
             if (_filtroInstituto is null) _filtroInstituto = Institutos[0];
         }
