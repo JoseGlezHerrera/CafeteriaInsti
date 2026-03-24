@@ -13,12 +13,6 @@ public partial class AdminUsuariosPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _ = Vm.CargarAsync();
-    }
-
     private void OnAprobarClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is UsuarioDto u)

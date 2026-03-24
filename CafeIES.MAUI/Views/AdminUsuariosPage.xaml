@@ -42,6 +42,8 @@
                             Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
                     <Button Text="🏢 Personal" Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
                             Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    <Button Text="☕ Empleado" Command="{Binding SetFiltroRolCommand}" CommandParameter="Empleado"
+                            Style="{Binding FiltroRolEmpleadoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
                 </HorizontalStackLayout>
             </ScrollView>
             <!-- Chips Estado -->

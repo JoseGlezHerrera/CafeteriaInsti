@@ -12,10 +12,5 @@ public partial class PedidosPage : ContentPage
         BindingContext = _vm = vm;
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        // Recargar siempre al mostrar la página para evitar ver datos de otra sesión
-        _ = _vm.CargarAsync();
-    }
+
 }

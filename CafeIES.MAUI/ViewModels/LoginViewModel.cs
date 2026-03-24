@@ -100,9 +100,5 @@ public partial class LoginViewModel : ObservableObject
         await Shell.Current.GoToAsync("RegistroInvitacion");
     }
 
-    [RelayCommand]
-    private async Task IrARegistroEmpleadoAsync()
-    {
-        await Shell.Current.GoToAsync("RegistroEmpleado");
-    }
+
 }
