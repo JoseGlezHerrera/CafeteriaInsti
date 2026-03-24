@@ -17,6 +17,9 @@ public enum MotivoRechazo { Ninguno, Pendiente, Suspendida, Rechazada }
 /// <summary>Mensaje SignalR: el estado de un pedido cambió.</summary>
 public record PedidoActualizadoMessage(int PedidoId, string NuevoEstado);
 
+/// <summary>Mensaje SignalR: se ha creado un pedido nuevo (para staff de cafetería).</summary>
+public record NuevoPedidoMessage();
+
 /// <summary>
 /// Mensaje enviado cuando la sesión expira definitivamente (refresh token inválido).
 /// Suscríbete a este mensaje en App.xaml.cs o AppShell para redirigir al login.
@@ -864,6 +867,11 @@ public class ApiService
             })
             .WithAutomaticReconnect()
             .Build();
+
+        _hub.On<object>("NuevoPedido", _ =>
+        {
+            WeakReferenceMessenger.Default.Send(new NuevoPedidoMessage());
+        });
 
         _hub.On<object>("EstadoPedidoActualizado", raw =>
         {

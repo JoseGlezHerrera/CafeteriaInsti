@@ -13,6 +13,12 @@ public partial class AdminProductosPage : ContentPage
         BindingContext = vm;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = Vm.CargarAsync();
+    }
+
     private void OnEditarClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is ProductoDto p)

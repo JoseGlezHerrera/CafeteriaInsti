@@ -28,6 +28,12 @@ public partial class ConfirmacionPedidoPage : ContentPage
         InitializeComponent();
     }
 
+    protected override bool OnBackButtonPressed()
+    {
+        // No permitir volver a la pasarela de pago desde la confirmación
+        return true;
+    }
+
     private async void OnVerPedidosClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//Main/Pedidos");

@@ -9,4 +9,10 @@ public partial class AdminPerfilPage : ContentPage
         InitializeComponent();
         BindingContext = vm;
     }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = ((PerfilViewModel)BindingContext).CargarAsync();
+    }
 }
