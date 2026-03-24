@@ -13,7 +13,7 @@ public static class DtoMapperExtensions
         u.InstitutoId, u.Instituto?.Nombre);
 
     public static FranjaHorariaDto ToDto(this FranjaHoraria f) => new(
-        f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa);
+        f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa, f.EsBloqueada);
 
     public static AlergenoDto ToDto(this Alergeno a) => new(a.Id, a.Nombre, a.Emoji);
 

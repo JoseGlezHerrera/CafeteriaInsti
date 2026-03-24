@@ -46,9 +46,9 @@ public partial class AdminHorariosViewModel : ObservableObject
         IsLoading = true;
         var defaults = new[]
         {
-            new UpsertFranjaRequest(Turno.Manana, "Horario de clase", "08:00", "14:00", true),
-            new UpsertFranjaRequest(Turno.Tarde,  "Horario de clase", "14:30", "20:30", true),
-            new UpsertFranjaRequest(Turno.Noche,  "Horario de clase", "21:00", "03:00", true),
+            new UpsertFranjaRequest(Turno.Manana, "Horario de clase", "08:00", "14:00", true, EsBloqueada: true),
+            new UpsertFranjaRequest(Turno.Tarde,  "Horario de clase", "14:30", "20:30", true, EsBloqueada: true),
+            new UpsertFranjaRequest(Turno.Noche,  "Horario de clase", "21:00", "03:00", true, EsBloqueada: true),
         };
         foreach (var req in defaults)
             await _api.CrearFranjaAsync(req);
@@ -78,7 +78,12 @@ public partial class AdminHorariosViewModel : ObservableObject
 
         if (!Enum.TryParse<Turno>(turnoStr, out var turno)) turno = Turno.Manana;
 
-        var req = new UpsertFranjaRequest(turno, descripcion, horaInicio, horaFin, true);
+        var bloquear = await Shell.Current.DisplayAlert(
+            "¿Bloquear pedidos?",
+            "¿Esta franja debe BLOQUEAR los pedidos (ej. horario de clase)?",
+            "Sí, bloquear", "No, permitir");
+
+        var req = new UpsertFranjaRequest(turno, descripcion, horaInicio, horaFin, true, EsBloqueada: bloquear);
         var ok  = await _api.CrearFranjaAsync(req);
 
         if (ok)
@@ -108,7 +113,7 @@ public partial class AdminHorariosViewModel : ObservableObject
             initialValue: franja.HoraFin);
         if (horaFin is null) return;
 
-        var req = new UpsertFranjaRequest(franja.Turno, descripcion, horaInicio, horaFin, franja.Activa);
+        var req = new UpsertFranjaRequest(franja.Turno, descripcion, horaInicio, horaFin, franja.Activa, franja.EsBloqueada);
         var ok  = await _api.ActualizarFranjaAsync(franja.Id, req);
 
         if (ok)

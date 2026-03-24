@@ -92,8 +92,9 @@ public partial class PerfilViewModel : ObservableObject
                 RolUsuario.Alumno   => "🎓 Alumno",
                 RolUsuario.Profesor => "👨‍🏫 Profesor",
                 RolUsuario.Personal => "🏢 Personal",
-                RolUsuario.Admin    => "⚙️ Admin",
-                _                  => "Usuario"
+                RolUsuario.Admin     => "⚙️ Admin",
+                RolUsuario.Empleado  => "☕ Empleado",
+                _                   => "Usuario"
             };
             TieneTurno = usuario.Turno.HasValue;
             TurnoTexto = usuario.Turno switch

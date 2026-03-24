@@ -34,6 +34,9 @@
                         }
                         <div class="franja-desc">@f.Descripcion</div>
                         <div class="franja-horario">@f.HoraInicio — @f.HoraFin</div>
+                        <span class="status-pill @(f.EsBloqueada ? "pill--block" : "pill--allow") franja-status" title="@(f.EsBloqueada ? "Bloquea pedidos" : "Permite pedidos")">
+                            @(f.EsBloqueada ? "🚫 Bloquea" : "✅ Permite")
+                        </span>
                         <span class="status-pill @(f.Activa ? "pill--on" : "pill--off") franja-status">
                             @(f.Activa ? "Activa" : "Desactivada")
                         </span>
@@ -70,6 +73,15 @@
                         <label>Hora fin (HH:mm)</label>
                         <input class="form-input" type="text" placeholder="09:00" @bind="_fFin" />
                     </div>
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" @bind="_fEsBloqueada" />
+                        <span>🚫 Bloquear pedidos durante esta franja (ej. horario de clase)</span>
+                    </label>
+                    <p style="font-size:12px;color:var(--muted);margin-top:4px;margin-left:24px">
+                        Si está marcado, los alumnos <strong>no podrán</strong> hacer pedidos en este horario.
+                    </p>
                 </div>
                 @if (!string.IsNullOrEmpty(_fError))
                 {
@@ -111,6 +123,7 @@
     private string _fInicio = "08:00";
     private string _fFin = "09:00";
     private string _fError = string.Empty;
+    private bool   _fEsBloqueada;
 
     private bool   _confirmarEliminar;
     private int    _eliminarId;
@@ -124,19 +137,25 @@
         _turnoModal = turno; _fDesc = string.Empty;
         _fInicio = "08:00"; _fFin = "09:00";
         _fError = string.Empty;
+        _fEsBloqueada = false;
         _mostrarModal = true;
     }
 
     private async Task GuardarFranja()
     {
         if (string.IsNullOrWhiteSpace(_fDesc)) { _fError = "La descripción es obligatoria."; return; }
-        if (string.Compare(_fInicio, _fFin, StringComparison.Ordinal) >= 0)
+        if (!TimeOnly.TryParse(_fInicio, out _) || !TimeOnly.TryParse(_fFin, out _))
         {
-            _fError = "La hora de inicio debe ser anterior a la hora de fin.";
+            _fError = "Formato de hora inválido. Usa HH:mm (ej. 08:00).";
+            return;
+        }
+        if (_fInicio == _fFin)
+        {
+            _fError = "La hora de inicio y fin no pueden ser iguales.";
             return;
         }
         _fError = string.Empty;
-        await Api.CrearFranjaAsync(new UpsertFranjaRequest(_turnoModal, _fDesc, _fInicio, _fFin));
+        await Api.CrearFranjaAsync(new UpsertFranjaRequest(_turnoModal, _fDesc, _fInicio, _fFin, true, _fEsBloqueada));
         _franjas = await Api.GetHorariosAsync();
         _mostrarModal = false;
     }
@@ -177,8 +196,14 @@
         if (!f.Activa) return false;
         try
         {
-            var ahora = TimeOnly.FromDateTime(DateTime.Now);
-            return ahora >= TimeOnly.Parse(f.HoraInicio) && ahora <= TimeOnly.Parse(f.HoraFin);
+            var spainTz = TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+            var ahora = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
+            var inicio = TimeOnly.Parse(f.HoraInicio);
+            var fin    = TimeOnly.Parse(f.HoraFin);
+            if (inicio > fin) // franja que cruza medianoche
+                return ahora >= inicio || ahora <= fin;
+            return ahora >= inicio && ahora <= fin;
         }
         catch { return false; }
     }

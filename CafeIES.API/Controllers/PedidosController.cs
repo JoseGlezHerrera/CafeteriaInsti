@@ -187,7 +187,7 @@ public class PedidosController : ControllerBase
         var pedido = await _db.Pedidos.FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
 
-        var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal");
+        var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal") || User.IsInRole("Empleado");
         if (pedido.UsuarioId != userId && !esStaff)
             return Forbid();
 

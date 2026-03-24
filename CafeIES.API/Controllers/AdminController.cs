@@ -258,7 +258,8 @@ public class AdminController : ControllerBase
             Descripcion = req.Descripcion,
             HoraInicio  = req.HoraInicio,
             HoraFin     = req.HoraFin,
-            Activa      = req.Activa
+            Activa      = req.Activa,
+            EsBloqueada = req.EsBloqueada
         };
         _db.FranjasHorarias.Add(franja);
         await _db.SaveChangesAsync();
@@ -282,6 +283,7 @@ public class AdminController : ControllerBase
         franja.HoraInicio  = req.HoraInicio;
         franja.HoraFin     = req.HoraFin;
         franja.Activa      = req.Activa;
+        franja.EsBloqueada = req.EsBloqueada;
         await _db.SaveChangesAsync();
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";

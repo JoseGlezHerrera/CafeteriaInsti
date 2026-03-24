@@ -175,7 +175,8 @@ public record FranjaHorariaDto(
     string Descripcion,
     string HoraInicio,
     string HoraFin,
-    bool   Activa
+    bool   Activa,
+    bool   EsBloqueada
 );
 
 public record UpsertFranjaRequest(
@@ -183,7 +184,8 @@ public record UpsertFranjaRequest(
     [Required] string Descripcion,
     [Required, RegularExpression(@"^\d{2}:\d{2}$")] string HoraInicio,
     [Required, RegularExpression(@"^\d{2}:\d{2}$")] string HoraFin,
-    bool Activa = true
+    bool Activa = true,
+    bool EsBloqueada = false
 );
 
 // ── Cambiar contraseña ────────────────────────────────────────────────────────
