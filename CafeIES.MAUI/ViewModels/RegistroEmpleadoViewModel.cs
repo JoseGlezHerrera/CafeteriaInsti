@@ -42,6 +42,9 @@ public partial class RegistroEmpleadoViewModel : ObservableObject
         if (!Email.Contains('@') || !Email.Contains('.'))
         { HayError = true; ErrorMessage = "Introduce un email válido."; return; }
 
+        if (Password.Length < 8)
+        { HayError = true; ErrorMessage = "La contraseña debe tener al menos 8 caracteres."; return; }
+
         if (Password != ConfirmarPassword)
         { HayError = true; ErrorMessage = "Las contraseñas no coinciden."; return; }
 

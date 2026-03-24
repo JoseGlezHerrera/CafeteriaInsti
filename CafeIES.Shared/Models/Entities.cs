@@ -117,7 +117,10 @@ public class FranjaHoraria
         get
         {
             if (!Activa) return false;
-            var ahora = TimeOnly.FromDateTime(DateTime.UtcNow);
+            // Convertir UTC a hora local española (CET/CEST)
+            var spainTz = TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+            var ahora = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
             if (!TimeOnly.TryParse(HoraInicio, out var inicio) ||
                 !TimeOnly.TryParse(HoraFin,    out var fin))
                 return false; // Formato de hora inválido — franja inactiva por seguridad

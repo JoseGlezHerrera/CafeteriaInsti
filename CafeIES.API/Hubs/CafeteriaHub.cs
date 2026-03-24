@@ -17,8 +17,8 @@ public class CafeteriaHub : Hub
     {
         var user = Context.User!;
 
-        // El panel de cafetería/admin se une al grupo "cafeteria"
-        if (user.IsInRole("Admin") || user.IsInRole("Personal"))
+        // El panel de cafetería/admin/empleado se une al grupo "cafeteria"
+        if (user.IsInRole("Admin") || user.IsInRole("Personal") || user.IsInRole("Empleado"))
             await Groups.AddToGroupAsync(Context.ConnectionId, "cafeteria");
 
         // Todo usuario se une a su grupo personal para recibir updates de sus pedidos
