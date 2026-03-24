@@ -86,7 +86,7 @@
                 <Button Text="Crear cuenta →" Style="{StaticResource SecondaryButton}"
                         Command="{Binding IrARegistroCommand}"/>
 
-                <!-- Botón invitación (profesor / personal) -->
+                <!-- Botón invitación (profesor / personal / empleado cafetería) -->
                 <Button Text="🔗 Tengo un código de invitación"
                         BackgroundColor="Transparent"
                         TextColor="{StaticResource MutedColor}"
@@ -94,15 +94,6 @@
                         HeightRequest="44"
                         Command="{Binding IrARegistroInvitacionCommand}"
                         Margin="0,8,0,0"/>
-
-                <!-- Botón registro empleado -->
-                <Button Text="☕ Soy empleado de cafetería"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource MutedColor}"
-                        FontFamily="DMSans" FontSize="13"
-                        HeightRequest="44"
-                        Command="{Binding IrARegistroEmpleadoCommand}"
-                        Margin="0,4,0,0"/>
 
                 <Label Text="¿Problemas? Contacta con secretaría"
                        TextColor="{StaticResource MutedColor}" FontSize="12"

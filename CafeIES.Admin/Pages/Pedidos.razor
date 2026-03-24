@@ -31,6 +31,33 @@
     <button class="btn-primary" @onclick="Recargar">Filtrar</button>
 </div>
 
+@* Resumen activo por centro (solo visible cuando no hay filtro de instituto) *@
+@if (!_cargando && string.IsNullOrEmpty(_institutoFiltro))
+{
+    var activos = _pedidos.Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion || p.Estado == EstadoPedido.Listo).ToList();
+    if (activos.Any())
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="section-header" style="margin-bottom:10px">
+                <h2>Pedidos activos por centro</h2>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+                @foreach (var g in activos.GroupBy(p => p.InstitutoNombre ?? "Sin instituto").OrderBy(g => g.Key))
+                {
+                    <div class="table-card" style="min-width:180px;padding:14px 18px;flex:1">
+                        <div style="font-weight:700;margin-bottom:6px">🏫 @g.Key</div>
+                        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+                            <span style="color:var(--warning)">⏳ @g.Count(p => p.Estado == EstadoPedido.Pendiente) pendientes</span><br/>
+                            <span style="color:var(--accent)">🔧 @g.Count(p => p.Estado == EstadoPedido.EnPreparacion) preparando</span><br/>
+                            <span style="color:var(--green)">✅ @g.Count(p => p.Estado == EstadoPedido.Listo) listos</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
 @if (_cargando)
 {
     <div class="loading-wrap"><div class="spinner"></div><p>Cargando...</p></div>

@@ -46,9 +46,12 @@ public partial class RegistroInvitacionViewModel : ObservableObject
     // true cuando tenemos token + tipo validados → muestra el formulario de registro
     public bool TokenVerificado => !string.IsNullOrEmpty(TokenInvitacion) && !string.IsNullOrEmpty(TipoInvitacion);
 
-    public string RolTexto => TipoInvitacion == "Profesor"
-        ? "👨‍🏫 Profesor"
-        : "🏢 Personal";
+    public string RolTexto => TipoInvitacion switch
+    {
+        "Profesor" => "👨‍🏫 Profesor",
+        "Empleado" => "☕ Empleado de cafetería",
+        _          => "🏢 Personal"
+    };
 
     // ── Instituto ─────────────────────────────────────────────────────────────
     public ObservableCollection<InstitutoDto> Institutos { get; } = new();

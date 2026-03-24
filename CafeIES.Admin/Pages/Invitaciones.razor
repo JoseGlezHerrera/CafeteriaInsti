@@ -56,6 +56,51 @@
         }
     </div>
 
+    <!-- Card Empleados de cafetería -->
+    <div class="invite-card @(_invEmpleado?.EsValida == true ? "invite-card--active" : "")">
+        <div class="invite-card-header">
+            <div>
+                <div class="invite-role">☕ Empleados de cafetería</div>
+                <div class="invite-desc">Gestión de pedidos y productos</div>
+            </div>
+            <span class="status-pill @(_invEmpleado?.EsValida == true ? "pill--on" : "pill--off")">
+                @(_invEmpleado?.EsValida == true ? "Activo" : "Inactivo")
+            </span>
+        </div>
+
+        @if (_invEmpleado?.EsValida == true)
+        {
+            <div class="qr-wrap">
+                <img src="@Api.GetQrUrl(_invEmpleado.Id)" class="qr-img" alt="QR Empleados"/>
+            </div>
+            <div class="invite-url">@_invEmpleado.UrlInvitacion</div>
+            <div class="invite-meta">
+                Caduca: @_invEmpleado.FechaExpiracion.ToString("dd/MM/yyyy") ·
+                Usos: @_invEmpleado.UsosActuales@(_invEmpleado.UsosMaximos.HasValue ? $"/{_invEmpleado.UsosMaximos}" : "")
+            </div>
+            <div class="invite-actions">
+                <button class="btn-secondary" @onclick="() => CopiarUrl(_invEmpleado.UrlInvitacion)">
+                    📋 Copiar enlace
+                </button>
+                <button class="btn-icon btn-icon--danger"
+                        @onclick="() => ConfirmarRevocar(_invEmpleado.Id)">
+                    🗑 Revocar
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="invite-empty">
+                <span class="invite-lock">🔒</span>
+                <p>Sin enlace activo</p>
+            </div>
+            <button class="btn-primary btn-full"
+                    @onclick="() => GenerarInvitacion(TipoInvitacion.Empleado)">
+                ✨ Generar QR
+            </button>
+        }
+    </div>
+
     <!-- Card Personal -->
     <div class="invite-card @(_invPersonal?.EsValida == true ? "invite-card--active" : "")">
         <div class="invite-card-header">
@@ -154,6 +199,7 @@
     private List<InvitacionDto> _invitaciones = new();
     private InvitacionDto?     _invProfesor;
     private InvitacionDto?     _invPersonal;
+    private InvitacionDto?     _invEmpleado;
     private bool               _mostrarOpcionesGen;
     private TipoInvitacion     _tipoGenerando;
     private int                _diasValidez  = 7;
@@ -166,6 +212,7 @@
         _invitaciones = await Api.GetInvitacionesAsync();
         _invProfesor  = _invitaciones.FirstOrDefault(i => i.Tipo == TipoInvitacion.Profesor && i.EsValida);
         _invPersonal  = _invitaciones.FirstOrDefault(i => i.Tipo == TipoInvitacion.Personal && i.EsValida);
+        _invEmpleado  = _invitaciones.FirstOrDefault(i => i.Tipo == TipoInvitacion.Empleado && i.EsValida);
     }
 
     private void GenerarInvitacion(TipoInvitacion tipo)

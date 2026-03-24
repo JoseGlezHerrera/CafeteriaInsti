@@ -58,8 +58,13 @@
                                         <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
                                                 WidthRequest="52" HeightRequest="52">
                                             <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                            <Label Text="🍽" FontSize="26"
-                                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                                            <Grid>
+                                                <Image Source="{Binding ImagenUrl}" Aspect="AspectFill"
+                                                       IsVisible="{Binding TieneImagen}"/>
+                                                <Label Text="🍽" FontSize="26"
+                                                       HorizontalOptions="Center" VerticalOptions="Center"
+                                                       IsVisible="{Binding TieneImagen, Converter={StaticResource InvertBoolConverter}}"/>
+                                            </Grid>
                                         </Border>
                                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
                                             <Label Text="{Binding Nombre}" FontFamily="SyneBold"
