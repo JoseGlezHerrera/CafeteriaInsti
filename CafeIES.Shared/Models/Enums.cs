@@ -63,5 +63,6 @@ public enum MetodoPago
 public enum TipoInvitacion
 {
     Profesor = 1,
-    Personal = 2
+    Personal = 2,
+    Empleado = 3   // Empleado de cafetería — acceso a gestión de pedidos y productos
 }

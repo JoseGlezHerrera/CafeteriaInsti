@@ -139,9 +139,12 @@ public class AuthController : ControllerBase
             return BadRequest(new { mensaje = "El instituto seleccionado no es válido." });
 
         // Asignar rol según tipo de invitación
-        var rol = invitacion.Tipo == TipoInvitacion.Profesor
-            ? RolUsuario.Profesor
-            : RolUsuario.Personal;
+        var rol = invitacion.Tipo switch
+        {
+            TipoInvitacion.Profesor => RolUsuario.Profesor,
+            TipoInvitacion.Empleado => RolUsuario.Empleado,
+            _                       => RolUsuario.Personal
+        };
 
         var usuario = new Usuario
         {

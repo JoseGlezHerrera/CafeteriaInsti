@@ -54,12 +54,17 @@ public partial class CarritoViewModel : ObservableObject
         }
         else
         {
+            var imageUrl = string.IsNullOrEmpty(producto.ImagenUrl) ? null
+                         : producto.ImagenUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                           ? producto.ImagenUrl
+                           : _api.BuildImageUrl(producto.ImagenUrl);
             Items.Add(new ItemCarrito
             {
                 ProductoId = producto.Id,
                 Nombre     = producto.Nombre,
                 Precio     = producto.Precio,
-                Cantidad   = 1
+                Cantidad   = 1,
+                ImagenUrl  = imageUrl
             });
         }
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -196,6 +201,8 @@ public partial class ItemCarrito : ObservableObject
     public int     ProductoId { get; set; }
     public string  Nombre     { get; set; } = string.Empty;
     public decimal Precio     { get; set; }
+    public string? ImagenUrl  { get; set; }
+    public bool    TieneImagen => !string.IsNullOrEmpty(ImagenUrl);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtotal))]
