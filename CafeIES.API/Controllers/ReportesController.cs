@@ -1,4 +1,5 @@
 using CafeIES.API.Data;
+using CafeIES.API.Extensions;
 using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +23,11 @@ public class ReportesController : ControllerBase
         _db = db;
         _logger = logger;
     }
+
+    /// Admin con instituto asignado en JWT solo puede ver su propio instituto.
+    /// Admin global (sin institutoId en JWT) puede ver todos.
+    private int? GetAdminInstitutoId() =>
+        int.TryParse(User.FindFirst("institutoId")?.Value, out var id) && id > 0 ? id : null;
 
     // ── GET /api/reportes/excel ───────────────────────────────────────────────
     [HttpGet("excel")]
@@ -60,10 +66,16 @@ public class ReportesController : ControllerBase
     // ─────────────────────────────────────────────────────────────────────────
     private async Task<List<Pedido>> CargarPedidosAsync(DateTime? desde, DateTime? hasta)
     {
+        var institutoId = GetAdminInstitutoId();
+
         var query = _db.Pedidos
             .Include(p => p.Usuario).ThenInclude(u => u!.Instituto)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .AsQueryable();
+
+        // Scoping por instituto: admins de instituto solo ven sus pedidos
+        if (institutoId.HasValue)
+            query = query.Where(p => p.Usuario!.InstitutoId == institutoId);
 
         if (desde.HasValue)
             query = query.Where(p => p.FechaCreacion.Date >= desde.Value.Date);

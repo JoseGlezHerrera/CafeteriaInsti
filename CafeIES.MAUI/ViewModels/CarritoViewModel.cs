@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
 using System.Collections.ObjectModel;
@@ -14,6 +15,10 @@ public partial class CarritoViewModel : ObservableObject
     public CarritoViewModel(ApiService api)
     {
         _api = api;
+
+        // Limpiar carrito si la sesión expira (refresh token caducado)
+        WeakReferenceMessenger.Default.Register<SesionExpiradaMessage>(this, (_, _) =>
+            MainThread.BeginInvokeOnMainThread(LimpiarCarrito));
     }
 
     // ── Estado ────────────────────────────────────────────────────────────────
