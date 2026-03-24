@@ -158,15 +158,19 @@ public class PedidosController : ControllerBase
 
     // ── GET /api/pedidos/mis-pedidos ─────────────────────────────────────────
     [HttpGet("mis-pedidos")]
-    public async Task<ActionResult<List<PedidoDto>>> MisPedidos()
+    public async Task<ActionResult<List<PedidoDto>>> MisPedidos([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        page     = Math.Max(page, 1);
+
         var pedidos = await _db.Pedidos
             .Where(p => p.UsuarioId == userId)
             .OrderByDescending(p => p.FechaCreacion)
-            .Take(50)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
@@ -280,11 +284,22 @@ public class PedidosController : ControllerBase
                 .ToListAsync();
 
             if (tokens.Count > 0)
-                await _fcm.EnviarAsync(
+            {
+                var invalidos = await _fcm.EnviarAsync(
                     tokens,
                     "¡Tu pedido está listo! ☕",
                     $"Pedido #{pedido.NumeroPedido} — ya puedes pasar a recogerlo.",
                     new Dictionary<string, string> { ["pedidoId"] = pedido.Id.ToString() });
+
+                if (invalidos.Count > 0)
+                {
+                    _db.DispositivoTokens.RemoveRange(
+                        _db.DispositivoTokens.Where(t => invalidos.Contains(t.Token)));
+                    await _db.SaveChangesAsync();
+                    _logger.LogInformation("Eliminados {N} tokens FCM expirados del usuario {UserId}.",
+                        invalidos.Count, pedido.UsuarioId);
+                }
+            }
         }
 
         return NoContent();

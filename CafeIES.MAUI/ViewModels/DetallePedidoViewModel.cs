@@ -98,4 +98,6 @@ public partial class DetallePedidoViewModel : ObservableObject
 
     [RelayCommand]
     private async Task VolverAsync() => await Shell.Current.GoToAsync("..");
+
+    public void Cleanup() => WeakReferenceMessenger.Default.Unregister<PedidoActualizadoMessage>(this);
 }

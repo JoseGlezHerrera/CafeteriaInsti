@@ -49,10 +49,11 @@
                 </HorizontalStackLayout>
             </VerticalStackLayout>
 
-            <!-- Info estado horario -->
+            <!-- Info estado horario (solo para alumnos/profesores/personal) -->
             <Border BackgroundColor="{StaticResource Surface2Color}"
                     StrokeThickness="1" Stroke="{StaticResource BorderColor}"
-                    Padding="18,16" Margin="0,0,0,16">
+                    Padding="18,16" Margin="0,0,0,16"
+                    IsVisible="{Binding EsEmpleadoCafeteria, Converter={StaticResource InvertBoolConverter}}">
                 <Border.StrokeShape><RoundRectangle CornerRadius="18"/></Border.StrokeShape>
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                     <Label Grid.Column="0" Text="⏰" FontSize="22" VerticalOptions="Center"/>
@@ -65,8 +66,9 @@
                 </Grid>
             </Border>
 
-            <!-- Estadísticas -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,16">
+            <!-- Estadísticas (solo para alumnos/profesores/personal) -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,16"
+                  IsVisible="{Binding EsEmpleadoCafeteria, Converter={StaticResource InvertBoolConverter}}">
                 <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
                         StrokeThickness="1" Stroke="{StaticResource BorderColor}" Padding="16">
                     <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>

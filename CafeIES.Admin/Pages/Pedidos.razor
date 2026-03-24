@@ -11,7 +11,7 @@
 
 <!-- Filtros -->
 <div class="filters-bar">
-    <select class="filter-select" @bind="_institutoFiltro">
+    <select class="filter-select" value="@_institutoFiltro" @onchange="OnInstitutoFiltroChanged">
         <option value="">Todos los institutos</option>
         @foreach (var i in _institutos)
         {
@@ -196,6 +196,12 @@ else
     private async Task CambiarEstado(int id, EstadoPedido nuevoEstado)
     {
         await Api.CambiarEstadoPedidoAsync(id, nuevoEstado);
+        await Recargar();
+    }
+
+    private async Task OnInstitutoFiltroChanged(ChangeEventArgs e)
+    {
+        _institutoFiltro = e.Value?.ToString() ?? string.Empty;
         await Recargar();
     }
 

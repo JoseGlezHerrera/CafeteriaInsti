@@ -13,7 +13,10 @@ namespace CafeIES.MAUI.ViewModels;
 
 public partial class PedidosViewModel : ObservableObject
 {
+    private const int PageSize = 20;
+
     private readonly ApiService _api;
+    private int _paginaActual;
 
     public PedidosViewModel(ApiService api)
     {
@@ -23,19 +26,33 @@ public partial class PedidosViewModel : ObservableObject
     }
 
     [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _isCargandoMas;
+    [ObservableProperty] private bool _hayMas;
 
     public ObservableCollection<PedidoDto> Pedidos { get; } = new();
 
     [RelayCommand]
     public async Task CargarAsync()
     {
-        // Limpiar ANTES del await para que nunca se vean datos de otra sesión
         Pedidos.Clear();
+        _paginaActual = 1;
         IsLoading = true;
-        var pedidos = await _api.GetMisPedidosAsync();
-        Pedidos.Clear();
+        var pedidos = await _api.GetMisPedidosAsync(page: 1, pageSize: PageSize);
         foreach (var p in pedidos) Pedidos.Add(p);
+        HayMas = pedidos.Count == PageSize;
         IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task CargarMasAsync()
+    {
+        if (IsCargandoMas || !HayMas) return;
+        IsCargandoMas = true;
+        _paginaActual++;
+        var pedidos = await _api.GetMisPedidosAsync(page: _paginaActual, pageSize: PageSize);
+        foreach (var p in pedidos) Pedidos.Add(p);
+        HayMas = pedidos.Count == PageSize;
+        IsCargandoMas = false;
     }
 
     [RelayCommand]
@@ -74,6 +91,7 @@ public partial class PerfilViewModel : ObservableObject
     [ObservableProperty] private decimal _totalGastado;
 
     // Cambio de contraseña (#6)
+    [ObservableProperty] private bool   _esEmpleadoCafeteria;
     [ObservableProperty] private bool   _mostrarCambioPassword;
     [ObservableProperty] private string _passwordActual = string.Empty;
     [ObservableProperty] private string _nuevaPassword  = string.Empty;
@@ -98,7 +116,7 @@ public partial class PerfilViewModel : ObservableObject
                 RolUsuario.Empleado  => "☕ Empleado",
                 _                   => "Usuario"
             };
-            TieneTurno = usuario.Turno.HasValue;
+            TieneTurno           = usuario.Turno.HasValue;
             TurnoTexto = usuario.Turno switch
             {
                 Turno.Manana => "☀️ Mañana",
@@ -106,15 +124,20 @@ public partial class PerfilViewModel : ObservableObject
                 Turno.Noche  => "🌙 Noche",
                 _            => string.Empty
             };
-            EsAdmin = usuario.Rol == RolUsuario.Admin;
+            EsAdmin              = usuario.Rol == RolUsuario.Admin;
+            EsEmpleadoCafeteria  = usuario.Rol == RolUsuario.Empleado;
         }
 
-        var status = await _api.GetHorarioStatusAsync();
-        ResumenHorario = status?.Mensaje ?? "Sin información";
+        // Horario y estadísticas solo son relevantes para usuarios que hacen pedidos
+        if (!EsEmpleadoCafeteria)
+        {
+            var status = await _api.GetHorarioStatusAsync();
+            ResumenHorario = status?.Mensaje ?? "Sin información";
 
-        var stats = await _api.GetMisEstadisticasAsync();
-        TotalPedidos = stats?.TotalPedidos ?? 0;
-        TotalGastado = stats?.TotalGastado ?? 0;
+            var stats = await _api.GetMisEstadisticasAsync();
+            TotalPedidos = stats?.TotalPedidos ?? 0;
+            TotalGastado = stats?.TotalGastado ?? 0;
+        }
     }
 
     [RelayCommand]
