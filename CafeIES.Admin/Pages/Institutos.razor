@@ -27,15 +27,15 @@
                     <td>@i.Nombre</td>
                     <td><code>@i.CodigoCorto</code></td>
                     <td>
-                        <span class="status-pill @(EsActivo(i.Id) ? "pill--on" : "pill--off")">
-                            @(EsActivo(i.Id) ? "Activo" : "Inactivo")
+                        <span class="status-pill @(i.Activo ? "pill--on" : "pill--off")">
+                            @(i.Activo ? "Activo" : "Inactivo")
                         </span>
                     </td>
                     <td>
                         <button class="btn-icon" title="Editar" @onclick="() => AbrirEditar(i)">&#9998;</button>
-                        <button class="btn-icon" title="@(EsActivo(i.Id) ? "Desactivar" : "Activar")"
+                        <button class="btn-icon" title="@(i.Activo ? "Desactivar" : "Activar")"
                                 @onclick="() => ToggleActivo(i.Id)">
-                            @(EsActivo(i.Id) ? "&#128274;" : "&#9989;")
+                            @(i.Activo ? "&#128274;" : "&#9989;")
                         </button>
                     </td>
                 </tr>
@@ -80,7 +80,6 @@
 
 @code {
     private List<InstitutoDto> _institutos = new();
-    private HashSet<int> _inactivos = new();
     private bool _mostrarModal;
     private int? _editandoId;
     private string _nombre = string.Empty;
@@ -93,8 +92,6 @@
 
     private async Task Recargar()
         => _institutos = await Api.GetInstitutosAsync();
-
-    private bool EsActivo(int id) => !_inactivos.Contains(id);
 
     private void AbrirNuevo()
     {
@@ -143,14 +140,7 @@
 
     private async Task ToggleActivo(int id)
     {
-        var ok = await Api.ToggleInstitutoAsync(id);
-        if (ok)
-        {
-            if (_inactivos.Contains(id))
-                _inactivos.Remove(id);
-            else
-                _inactivos.Add(id);
-        }
+        await Api.ToggleInstitutoAsync(id);
         await Recargar();
     }
 

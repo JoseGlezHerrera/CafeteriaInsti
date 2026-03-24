@@ -61,7 +61,7 @@ public record UsuarioDto(
 
 // ── Instituto ─────────────────────────────────────────────────────────────────
 
-public record InstitutoDto(int Id, string Nombre, string CodigoCorto);
+public record InstitutoDto(int Id, string Nombre, string CodigoCorto, bool Activo = true);
 
 /// <summary>FIX-24: Request para crear/actualizar instituto.</summary>
 public record CrearInstitutoRequest(
