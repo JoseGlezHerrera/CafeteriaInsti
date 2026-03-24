@@ -49,7 +49,7 @@ public class AdminController : ControllerBase
             usuariosQuery = usuariosQuery.Where(u => u.InstitutoId == institutoEfectivo);
         }
 
-        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion.Date == hoy);
+        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion.Date == hoy && p.Estado != EstadoPedido.Cancelado);
         var ingresosHoy   = await pedidosQuery
             .Where(p => p.FechaCreacion.Date == hoy && p.Estado != EstadoPedido.Cancelado)
             .SumAsync(p => (decimal?)p.Total) ?? 0;

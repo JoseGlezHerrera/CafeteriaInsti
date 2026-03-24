@@ -142,6 +142,12 @@ public class PedidosController : ControllerBase
 
             return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otro pedido simultáneo agotó el stock entre nuestra lectura y escritura
+            await transaction.RollbackAsync();
+            return Conflict(new { mensaje = "El stock de uno o más productos cambió mientras procesabas el pedido. Comprueba la disponibilidad y vuelve a intentarlo." });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al procesar el pedido para el usuario {UserId}.", userId);
@@ -189,12 +195,24 @@ public class PedidosController : ControllerBase
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
-        var pedido = await _db.Pedidos.FirstOrDefaultAsync(p => p.Id == id);
+        var pedido = await _db.Pedidos
+            .Include(p => p.Usuario)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
 
-        var esStaff = User.IsInRole("Admin") || User.IsInRole("Personal") || User.IsInRole("Empleado");
+        var esAdmin = User.IsInRole("Admin");
+        var esStaff = esAdmin || User.IsInRole("Personal") || User.IsInRole("Empleado");
+
         if (pedido.UsuarioId != userId && !esStaff)
             return Forbid();
+
+        // Empleado/Personal solo pueden ver pedidos de su propio instituto
+        if (esStaff && !esAdmin)
+        {
+            var miInstitutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
+            if (miInstitutoId.HasValue && pedido.Usuario?.InstitutoId != miInstitutoId)
+                return Forbid();
+        }
 
         var dto = await GetPedidoDtoAsync(id);
         return dto is null ? NotFound() : Ok(dto);
@@ -217,8 +235,17 @@ public class PedidosController : ControllerBase
     {
         var pedido = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Usuario)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
+
+        // Empleado/Personal solo pueden gestionar pedidos de su propio instituto
+        if (!User.IsInRole("Admin"))
+        {
+            var miInstitutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
+            if (miInstitutoId.HasValue && pedido.Usuario?.InstitutoId != miInstitutoId)
+                return Forbid();
+        }
 
         // Validar transición de estado
         if (!_transicionesValidas.TryGetValue(pedido.Estado, out var permitidos) ||

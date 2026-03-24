@@ -107,6 +107,12 @@ builder.Services.AddRateLimiter(options =>
     });
 
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (ctx, _) =>
+    {
+        ctx.HttpContext.Response.ContentType = "application/json";
+        await ctx.HttpContext.Response.WriteAsync(
+            "{\"mensaje\":\"Demasiadas solicitudes. Espera un momento antes de volver a intentarlo.\"}");
+    };
 });
 
 // ── SignalR ───────────────────────────────────────────────────────────────────

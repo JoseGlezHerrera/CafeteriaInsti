@@ -159,11 +159,20 @@ public class AuthController : ControllerBase
         _db.Usuarios.Add(usuario);
 
         // Incrementar usos de la invitación
+        // El [ConcurrencyCheck] en UsosActuales garantiza que dos registros simultáneos
+        // no puedan superar UsosMaximos: el segundo lanzará DbUpdateConcurrencyException.
         invitacion.UsosActuales++;
         if (invitacion.UsosMaximos.HasValue && invitacion.UsosActuales >= invitacion.UsosMaximos)
             invitacion.Activa = false;
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { mensaje = "Esta invitación acaba de alcanzar su límite de usos. Solicita un nuevo enlace." });
+        }
 
         // Login automático
         var accessToken  = _auth.GenerarAccessToken(usuario);
@@ -188,6 +197,10 @@ public class AuthController : ControllerBase
         if (usuario is null)
             return Unauthorized(new { mensaje = "Refresh token inválido o expirado." });
 
+        // Una cuenta suspendida/rechazada no puede renovar su sesión
+        if (usuario.Estado != EstadoCuenta.Activa)
+            return StatusCode(403, new { motivo = usuario.Estado.ToString().ToLower() });
+
         var accessToken  = _auth.GenerarAccessToken(usuario);
         var refreshToken = _auth.GenerarRefreshToken();
         usuario.RefreshToken       = refreshToken;
@@ -211,9 +224,12 @@ public class AuthController : ControllerBase
         if (!_auth.VerificarPassword(req.PasswordActual, usuario.PasswordHash))
             return BadRequest(new { mensaje = "La contraseña actual no es correcta." });
 
-        usuario.PasswordHash = _auth.HashPassword(req.NuevaPassword);
+        usuario.PasswordHash       = _auth.HashPassword(req.NuevaPassword);
+        // Invalidar sesiones existentes: cualquier refresh token activo deja de funcionar
+        usuario.RefreshToken       = null;
+        usuario.RefreshTokenExpiry = null;
         await _db.SaveChangesAsync();
 
-        return Ok(new { mensaje = "Contraseña actualizada correctamente." });
+        return Ok(new { mensaje = "Contraseña actualizada correctamente. Inicia sesión de nuevo." });
     }
 }
