@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
 using System.Collections.ObjectModel;
@@ -11,7 +12,12 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     private readonly ApiService _api;
     private List<PedidoDto> _todos = new();
 
-    public EmpleadoPedidosViewModel(ApiService api) => _api = api;
+    public EmpleadoPedidosViewModel(ApiService api)
+    {
+        _api = api;
+        WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
+            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+    }
 
     [ObservableProperty] private bool _isLoading;
 

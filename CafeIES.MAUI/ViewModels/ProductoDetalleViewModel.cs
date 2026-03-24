@@ -40,7 +40,7 @@ public partial class ProductoDetalleViewModel : ObservableObject
 
     partial void OnProductoIdChanged(int value)
     {
-        // Se llama cuando Shell establece la query property; iniciamos la carga.
+        if (value > 0) _ = CargarAsync();
     }
 
     [RelayCommand]
