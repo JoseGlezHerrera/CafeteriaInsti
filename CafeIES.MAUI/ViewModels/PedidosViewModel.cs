@@ -53,12 +53,14 @@ public partial class PerfilViewModel : ObservableObject
     private readonly ApiService              _api;
     private readonly TokenService            _tokens;
     private readonly PushNotificationService _push;
+    private readonly CarritoViewModel        _carrito;
 
-    public PerfilViewModel(ApiService api, TokenService tokens, PushNotificationService push)
+    public PerfilViewModel(ApiService api, TokenService tokens, PushNotificationService push, CarritoViewModel carrito)
     {
-        _api    = api;
-        _tokens = tokens;
-        _push   = push;
+        _api     = api;
+        _tokens  = tokens;
+        _push    = push;
+        _carrito = carrito;
     }
 
     [ObservableProperty] private string _nombreCompleto  = string.Empty;
@@ -184,6 +186,7 @@ public partial class PerfilViewModel : ObservableObject
         await _push.EliminarAsync();
         await _api.DesconectarSignalRAsync();
         _tokens.LimpiarTokens();
+        _carrito.LimpiarCarrito();
         await Shell.Current.GoToAsync("//Login");
     }
 

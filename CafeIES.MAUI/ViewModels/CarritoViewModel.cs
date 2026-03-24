@@ -168,6 +168,24 @@ public partial class CarritoViewModel : ObservableObject
             $"ConfirmacionPedido?numeroPedido={pedido.NumeroPedido}&total={totalStr}");
     }
 
+    /// <summary>Limpia el carrito y el estado de pago pendiente. Llamar al cerrar sesión.</summary>
+    public void LimpiarCarrito()
+    {
+        Items.Clear();
+        TotalItems = 0;
+        Notas = string.Empty;
+        HayErrorPago = false;
+        ErrorPago = string.Empty;
+        EstadoPago = string.Empty;
+        PendingClientSecret    = string.Empty;
+        PendingPublishableKey  = string.Empty;
+        PendingPaymentIntentId = string.Empty;
+        _pendingLineas = new();
+        _pendingNotas  = null;
+        OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(CarritoVacio));
+    }
+
     private bool PuedeConfirmar() => !CarritoVacio && !IsLoading;
 }
 

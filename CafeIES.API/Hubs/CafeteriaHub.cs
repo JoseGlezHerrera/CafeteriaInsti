@@ -17,9 +17,17 @@ public class CafeteriaHub : Hub
     {
         var user = Context.User!;
 
-        // El panel de cafetería/admin/empleado se une al grupo "cafeteria"
+        // El panel de cafetería/admin/empleado se une a su grupo de instituto
+        // Admins globales (sin institutoId) van al grupo "cafeteria-global" (ven todos los pedidos)
+        // Staff con instituto van al grupo "cafeteria-{institutoId}" (solo su instituto)
         if (user.IsInRole("Admin") || user.IsInRole("Personal") || user.IsInRole("Empleado"))
-            await Groups.AddToGroupAsync(Context.ConnectionId, "cafeteria");
+        {
+            var institutoIdStr = user.FindFirst("institutoId")?.Value;
+            var grupo = int.TryParse(institutoIdStr, out var iid) && iid > 0
+                ? $"cafeteria-{iid}"
+                : "cafeteria-global";
+            await Groups.AddToGroupAsync(Context.ConnectionId, grupo);
+        }
 
         // Todo usuario se une a su grupo personal para recibir updates de sus pedidos
         var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

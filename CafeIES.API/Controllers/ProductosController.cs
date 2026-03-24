@@ -69,6 +69,11 @@ public class ProductosController : ControllerBase
         if (!await _db.Categorias.AnyAsync(c => c.Id == req.CategoriaId))
             return BadRequest(new { mensaje = "Categoría no válida." });
 
+        if (!string.IsNullOrEmpty(req.ImagenUrl) &&
+            (!Uri.TryCreate(req.ImagenUrl, UriKind.Absolute, out var uriResult) ||
+             (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)))
+            return BadRequest(new { mensaje = "La URL de imagen debe ser una URL HTTP/HTTPS válida." });
+
         var producto = new Producto
         {
             Nombre      = req.Nombre,
@@ -110,6 +115,11 @@ public class ProductosController : ControllerBase
 
         if (!await _db.Categorias.AnyAsync(c => c.Id == req.CategoriaId))
             return BadRequest(new { mensaje = "Categoría no válida." });
+
+        if (!string.IsNullOrEmpty(req.ImagenUrl) &&
+            (!Uri.TryCreate(req.ImagenUrl, UriKind.Absolute, out var uriResult2) ||
+             (uriResult2.Scheme != Uri.UriSchemeHttp && uriResult2.Scheme != Uri.UriSchemeHttps)))
+            return BadRequest(new { mensaje = "La URL de imagen debe ser una URL HTTP/HTTPS válida." });
 
         producto.Nombre      = req.Nombre;
         producto.Descripcion = req.Descripcion;
