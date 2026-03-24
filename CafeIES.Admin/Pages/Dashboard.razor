@@ -1,7 +1,9 @@
 @page "/"
-@implements IDisposable
+@implements IAsyncDisposable
 @inject AdminApiService Api
 @inject NavigationManager Nav
+@inject AuthAdminService Auth
+@using Microsoft.AspNetCore.SignalR.Client
 
 <PageTitle>Dashboard · CaféIES Admin</PageTitle>
 
@@ -120,6 +122,7 @@ else
     private DashboardDto? _dashboard;
     private bool _cargado;
     private Timer? _timer;
+    private HubConnection? _hubConnection;
     private List<InstitutoDto> _institutos = new();
     private int? _institutoFiltro;
 
@@ -129,6 +132,10 @@ else
         _dashboard  = await Api.GetDashboardAsync(_institutoFiltro);
         _cargado    = true;
 
+        // FIX-18: Conectar a SignalR para recibir NuevoPedido en tiempo real
+        await ConectarSignalRAsync();
+
+        // Timer como fallback cada 60s (antes era 30s)
         _timer = new Timer(async _ =>
         {
             try
@@ -137,7 +144,35 @@ else
                 await InvokeAsync(StateHasChanged);
             }
             catch { /* ignorar errores de red en auto-refresh */ }
-        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private async Task ConectarSignalRAsync()
+    {
+        try
+        {
+            var baseUrl = Nav.BaseUri.TrimEnd('/');
+            // Obtener la URL de la API del HttpClient configurado
+            var apiBaseUrl = Api.GetApiBaseUrl();
+            if (string.IsNullOrEmpty(apiBaseUrl)) return;
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{apiBaseUrl}hubs/cafeteria", options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(Auth.Token);
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<object>("NuevoPedido", async _ =>
+            {
+                _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+        }
+        catch { /* SignalR no disponible — el timer de fallback se encarga */ }
     }
 
     private async Task OnInstitutoChanged(ChangeEventArgs e)
@@ -160,8 +195,10 @@ else
         _ => ""
     };
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _timer?.Dispose();
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
     }
 }

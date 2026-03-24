@@ -9,7 +9,7 @@ namespace CafeIES.API.Data;
 /// </summary>
 public static class DbSeeder
 {
-    public static async Task SeedAdminAsync(AppDbContext db, IConfiguration config)
+    public static async Task SeedAdminAsync(AppDbContext db, IConfiguration config, IWebHostEnvironment? env = null)
     {
         // Si ya hay algún admin, no hacemos nada
         if (db.Usuarios.Any(u => u.Rol == RolUsuario.Admin)) return;
@@ -17,6 +17,15 @@ public static class DbSeeder
         var adminEmail    = config["Admin:Email"]    ?? "admin@cafeies.local";
         var adminPassword = config["Admin:Password"] ?? "Admin1234!";
         var adminNombre   = config["Admin:Nombre"]   ?? "Administrador";
+
+        // FIX-22: En producción, no arrancar con credenciales por defecto
+        if (env?.IsProduction() == true &&
+            (string.IsNullOrEmpty(config["Admin:Email"]) || string.IsNullOrEmpty(config["Admin:Password"])))
+        {
+            throw new InvalidOperationException(
+                "SEC-06: No se puede arrancar en producción sin configurar Admin:Email y Admin:Password. " +
+                "Configúralos como variables de entorno o en appsettings.Production.json.");
+        }
 
         var admin = new Usuario
         {

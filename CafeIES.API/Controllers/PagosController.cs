@@ -180,6 +180,39 @@ public class PagosController : ControllerBase
         """;
 
     /// <summary>
+    /// FIX-10: Cancela un PaymentIntent en Stripe al abandonar el pago.
+    /// Verifica que el intent pertenezca al usuario autenticado via metadata.
+    /// </summary>
+    [HttpPost("cancelar-intent")]
+    [Authorize]
+    public async Task<IActionResult> CancelarIntent([FromBody] CancelarIntentRequest req)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        try
+        {
+            var (_, _, _, metaUserId) = await _stripe.VerificarPagoAsync(req.PaymentIntentId);
+            if (metaUserId != userId)
+                return StatusCode(403, new { mensaje = "Este pago no pertenece a tu cuenta." });
+
+            await _stripe.CancelarIntentAsync(req.PaymentIntentId);
+            return Ok(new { mensaje = "Pago cancelado." });
+        }
+        catch (Stripe.StripeException ex) when (ex.StripeError?.Code == "payment_intent_unexpected_state")
+        {
+            // El intent ya fue confirmado o cancelado — ignorar
+            _logger.LogDebug("PaymentIntent {Id} ya estaba en estado final.", req.PaymentIntentId);
+            return Ok(new { mensaje = "El pago ya estaba finalizado." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cancelar PaymentIntent {Id}.", req.PaymentIntentId);
+            return StatusCode(500, new { mensaje = "Error al cancelar el pago." });
+        }
+    }
+
+    /// <summary>
     /// Webhook de Stripe — recibe notificaciones de pago completado/fallido.
     /// Si el pago se completó pero no existe pedido (usuario cerró la app),
     /// reconstruye el pedido automáticamente desde los metadatos del PaymentIntent.
@@ -289,8 +322,8 @@ public class PagosController : ControllerBase
             return;
         }
 
-        // Crear el pedido con transacción
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        // FIX-03: Serializable para evitar race condition en NumeroPedido
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
             var lineasPedido = new List<LineaPedido>();
@@ -348,9 +381,10 @@ public class PagosController : ControllerBase
                 return;
             }
 
+            // FIX-04: SARGable date comparison
             var hoy = DateTime.UtcNow.Date;
             var ultimoNumero = await _db.Pedidos
-                .Where(p => p.FechaCreacion.Date == hoy)
+                .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < hoy.AddDays(1))
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
 
             var notaFinal = notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;");

@@ -19,7 +19,7 @@
         </div>
         @if (!franjasTurno.Any())
         {
-            <div class="empty-mini">Sin franjas configuradas — este turno no podrá pedir.</div>
+            <div class="empty-mini">Sin franjas bloqueadas — los alumnos de este turno pueden pedir en cualquier momento.</div>
         }
         else
         {
@@ -191,6 +191,8 @@
 
     private void CerrarModal() => _mostrarModal = false;
 
+    // FIX-21: Lógica alineada con FranjaHoraria.EstaActiva (Entities.cs).
+    // Se mantiene aquí porque FranjaHorariaDto no tiene la propiedad calculada.
     private static bool EsFranjaActiva(FranjaHorariaDto f)
     {
         if (!f.Activa) return false;

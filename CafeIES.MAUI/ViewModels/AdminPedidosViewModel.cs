@@ -10,7 +10,10 @@ namespace CafeIES.MAUI.ViewModels;
 public partial class AdminPedidosViewModel : ObservableObject
 {
     private readonly ApiService _api;
-    private List<PedidoDto> _todos = new();
+    // FIX-19: Paginación real en lugar de cargar todos los pedidos
+    private const int PageSize = 30;
+    private int _paginaActual;
+    private int _totalCount;
 
     public AdminPedidosViewModel(ApiService api)
     {
@@ -20,13 +23,15 @@ public partial class AdminPedidosViewModel : ObservableObject
     }
 
     [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _isCargandoMas;
+    [ObservableProperty] private bool _hayMas;
 
-    // ── Filtro por estado (client-side) ───────────────────────────────────────
+    // ── Filtro por estado (client-side sobre la página cargada) ──────────────
     private string _filtroEstado = string.Empty;
     public string FiltroEstado
     {
         get => _filtroEstado;
-        set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
+        set { if (SetProperty(ref _filtroEstado, value)) _ = CargarAsync(); }
     }
 
     // ── Filtro por instituto (server-side al recargar) ────────────────────────
@@ -45,6 +50,8 @@ public partial class AdminPedidosViewModel : ObservableObject
     public async Task CargarAsync()
     {
         IsLoading = true;
+        Pedidos.Clear();
+        _paginaActual = 1;
 
         // Carga institutos la primera vez
         if (Institutos.Count == 0)
@@ -56,9 +63,30 @@ public partial class AdminPedidosViewModel : ObservableObject
         }
 
         var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
-        _todos = await _api.GetAllPedidosAsync(institutoId);
-        AplicarFiltro();
+        var result = await _api.GetPedidosAdminPaginadoAsync(page: 1, pageSize: PageSize, institutoId: institutoId);
+        if (result is not null)
+        {
+            _totalCount = result.TotalCount;
+            foreach (var p in result.Items) Pedidos.Add(p);
+            HayMas = Pedidos.Count < _totalCount;
+        }
         IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task CargarMasAsync()
+    {
+        if (IsCargandoMas || !HayMas) return;
+        IsCargandoMas = true;
+        _paginaActual++;
+        var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
+        var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId);
+        if (result is not null)
+        {
+            foreach (var p in result.Items) Pedidos.Add(p);
+            HayMas = Pedidos.Count < _totalCount;
+        }
+        IsCargandoMas = false;
     }
 
     [RelayCommand]
@@ -67,33 +95,31 @@ public partial class AdminPedidosViewModel : ObservableObject
         FiltroEstado = estado;
     }
 
-    private void AplicarFiltro()
-    {
-        Pedidos.Clear();
-        var filtrados = string.IsNullOrEmpty(FiltroEstado)
-            ? _todos
-            : _todos.Where(p => p.Estado.ToString() == FiltroEstado).ToList();
-        foreach (var p in filtrados) Pedidos.Add(p);
-    }
-
     [RelayCommand]
     private async Task PrepararAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.EnPreparacion);
+        // FIX-14: Verificar resultado y mostrar error si falla
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.EnPreparacion);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo cambiar el estado del pedido.", "OK");
         await CargarAsync();
     }
 
     [RelayCommand]
     private async Task ListoAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Listo);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Listo);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como listo.", "OK");
         await CargarAsync();
     }
 
     [RelayCommand]
     private async Task EntregarAsync(PedidoDto pedido)
     {
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como entregado.", "OK");
         await CargarAsync();
     }
 
@@ -106,7 +132,12 @@ public partial class AdminPedidosViewModel : ObservableObject
             "Sí, cancelar", "No");
         if (!confirmar) return;
 
-        await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
+        var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
+        if (!ok)
+            await Shell.Current.DisplayAlert("Error", "No se pudo cancelar el pedido. Inténtalo de nuevo.", "OK");
         await CargarAsync();
     }
+
+    /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
+    public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 }

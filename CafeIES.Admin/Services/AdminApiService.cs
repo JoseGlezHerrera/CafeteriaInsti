@@ -17,6 +17,9 @@ public class AdminApiService
         _auth = auth;
     }
 
+    /// <summary>FIX-18: Expone la URL base de la API para conexiones SignalR.</summary>
+    public string GetApiBaseUrl() => _http.BaseAddress?.ToString().TrimEnd('/') + "/" ?? "";
+
     // ── Helper: ejecuta request con auto-refresh en 401 ──────────────────────
     private async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> action)
     {
@@ -158,6 +161,16 @@ public class AdminApiService
     // ── Institutos ──────────────────────────────────────────────────────────────
     public async Task<List<InstitutoDto>> GetInstitutosAsync()
         => await GetListAsync<InstitutoDto>("api/admin/institutos");
+
+    // FIX-24: CRUD de institutos
+    public async Task<bool> CrearInstitutoAsync(CrearInstitutoRequest req)
+        => await SendBoolAsync(() => _http.PostAsJsonAsync("api/admin/institutos", req));
+
+    public async Task<bool> ActualizarInstitutoAsync(int id, CrearInstitutoRequest req)
+        => await SendBoolAsync(() => _http.PutAsJsonAsync($"api/admin/institutos/{id}", req));
+
+    public async Task<bool> ToggleInstitutoAsync(int id)
+        => await SendBoolAsync(() => _http.PatchAsync($"api/admin/institutos/{id}/toggle", null));
 
     // ── Alérgenos ──────────────────────────────────────────────────────────────
     public async Task<List<AlergenoDto>> GetAlergenosAsync()

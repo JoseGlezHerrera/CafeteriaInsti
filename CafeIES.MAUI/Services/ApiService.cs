@@ -283,6 +283,20 @@ public class ApiService
         }
     }
 
+    // FIX-10: Cancelar PaymentIntent al abandonar el pago
+    public async Task CancelarPagoIntentAsync(string paymentIntentId)
+    {
+        try
+        {
+            await EnviarConRefreshAsync(HttpMethod.Post, "api/pagos/cancelar-intent",
+                JsonContent.Create(new CancelarIntentRequest(paymentIntentId)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cancelar el PaymentIntent {Id}.", paymentIntentId);
+        }
+    }
+
     // ── Institutos ────────────────────────────────────────────────────────────
     public async Task<List<InstitutoDto>> GetInstitutosAsync()
     {
@@ -448,7 +462,26 @@ public class ApiService
         }
     }
 
-    // ── Admin: Pedidos ────────────────────────────────────────────────────────
+    // ── Admin: Pedidos (paginado) ────────────────────────────────────────────
+    // FIX-19: Método paginado para evitar cargar todos los pedidos en memoria
+    public async Task<PaginatedResponse<PedidoDto>?> GetPedidosAdminPaginadoAsync(int page = 1, int pageSize = 30, int? institutoId = null)
+    {
+        try
+        {
+            var institutoParam = institutoId.HasValue ? $"&institutoId={institutoId}" : "";
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get,
+                $"api/admin/pedidos?page={page}&pageSize={pageSize}{institutoParam}");
+            if (!resp.IsSuccessStatusCode) return null;
+            return await resp.Content.ReadFromJsonAsync<PaginatedResponse<PedidoDto>>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener pedidos admin (página {Page}).", page);
+            return null;
+        }
+    }
+
+    // ── Admin: Pedidos (todos - legacy) ────────────────────────────────────
     public async Task<List<PedidoDto>> GetAllPedidosAsync(int? institutoId = null)
     {
         var all = new List<PedidoDto>();
@@ -889,6 +922,22 @@ public class ApiService
                 _logger.LogDebug(ex, "Payload inesperado en EstadoPedidoActualizado.");
             }
         });
+
+        // FIX-13: Reconectar SignalR tras desconexión definitiva
+        _hub.Closed += async (ex) =>
+        {
+            _logger.LogWarning(ex, "SignalR desconectado. Reintentando en 5 segundos...");
+            await Task.Delay(5000);
+            try
+            {
+                await _hub.StartAsync();
+                _logger.LogInformation("SignalR reconectado tras desconexión.");
+            }
+            catch (Exception reconnectEx)
+            {
+                _logger.LogWarning(reconnectEx, "No se pudo reconectar a SignalR tras desconexión.");
+            }
+        };
 
         try
         {

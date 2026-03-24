@@ -19,17 +19,27 @@ public partial class HomeViewModel : ObservableObject
     private DateTime _cacheTimestamp = DateTime.MinValue;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
 
+    // FIX-12: Guardar referencia al handler para poder desuscribirse
+    private readonly System.ComponentModel.PropertyChangedEventHandler _carritoHandler;
+
     public HomeViewModel(ApiService api, CarritoViewModel carrito)
     {
         _api = api;
         _carrito = carrito;
 
         ItemsEnCarrito = _carrito.TotalItems;
-        _carrito.PropertyChanged += (_, e) =>
+        _carritoHandler = (_, e) =>
         {
             if (e.PropertyName == nameof(CarritoViewModel.TotalItems))
                 ItemsEnCarrito = _carrito.TotalItems;
         };
+        _carrito.PropertyChanged += _carritoHandler;
+    }
+
+    /// <summary>FIX-12: Limpia suscripciones para evitar memory leaks.</summary>
+    public void Cleanup()
+    {
+        _carrito.PropertyChanged -= _carritoHandler;
     }
 
     // ── Estado horario ────────────────────────────────────────────────────────

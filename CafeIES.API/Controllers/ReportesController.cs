@@ -26,8 +26,8 @@ public class ReportesController : ControllerBase
 
     /// Admin con instituto asignado en JWT solo puede ver su propio instituto.
     /// Admin global (sin institutoId en JWT) puede ver todos.
-    private int? GetAdminInstitutoId() =>
-        int.TryParse(User.FindFirst("institutoId")?.Value, out var id) && id > 0 ? id : null;
+    /// FIX-08: Usa extensión centralizada
+    private int? GetAdminInstitutoId() => User.GetInstitutoId();
 
     // ── GET /api/reportes/excel ───────────────────────────────────────────────
     [HttpGet("excel")]
@@ -77,10 +77,11 @@ public class ReportesController : ControllerBase
         if (institutoId.HasValue)
             query = query.Where(p => p.Usuario!.InstitutoId == institutoId);
 
+        // FIX-04: SARGable date comparison
         if (desde.HasValue)
-            query = query.Where(p => p.FechaCreacion.Date >= desde.Value.Date);
+            query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
         if (hasta.HasValue)
-            query = query.Where(p => p.FechaCreacion.Date <= hasta.Value.Date);
+            query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
 
         // Contar antes de aplicar el límite para poder advertir
         var total = await query.CountAsync();

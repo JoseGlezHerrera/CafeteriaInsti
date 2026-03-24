@@ -29,8 +29,8 @@ public class AdminController : ControllerBase
     /// Si el admin no tiene instituto asignado (admin global), devuelve null → puede ver todo.
     /// Si tiene instituto, ese es el único que puede ver.
     /// </summary>
-    private int? GetAdminInstitutoId() =>
-        int.TryParse(User.FindFirst("institutoId")?.Value, out var id) && id > 0 ? id : null;
+    // FIX-08: Usa extensión centralizada en lugar de método duplicado
+    private int? GetAdminInstitutoId() => User.GetInstitutoId();
 
     // ── GET /api/admin/dashboard ─────────────────────────────────────────────
     [HttpGet("dashboard")]
@@ -49,9 +49,11 @@ public class AdminController : ControllerBase
             usuariosQuery = usuariosQuery.Where(u => u.InstitutoId == institutoEfectivo);
         }
 
-        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion.Date == hoy && p.Estado != EstadoPedido.Cancelado);
+        // FIX-04: SARGable date comparison
+        var manana = hoy.AddDays(1);
+        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion >= hoy && p.FechaCreacion < manana && p.Estado != EstadoPedido.Cancelado);
         var ingresosHoy   = await pedidosQuery
-            .Where(p => p.FechaCreacion.Date == hoy && p.Estado != EstadoPedido.Cancelado)
+            .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < manana && p.Estado != EstadoPedido.Cancelado)
             .SumAsync(p => (decimal?)p.Total) ?? 0;
         var productosActivos   = await _db.Productos.CountAsync(p => p.Activo);
         var productosStockBajo = await _db.Productos
@@ -80,12 +82,15 @@ public class AdminController : ControllerBase
     }
 
     // ── GET /api/admin/usuarios ───────────────────────────────────────────────
+    // FIX-20: Soporte de paginación opcional (retrocompatible)
     [HttpGet("usuarios")]
-    public async Task<ActionResult<List<UsuarioDto>>> GetUsuarios(
+    public async Task<ActionResult> GetUsuarios(
         [FromQuery] EstadoCuenta? estado,
         [FromQuery] RolUsuario?   rol,
         [FromQuery] string?       busqueda,
-        [FromQuery] int?          institutoId)
+        [FromQuery] int?          institutoId,
+        [FromQuery] int?          page = null,
+        [FromQuery] int           pageSize = 50)
     {
         var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
 
@@ -96,8 +101,20 @@ public class AdminController : ControllerBase
         if (!string.IsNullOrWhiteSpace(busqueda))
             query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
-        var users = await query.OrderBy(u => u.NombreCompleto).ToListAsync();
-        return Ok(users.Select(u => u.ToDto()).ToList());
+        // Si page está presente, devolver respuesta paginada; si no, devolver lista completa (retrocompatible)
+        if (page.HasValue)
+        {
+            pageSize = Math.Clamp(pageSize, 1, 200);
+            var p = Math.Max(1, page.Value);
+            var totalCount = await query.CountAsync();
+            var users = await query.OrderBy(u => u.NombreCompleto)
+                .Skip((p - 1) * pageSize).Take(pageSize).ToListAsync();
+            return Ok(new PaginatedResponse<UsuarioDto>(
+                users.Select(u => u.ToDto()).ToList(), totalCount, p, pageSize));
+        }
+
+        var allUsers = await query.OrderBy(u => u.NombreCompleto).ToListAsync();
+        return Ok(allUsers.Select(u => u.ToDto()).ToList());
     }
 
     // ── PATCH /api/admin/usuarios/{id}/validar ────────────────────────────────
@@ -201,6 +218,10 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        // FIX-07: No se puede cambiar el rol de otro admin
+        if (user.Rol == RolUsuario.Admin)
+            return BadRequest(new { mensaje = "No se puede cambiar el rol de un administrador." });
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         var rolAnterior = user.Rol;
@@ -356,6 +377,72 @@ public class AdminController : ControllerBase
             .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto))
             .ToListAsync();
         return Ok(institutos);
+    }
+
+    // ── POST /api/admin/institutos ──────────────────────────────────────────────
+    // FIX-24: CRUD de institutos
+    [HttpPost("institutos")]
+    public async Task<ActionResult<InstitutoDto>> CrearInstituto([FromBody] CrearInstitutoRequest req)
+    {
+        if (await _db.Institutos.AnyAsync(i => i.CodigoCorto == req.CodigoCorto))
+            return Conflict(new { mensaje = "Ya existe un instituto con ese código corto." });
+
+        var instituto = new Instituto
+        {
+            Nombre      = req.Nombre,
+            CodigoCorto = req.CodigoCorto,
+            Direccion   = req.Direccion ?? string.Empty,
+            Activo      = true
+        };
+        _db.Institutos.Add(instituto);
+        await _db.SaveChangesAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} creó el instituto {Id} ({Nombre})",
+            adminEmail, instituto.Id, instituto.Nombre);
+
+        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto));
+    }
+
+    // ── PUT /api/admin/institutos/{id} ──────────────────────────────────────
+    [HttpPut("institutos/{id}")]
+    public async Task<ActionResult<InstitutoDto>> ActualizarInstituto(int id, [FromBody] CrearInstitutoRequest req)
+    {
+        var instituto = await _db.Institutos.FindAsync(id);
+        if (instituto is null) return NotFound();
+
+        // Verificar unicidad del código corto si cambió
+        if (instituto.CodigoCorto != req.CodigoCorto &&
+            await _db.Institutos.AnyAsync(i => i.CodigoCorto == req.CodigoCorto && i.Id != id))
+            return Conflict(new { mensaje = "Ya existe otro instituto con ese código corto." });
+
+        instituto.Nombre      = req.Nombre;
+        instituto.CodigoCorto = req.CodigoCorto;
+        instituto.Direccion   = req.Direccion ?? string.Empty;
+        await _db.SaveChangesAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} actualizó el instituto {Id} ({Nombre})",
+            adminEmail, id, instituto.Nombre);
+
+        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto));
+    }
+
+    // ── PATCH /api/admin/institutos/{id}/toggle ─────────────────────────────
+    [HttpPatch("institutos/{id}/toggle")]
+    public async Task<ActionResult> ToggleInstituto(int id)
+    {
+        var instituto = await _db.Institutos.FindAsync(id);
+        if (instituto is null) return NotFound();
+
+        instituto.Activo = !instituto.Activo;
+        await _db.SaveChangesAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} {Accion} el instituto {Id} ({Nombre})",
+            adminEmail, instituto.Activo ? "activó" : "desactivó", id, instituto.Nombre);
+
+        return Ok(new { activo = instituto.Activo });
     }
 
     // ── GET /api/admin/alergenos ───────────────────────────────────────────────

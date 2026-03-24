@@ -60,6 +60,9 @@ public partial class PedidosViewModel : ObservableObject
     {
         await Shell.Current.GoToAsync($"DetallePedido?pedidoId={pedido.Id}");
     }
+
+    /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
+    public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 }
 
 
@@ -162,9 +165,13 @@ public partial class PerfilViewModel : ObservableObject
             return;
         }
 
-        if (NuevaPassword.Length < 8)
+        // FIX-15: Validación de complejidad antes de llamar a la API
+        if (NuevaPassword.Length < 8 ||
+            !NuevaPassword.Any(char.IsUpper) ||
+            !NuevaPassword.Any(char.IsDigit) ||
+            !NuevaPassword.Any(c => !char.IsLetterOrDigit(c)))
         {
-            PasswordMessage = "La nueva contraseña debe tener al menos 8 caracteres.";
+            PasswordMessage = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.";
             PasswordIsError = true;
             return;
         }

@@ -196,6 +196,10 @@ public partial class CarritoViewModel : ObservableObject
     /// </summary>
     public void CancelarPendingPago()
     {
+        // FIX-10: Cancelar el PaymentIntent en Stripe en background
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId))
+            _ = _api.CancelarPagoIntentAsync(PendingPaymentIntentId);
+
         PendingClientSecret    = string.Empty;
         PendingPublishableKey  = string.Empty;
         PendingPaymentIntentId = string.Empty;

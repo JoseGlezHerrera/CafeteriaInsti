@@ -62,6 +62,12 @@ public class PedidosController : ControllerBase
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
+        // FIX-05: Verificar que el usuario no esté suspendido/rechazado
+        var usuario = await _db.Usuarios.FindAsync(userId.Value);
+        if (usuario is null) return Unauthorized();
+        if (usuario.Estado != EstadoCuenta.Activa)
+            return StatusCode(403, new { mensaje = "Tu cuenta no está activa. No puedes realizar pedidos." });
+
         // 1. Comprobar horario
         var horario = await _horario.PuedePedirAhoraAsync(userId.Value);
         if (!horario.Puede)
@@ -71,8 +77,8 @@ public class PedidosController : ControllerBase
         if (!Enum.IsDefined(typeof(MetodoPago), req.MetodoPago))
             return BadRequest(new { mensaje = "Método de pago inválido." });
 
-        // Usar transacción ReadCommitted; el control de stock se hace via EF ConcurrencyCheck en Producto
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        // FIX-03: Serializable para evitar race condition en NumeroPedido
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
             // 2. Calcular total y validar stock
@@ -104,16 +110,26 @@ public class PedidosController : ControllerBase
             string? referenciaPago = null;
             if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
             {
-                var (pagado, status) = await _stripe.VerificarPagoAsync(req.StripePaymentIntentId);
+                var (pagado, status, amount, metaUserId) = await _stripe.VerificarPagoAsync(req.StripePaymentIntentId);
                 if (!pagado)
                     return BadRequest(new { mensaje = $"El pago no se ha completado (estado: {status}). Inténtalo de nuevo." });
+
+                // FIX-01: Verificar que el PaymentIntent pertenezca al usuario autenticado
+                if (metaUserId != userId.Value.ToString())
+                    return StatusCode(403, new { mensaje = "Este pago no pertenece a tu cuenta." });
+
+                // FIX-02: Verificar que el importe cobrado coincida con el total calculado
+                var totalEsperadoCentimos = (long)Math.Round(total * 100);
+                if (totalEsperadoCentimos != amount)
+                    return BadRequest(new { mensaje = $"El importe cobrado ({amount / 100m:F2}€) no coincide con el total del pedido ({total:F2}€)." });
+
                 referenciaPago = req.StripePaymentIntentId;
             }
 
-            // 4. Número de pedido secuencial del día
+            // 4. Número de pedido secuencial del día (FIX-04: SARGable query)
             var hoy = DateTime.UtcNow.Date;
             var ultimoNumero = await _db.Pedidos
-                .Where(p => p.FechaCreacion.Date == hoy)
+                .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < hoy.AddDays(1))
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
 
             var pedido = new Pedido
