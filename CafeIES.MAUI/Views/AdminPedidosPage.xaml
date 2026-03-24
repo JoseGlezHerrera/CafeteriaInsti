@@ -12,7 +12,7 @@
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
 
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
@@ -20,8 +20,22 @@
                    TextColor="{StaticResource TextColor}"/>
         </Grid>
 
+        <!-- Filtro por instituto -->
+        <Border Grid.Row="1" BackgroundColor="{StaticResource SurfaceColor}"
+                StrokeThickness="0" Padding="16,0,16,12">
+            <Border Style="{StaticResource InputBox}">
+                <Picker ItemsSource="{Binding Institutos}"
+                        ItemDisplayBinding="{Binding Nombre}"
+                        SelectedItem="{Binding FiltroInstituto}"
+                        Title="Todos los centros"
+                        TextColor="{StaticResource TextColor}"
+                        TitleColor="{StaticResource MutedColor}"
+                        FontFamily="DMSans" FontSize="14"/>
+            </Border>
+        </Border>
+
         <!-- Filtro por estado -->
-        <ScrollView Grid.Row="1" Orientation="Horizontal"
+        <ScrollView Grid.Row="2" Orientation="Horizontal"
                     BackgroundColor="{StaticResource SurfaceColor}"
                     Padding="16,10,16,14">
             <HorizontalStackLayout Spacing="8">
@@ -40,7 +54,7 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <RefreshView Grid.Row="2"
+        <RefreshView Grid.Row="3"
                      IsRefreshing="{Binding IsLoading}"
                      Command="{Binding CargarCommand}"
                      RefreshColor="{StaticResource AccentColor}">

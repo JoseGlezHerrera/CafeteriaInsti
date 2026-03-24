@@ -448,17 +448,18 @@ public class ApiService
     }
 
     // ── Admin: Pedidos ────────────────────────────────────────────────────────
-    public async Task<List<PedidoDto>> GetAllPedidosAsync()
+    public async Task<List<PedidoDto>> GetAllPedidosAsync(int? institutoId = null)
     {
         var all = new List<PedidoDto>();
         int page = 1;
         const int pageSize = 500;
+        var institutoParam = institutoId.HasValue ? $"&institutoId={institutoId}" : "";
         while (true)
         {
             try
             {
                 var resp = await EnviarConRefreshAsync(HttpMethod.Get,
-                    $"api/admin/pedidos?pageSize={pageSize}&page={page}");
+                    $"api/admin/pedidos?pageSize={pageSize}&page={page}{institutoParam}");
                 if (!resp.IsSuccessStatusCode) break;
                 var paginated = await resp.Content.ReadFromJsonAsync<PaginatedResponse<PedidoDto>>();
                 if (paginated is null || paginated.Items.Count == 0) break;
