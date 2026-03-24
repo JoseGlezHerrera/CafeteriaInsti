@@ -91,6 +91,20 @@
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <VerticalStackLayout Padding="0,4,0,20">
+                        <Button Text="Cargar más"
+                                Command="{Binding CargarMasCommand}"
+                                IsVisible="{Binding HayMas}"
+                                IsEnabled="{Binding IsCargandoMas, Converter={StaticResource InvertBoolConverter}}"
+                                Style="{StaticResource SecondaryButton}"
+                                HorizontalOptions="Center" Margin="0,8"/>
+                        <ActivityIndicator IsRunning="{Binding IsCargandoMas}"
+                                           IsVisible="{Binding IsCargandoMas}"
+                                           Color="{StaticResource AccentColor}"
+                                           HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
             </CollectionView>
         </RefreshView>
     </Grid>

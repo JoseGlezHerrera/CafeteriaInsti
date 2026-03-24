@@ -139,13 +139,20 @@ public partial class RegistroInvitacionViewModel : ObservableObject
         // Conectar SignalR y registrar token push en segundo plano
         _ = _api.ConectarSignalRAsync();
         _ = _push.RegistrarAsync();
+
+        var destino = resultado.Usuario.Rol switch
+        {
+            RolUsuario.Empleado => "//Empleado",
+            RolUsuario.Admin    => "//Admin",
+            _                   => "//Main"
+        };
         try
         {
-            await Shell.Current.GoToAsync("//Main");
+            await Shell.Current.GoToAsync(destino);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error de navegación a //Main tras el registro por invitación.");
+            _logger.LogError(ex, "Error de navegación a {Destino} tras el registro por invitación.", destino);
             HayError     = true;
             ErrorMessage = $"Error al abrir la aplicación: {ex.Message}";
         }

@@ -104,7 +104,19 @@ public partial class CarritoViewModel : ObservableObject
         HayErrorPago = false;
         ErrorPago    = string.Empty;
         IsLoading    = true;
-        EstadoPago   = "Iniciando pago…";
+        EstadoPago   = "Comprobando horario…";
+
+        // Validar horario antes de crear el PaymentIntent
+        var horario = await _api.GetHorarioStatusAsync();
+        if (horario is not null && !horario.PuedePedir)
+        {
+            IsLoading = false; EstadoPago = string.Empty;
+            HayErrorPago = true;
+            ErrorPago = horario.Mensaje;
+            return;
+        }
+
+        EstadoPago = "Iniciando pago…";
 
         var lineas  = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList();
         var notas   = string.IsNullOrWhiteSpace(Notas) ? null : Notas;
@@ -173,20 +185,30 @@ public partial class CarritoViewModel : ObservableObject
             $"ConfirmacionPedido?numeroPedido={pedido.NumeroPedido}&total={totalStr}");
     }
 
+    /// <summary>
+    /// Cancela el intento de pago en curso sin tocar los items del carrito.
+    /// Llamar cuando el usuario abandona la pantalla de pago (vuelve atrás o cambia de tab).
+    /// </summary>
+    public void CancelarPendingPago()
+    {
+        PendingClientSecret    = string.Empty;
+        PendingPublishableKey  = string.Empty;
+        PendingPaymentIntentId = string.Empty;
+        _pendingLineas = new();
+        _pendingNotas  = null;
+        HayErrorPago  = false;
+        ErrorPago     = string.Empty;
+        EstadoPago    = string.Empty;
+        IsLoading     = false;
+    }
+
     /// <summary>Limpia el carrito y el estado de pago pendiente. Llamar al cerrar sesión.</summary>
     public void LimpiarCarrito()
     {
         Items.Clear();
         TotalItems = 0;
         Notas = string.Empty;
-        HayErrorPago = false;
-        ErrorPago = string.Empty;
-        EstadoPago = string.Empty;
-        PendingClientSecret    = string.Empty;
-        PendingPublishableKey  = string.Empty;
-        PendingPaymentIntentId = string.Empty;
-        _pendingLineas = new();
-        _pendingNotas  = null;
+        CancelarPendingPago();
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(CarritoVacio));
     }

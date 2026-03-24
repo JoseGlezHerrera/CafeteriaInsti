@@ -32,9 +32,10 @@ public class FcmService
 
     /// <summary>
     /// Envía una notificación push a la lista de tokens FCM indicada.
-    /// Silencia cualquier error para no interrumpir el flujo principal del servidor.
+    /// Devuelve la lista de tokens inválidos (UNREGISTERED) que deben eliminarse de la BD.
+    /// Silencia cualquier otro error para no interrumpir el flujo principal del servidor.
     /// </summary>
-    public async Task EnviarAsync(
+    public async Task<List<string>> EnviarAsync(
         IEnumerable<string>         tokens,
         string                      titulo,
         string                      cuerpo,
@@ -44,7 +45,7 @@ public class FcmService
         if (string.IsNullOrEmpty(projectId))
         {
             _logger.LogDebug("FCM desactivado: Fcm:ProjectId no configurado.");
-            return;
+            return [];
         }
 
         string? accessToken;
@@ -55,22 +56,26 @@ public class FcmService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "No se pudo obtener el access token de FCM.");
-            return;
+            return [];
         }
 
-        if (accessToken is null) return;
+        if (accessToken is null) return [];
 
         var url  = $"https://fcm.googleapis.com/v1/projects/{projectId}/messages:send";
         using var http = _httpFactory.CreateClient("fcm");
 
+        var tokensInvalidos = new List<string>();
         foreach (var token in tokens)
         {
-            await EnviarATokenAsync(http, token, titulo, cuerpo, datos ?? [], url, accessToken);
+            var esInvalido = await EnviarATokenAsync(http, token, titulo, cuerpo, datos ?? [], url, accessToken);
+            if (esInvalido) tokensInvalidos.Add(token);
         }
+        return tokensInvalidos;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    private async Task EnviarATokenAsync(
+    /// <summary>Returns true if the token is invalid and should be removed from the DB.</summary>
+    private async Task<bool> EnviarATokenAsync(
         HttpClient                  http,
         string                      token,
         string                      titulo,
@@ -123,12 +128,18 @@ public class FcmService
                     token.Length > 8 ? token[^8..] : token,
                     (int)resp.StatusCode,
                     body);
+
+                // Token expirado/desregistrado — debe eliminarse de la BD
+                return resp.StatusCode == System.Net.HttpStatusCode.NotFound ||
+                       body.Contains("UNREGISTERED", StringComparison.OrdinalIgnoreCase);
             }
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error inesperado al enviar notificación FCM al token ...{Suffix}.",
                 token.Length > 8 ? token[^8..] : token);
+            return false;
         }
     }
 

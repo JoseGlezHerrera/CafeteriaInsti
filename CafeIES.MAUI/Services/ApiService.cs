@@ -383,11 +383,12 @@ public class ApiService
         }
     }
 
-    public async Task<List<PedidoDto>> GetMisPedidosAsync()
+    public async Task<List<PedidoDto>> GetMisPedidosAsync(int page = 1, int pageSize = 20)
     {
         try
         {
-            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/pedidos/mis-pedidos");
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get,
+                $"api/pedidos/mis-pedidos?page={page}&pageSize={pageSize}");
             return resp.IsSuccessStatusCode
                 ? await resp.Content.ReadFromJsonAsync<List<PedidoDto>>() ?? new()
                 : new();
