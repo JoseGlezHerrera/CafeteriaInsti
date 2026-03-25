@@ -478,4 +478,34 @@ public class AdminController : ControllerBase
             tablaDispositivoTokensExiste = tablaDispositivoTokens > 0
         });
     }
+
+    // ── POST /api/admin/run-migrations ────────────────────────────────────────
+    /// <summary>
+    /// Fuerza la ejecución de MigrateAsync() y devuelve el error si falla.
+    /// Solo para diagnóstico en producción — eliminar una vez solucionado.
+    /// </summary>
+    [HttpPost("run-migrations")]
+    public async Task<IActionResult> RunMigrations()
+    {
+        try
+        {
+            await _db.Database.MigrateAsync();
+            var migraciones = await _db.Database
+                .SqlQueryRaw<string>("SELECT MigrationId AS Value FROM [__EFMigrationsHistory] ORDER BY MigrationId")
+                .ToListAsync();
+            return Ok(new { ok = true, migracionesAplicadas = migraciones });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al ejecutar MigrateAsync desde endpoint diagnóstico.");
+            return StatusCode(500, new
+            {
+                ok           = false,
+                error        = ex.Message,
+                innerError   = ex.InnerException?.Message,
+                innerInner   = ex.InnerException?.InnerException?.Message,
+                tipo         = ex.GetType().FullName
+            });
+        }
+    }
 }
