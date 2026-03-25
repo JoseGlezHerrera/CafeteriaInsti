@@ -186,6 +186,30 @@ public class PedidosController : ControllerBase
             await transaction.RollbackAsync();
             return Conflict(new { mensaje = "El stock de uno o más productos cambió mientras procesabas el pedido. Comprueba la disponibilidad y vuelve a intentarlo." });
         }
+        catch (DbUpdateException dbEx) when (
+            dbEx.InnerException?.Message.Contains("ReferenciasPago", StringComparison.OrdinalIgnoreCase) == true ||
+            dbEx.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true ||
+            dbEx.InnerException?.Message.Contains("unique", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            // El webhook de Stripe ya creó el pedido antes de que llegara esta llamada.
+            // Devolver el pedido existente en lugar de error.
+            await transaction.RollbackAsync();
+            if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
+            {
+                var pedidoExistente = await _db.Pedidos
+                    .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+                    .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
+                    .FirstOrDefaultAsync(p => p.ReferenciasPago == req.StripePaymentIntentId);
+                if (pedidoExistente is not null)
+                {
+                    _logger.LogInformation("ReferenciasPago duplicada para PaymentIntent {PI}: devolviendo pedido existente #{Num}.",
+                        req.StripePaymentIntentId, pedidoExistente.NumeroPedido);
+                    return CreatedAtAction(nameof(GetById), new { id = pedidoExistente.Id }, pedidoExistente.ToDto());
+                }
+            }
+            _logger.LogError(dbEx, "DbUpdateException en pedido para usuario {UserId} (no es duplicado conocido).", userId);
+            return StatusCode(500, new { mensaje = "Error al procesar el pedido. Inténtalo de nuevo." });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al procesar el pedido para el usuario {UserId}.", userId);

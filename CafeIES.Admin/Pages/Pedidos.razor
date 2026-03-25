@@ -11,7 +11,7 @@
 
 <!-- Filtros -->
 <div class="filters-bar">
-    <select class="filter-select" @bind="_institutoFiltro" @bind:after="Recargar">
+    <select class="filter-select" @bind="_institutoFiltro">
         <option value="">Todos los institutos</option>
         @foreach (var i in _institutos)
         {
