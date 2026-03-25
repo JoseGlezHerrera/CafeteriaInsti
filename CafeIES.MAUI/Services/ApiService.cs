@@ -279,20 +279,34 @@ public class ApiService
         }
     }
 
-    public async Task<PagoIntentResponse?> CrearPagoIntentAsync(CrearPagoRequest req)
+    /// <summary>
+    /// Crea un PaymentIntent. Devuelve (respuesta, mensajeError).
+    /// Si el servidor devuelve 400/403 con {"mensaje":"..."}, ese texto se devuelve como error.
+    /// </summary>
+    public async Task<(PagoIntentResponse? Intent, string? Error)> CrearPagoIntentAsync(CrearPagoRequest req)
     {
         try
         {
             var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/pagos/crear-intent",
                 JsonContent.Create(req));
-            return resp.IsSuccessStatusCode
-                ? await resp.Content.ReadFromJsonAsync<PagoIntentResponse>()
-                : null;
+            if (resp.IsSuccessStatusCode)
+                return (await resp.Content.ReadFromJsonAsync<PagoIntentResponse>(), null);
+
+            // Intentar leer el mensaje de error del servidor
+            string? mensajeServidor = null;
+            try
+            {
+                var err = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                mensajeServidor = err?.GetValueOrDefault("mensaje");
+            }
+            catch { /* ignorar si el body no es JSON */ }
+
+            return (null, mensajeServidor);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error al crear el PaymentIntent.");
-            return null;
+            return (null, null);
         }
     }
 

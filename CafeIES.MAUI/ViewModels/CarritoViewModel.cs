@@ -125,13 +125,13 @@ public partial class CarritoViewModel : ObservableObject
 
         var lineas  = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList();
         var notas   = string.IsNullOrWhiteSpace(Notas) ? null : Notas;
-        var intent  = await _api.CrearPagoIntentAsync(new CrearPagoRequest(lineas, notas));
+        var (intent, errorIntent) = await _api.CrearPagoIntentAsync(new CrearPagoRequest(lineas, notas));
 
         if (intent is null)
         {
             IsLoading = false; EstadoPago = string.Empty;
             HayErrorPago = true;
-            ErrorPago = "No se pudo iniciar el pago. Comprueba tu conexión o el horario.";
+            ErrorPago = errorIntent ?? "No se pudo iniciar el pago. Comprueba tu conexión o el horario.";
             return;
         }
 
