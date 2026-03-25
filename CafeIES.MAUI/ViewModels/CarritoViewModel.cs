@@ -174,6 +174,13 @@ public partial class CarritoViewModel : ObservableObject
 
         if (pedido is null)
         {
+            // El pago ya fue cobrado por Stripe, no se puede cancelar.
+            // Limpiar estado pendiente para que el usuario no quede bloqueado.
+            PendingClientSecret    = string.Empty;
+            PendingPublishableKey  = string.Empty;
+            PendingPaymentIntentId = string.Empty;
+            _pendingLineas = new();
+            _pendingNotas  = null;
             HayErrorPago = true;
             ErrorPago = "El pago se procesó pero hubo un error al crear el pedido. Contacta con el administrador.";
             return;

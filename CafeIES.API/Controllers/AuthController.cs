@@ -223,6 +223,8 @@ public class AuthController : ControllerBase
 
         var usuario = await _db.Usuarios.FindAsync(userId.Value);
         if (usuario is null) return NotFound();
+        if (usuario.Estado != EstadoCuenta.Activa)
+            return StatusCode(403, new { mensaje = "Tu cuenta no está activa." });
 
         if (!_auth.VerificarPassword(req.PasswordActual, usuario.PasswordHash))
             return BadRequest(new { mensaje = "La contraseña actual no es correcta." });

@@ -412,6 +412,8 @@ public class PagosController : ControllerBase
                 var avisoStock = "⚠️ Stock ajustado: " + string.Join(", ", notasAjuste);
                 notaFinal = string.IsNullOrEmpty(notaFinal) ? avisoStock : $"{notaFinal} | {avisoStock}";
             }
+            // Truncar a 300 chars para no exceder la columna Notas (MaxLength 300)
+            if (notaFinal?.Length > 300) notaFinal = notaFinal[..300];
 
             var pedido = new Pedido
             {
