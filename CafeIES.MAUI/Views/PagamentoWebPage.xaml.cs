@@ -7,7 +7,9 @@ public partial class PagamentoWebPage : ContentPage
 {
     private readonly CarritoViewModel _carrito;
     private readonly ApiService       _api;
-    private bool _procesando;
+    // 0 = libre, 1 = procesando. Usar Interlocked para evitar race condition
+    // si OnNavigating se dispara desde hilos distintos en Android.
+    private int _procesando;
 
     public PagamentoWebPage(CarritoViewModel carrito, ApiService api)
     {
@@ -28,7 +30,7 @@ public partial class PagamentoWebPage : ContentPage
             return;
         }
 
-        _procesando = false;
+        Interlocked.Exchange(ref _procesando, 0);
         LoadingOverlay.IsVisible = true;
 
         var url = $"{_api.ApiBaseUrl}/api/pagos/stripe-form"
@@ -44,7 +46,7 @@ public partial class PagamentoWebPage : ContentPage
 
         // Si el usuario sale sin completar el pago (back, cambio de tab, etc.),
         // cancelamos el intent pendiente para que el próximo "Confirmar" cree uno nuevo.
-        if (!_procesando)
+        if (Volatile.Read(ref _procesando) == 0)
             _carrito.CancelarPendingPago();
     }
 
@@ -55,15 +57,17 @@ public partial class PagamentoWebPage : ContentPage
 
     private void OnNavigating(object? sender, WebNavigatingEventArgs e)
     {
-        if (_procesando) { e.Cancel = true; return; }
+        if (!e.Url.StartsWith("cafeies://success/", StringComparison.OrdinalIgnoreCase))
+            return;
 
-        if (e.Url.StartsWith("cafeies://success/", StringComparison.OrdinalIgnoreCase))
-        {
-            e.Cancel = true;
-            _procesando = true;
-            var piId = e.Url["cafeies://success/".Length..];
-            MainThread.BeginInvokeOnMainThread(async () => await HandleSuccessAsync(piId));
-        }
+        e.Cancel = true;
+
+        // Interlocked.CompareExchange: solo el primer hilo que cambie 0→1 procesa el pago.
+        // Evita duplicados si OnNavigating se dispara dos veces antes de que el flag se actualice.
+        if (Interlocked.CompareExchange(ref _procesando, 1, 0) != 0) return;
+
+        var piId = e.Url["cafeies://success/".Length..];
+        MainThread.BeginInvokeOnMainThread(async () => await HandleSuccessAsync(piId));
     }
 
     private async Task HandleSuccessAsync(string piId)
@@ -82,14 +86,14 @@ public partial class PagamentoWebPage : ContentPage
     // Bloquear el botón "←" mientras se procesa el pago para evitar doble navegación
     private async void OnVolverClicked(object? sender, EventArgs e)
     {
-        if (_procesando) return;
+        if (Volatile.Read(ref _procesando) != 0) return;
         await Shell.Current.GoToAsync("..");
     }
 
     // Bloquear el botón físico atrás de Android mientras se procesa el pago
     protected override bool OnBackButtonPressed()
     {
-        if (_procesando) return true; // true = no hacer nada
+        if (Volatile.Read(ref _procesando) != 0) return true; // true = no hacer nada
         return base.OnBackButtonPressed();
     }
 }

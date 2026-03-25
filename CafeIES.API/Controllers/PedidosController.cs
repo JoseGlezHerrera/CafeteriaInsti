@@ -106,7 +106,24 @@ public class PedidosController : ControllerBase
                 total += producto.Precio * l.Cantidad;
             }
 
-            // 3. Verificar pago con Stripe (si se proporcionó)
+            // 3. Detección de double-submit: rechazar si el mismo usuario tiene un pedido
+            //    idéntico (mismas líneas y cantidades) creado en los últimos 30 segundos.
+            var ventana = DateTime.UtcNow.AddSeconds(-30);
+            var productoIds = lineas.Select(l => l.ProductoId).OrderBy(x => x).ToList();
+            var pedidoReciente = await _db.Pedidos
+                .Where(p => p.UsuarioId == userId.Value && p.FechaCreacion >= ventana)
+                .Include(p => p.Lineas)
+                .FirstOrDefaultAsync(p =>
+                    p.Total == total &&
+                    p.Lineas.Count == lineas.Count &&
+                    p.Lineas.All(l => lineas.Any(nl => nl.ProductoId == l.ProductoId && nl.Cantidad == l.Cantidad)));
+            if (pedidoReciente is not null)
+            {
+                _logger.LogWarning("Double-submit detectado para usuario {UserId}: pedido duplicado del pedido {PedidoId} rechazado.", userId, pedidoReciente.Id);
+                return Conflict(new { mensaje = "Ya tienes un pedido idéntico reciente. Si no lo ves, espera unos segundos y refresca." });
+            }
+
+            // 4. Verificar pago con Stripe (si se proporcionó)
             string? referenciaPago = null;
             if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
             {

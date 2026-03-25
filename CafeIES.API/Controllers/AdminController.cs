@@ -463,12 +463,13 @@ public class AdminController : ControllerBase
     [HttpGet("diagnostics")]
     public async Task<IActionResult> Diagnostics()
     {
+        // SqlQueryRaw<T> para tipos primitivos requiere que la columna se llame "Value"
         var migraciones = await _db.Database
-            .SqlQueryRaw<string>("SELECT MigrationId FROM [__EFMigrationsHistory] ORDER BY MigrationId")
+            .SqlQueryRaw<string>("SELECT MigrationId AS Value FROM [__EFMigrationsHistory] ORDER BY MigrationId")
             .ToListAsync();
 
         var tablaDispositivoTokens = await _db.Database
-            .SqlQueryRaw<int>("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'DispositivoTokens'")
+            .SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'DispositivoTokens'")
             .FirstOrDefaultAsync();
 
         return Ok(new
