@@ -454,4 +454,27 @@ public class AdminController : ControllerBase
             .ToListAsync();
         return Ok(alergenos.Select(a => a.ToDto()).ToList());
     }
+
+    // ── GET /api/admin/diagnostics ────────────────────────────────────────────
+    /// <summary>
+    /// Devuelve el estado de migraciones y tablas clave. Solo Admin.
+    /// Útil para verificar en producción si las migraciones se aplicaron correctamente.
+    /// </summary>
+    [HttpGet("diagnostics")]
+    public async Task<IActionResult> Diagnostics()
+    {
+        var migraciones = await _db.Database
+            .SqlQueryRaw<string>("SELECT MigrationId FROM [__EFMigrationsHistory] ORDER BY MigrationId")
+            .ToListAsync();
+
+        var tablaDispositivoTokens = await _db.Database
+            .SqlQueryRaw<int>("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'DispositivoTokens'")
+            .FirstOrDefaultAsync();
+
+        return Ok(new
+        {
+            migracionesAplicadas = migraciones,
+            tablaDispositivoTokensExiste = tablaDispositivoTokens > 0
+        });
+    }
 }

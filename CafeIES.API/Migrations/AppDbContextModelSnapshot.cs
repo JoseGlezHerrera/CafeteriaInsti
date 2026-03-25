@@ -484,6 +484,10 @@ namespace CafeIES.API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReferenciasPago")
+                        .IsUnique()
+                        .HasFilter("[ReferenciasPago] IS NOT NULL");
+
                     b.HasIndex("UsuarioId", "FechaCreacion");
 
                     b.ToTable("Pedidos");

@@ -11,38 +11,27 @@ namespace CafeIES.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "DispositivoTokens",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UsuarioId = table.Column<int>(type: "int", nullable: false),
-                    Token = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
-                    Plataforma = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    FechaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DispositivoTokens", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DispositivoTokens_Usuarios_UsuarioId",
-                        column: x => x.UsuarioId,
-                        principalTable: "Usuarios",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DispositivoTokens_Token",
-                table: "DispositivoTokens",
-                column: "Token",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DispositivoTokens_UsuarioId",
-                table: "DispositivoTokens",
-                column: "UsuarioId");
+            // Idempotente: crea la tabla solo si no existe.
+            // La migración fue creada manualmente sin Designer.cs, por lo que en algunos
+            // entornos puede que la tabla ya exista (creada manualmente) pero esta migración
+            // no esté en __EFMigrationsHistory. IF NOT EXISTS evita el error en ese caso.
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'DispositivoTokens')
+BEGIN
+    CREATE TABLE [DispositivoTokens] (
+        [Id]                  INT            NOT NULL IDENTITY(1,1),
+        [UsuarioId]           INT            NOT NULL,
+        [Token]               NVARCHAR(512)  NOT NULL,
+        [Plataforma]          NVARCHAR(10)   NOT NULL,
+        [FechaActualizacion]  DATETIME2      NOT NULL,
+        CONSTRAINT [PK_DispositivoTokens] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_DispositivoTokens_Usuarios_UsuarioId]
+            FOREIGN KEY ([UsuarioId]) REFERENCES [Usuarios]([Id]) ON DELETE CASCADE
+    );
+    CREATE UNIQUE INDEX [IX_DispositivoTokens_Token] ON [DispositivoTokens]([Token]);
+    CREATE INDEX [IX_DispositivoTokens_UsuarioId] ON [DispositivoTokens]([UsuarioId]);
+END
+");
         }
 
         /// <inheritdoc />
