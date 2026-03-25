@@ -12,6 +12,12 @@ public partial class HomePage : ContentPage
         BindingContext = _vm = vm;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _vm.Resubscribe();
+    }
+
     // FIX-12: Desuscribir al desaparecer para evitar memory leaks
     protected override void OnDisappearing()
     {

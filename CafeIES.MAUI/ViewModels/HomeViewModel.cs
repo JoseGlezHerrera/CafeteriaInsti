@@ -42,6 +42,15 @@ public partial class HomeViewModel : ObservableObject
         _carrito.PropertyChanged -= _carritoHandler;
     }
 
+    /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
+    public void Resubscribe()
+    {
+        _carrito.PropertyChanged -= _carritoHandler;
+        _carrito.PropertyChanged += _carritoHandler;
+        // Sincronizar badge inmediatamente por si cambió mientras no estábamos suscritos
+        ItemsEnCarrito = _carrito.TotalItems;
+    }
+
     // ── Estado horario ────────────────────────────────────────────────────────
     [ObservableProperty] private bool   _puedePedir;
     [ObservableProperty] private string _mensajeHorario    = string.Empty;
