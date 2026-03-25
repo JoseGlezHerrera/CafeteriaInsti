@@ -936,14 +936,15 @@ public class ApiService
             }
         });
 
-        // FIX-13: Reconectar SignalR tras desconexión definitiva
-        // BUG-3: Capturar referencia local — _hub puede ser null si DesconectarSignalRAsync se ejecuta durante el delay
+        // FIX-13: Reconectar SignalR tras desconexión definitiva.
+        // Capturar referencia ANTES del delay para detectar si el usuario cerró sesión durante la espera.
         _hub.Closed += async (ex) =>
         {
+            var hub = _hub; // captura antes del delay
             _logger.LogWarning(ex, "SignalR desconectado. Reintentando en 5 segundos...");
             await Task.Delay(5000);
-            var hub = _hub; // captura local antes del delay (ya aplicado) — pero re-capturar aquí es lo correcto
-            if (hub is null) return;
+            // Si _hub cambió (logout/re-login) o fue eliminado, no reconectar con el objeto antiguo
+            if (hub is null || hub != _hub) return;
             try
             {
                 await hub.StartAsync();

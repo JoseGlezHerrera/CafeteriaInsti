@@ -202,13 +202,14 @@ public class PagosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CancelarIntent([FromBody] CancelarIntentRequest req)
     {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+        var userIdStr = userId.Value.ToString();
 
         try
         {
             var (_, _, _, metaUserId) = await _stripe.VerificarPagoAsync(req.PaymentIntentId);
-            if (metaUserId != userId)
+            if (metaUserId != userIdStr)
                 return StatusCode(403, new { mensaje = "Este pago no pertenece a tu cuenta." });
 
             await _stripe.CancelarIntentAsync(req.PaymentIntentId);
