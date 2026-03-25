@@ -12,6 +12,12 @@ public partial class PedidosPage : ContentPage
         BindingContext = _vm = vm;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _vm.Resubscribe();
+    }
+
     // FIX-11: Desuscribir mensajes al desaparecer la página
     protected override void OnDisappearing()
     {

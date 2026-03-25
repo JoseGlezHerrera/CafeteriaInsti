@@ -70,7 +70,20 @@ public class ApiService
     /// </summary>
     private async Task<HttpResponseMessage> EnviarConRefreshAsync(HttpMethod method, string url, HttpContent? content = null)
     {
-        var request = await CrearRequestAsync(method, url, content);
+        // Pre-leer el content a bytes para poder reconstruirlo en el retry.
+        // Los streams de HttpContent se agotan al primer SendAsync y no son reutilizables.
+        byte[]? bytes = null;
+        string mediaType = "application/json";
+        if (content is not null)
+        {
+            bytes     = await content.ReadAsByteArrayAsync();
+            mediaType = content.Headers.ContentType?.MediaType ?? "application/json";
+        }
+        HttpContent? Build() => bytes is null ? null
+            : new ByteArrayContent(bytes)
+              { Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType) } };
+
+        var request  = await CrearRequestAsync(method, url, Build());
         var response = await _http.SendAsync(request);
 
         if (response.StatusCode != HttpStatusCode.Unauthorized)
@@ -87,19 +100,19 @@ public class ApiService
             // Fallback: navegar directamente al login por si nadie procesa el mensaje
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                try { await Shell.Current.GoToAsync("//LoginPage"); }
+                try { await Shell.Current.GoToAsync("//Login"); }
                 catch (Exception ex) { _logger.LogError(ex, "Error navegando a login tras sesión expirada."); }
             });
 
             return response;
         }
 
-        // Refresh exitoso: reconectar SignalR si se había desconectado o eliminado
+        // Refresh exitoso: reconectar SignalR si se había desconectado
         if (_hub is null || _hub.State == HubConnectionState.Disconnected)
         {
             try
             {
-                _hub = null; // asegurar limpieza antes de reconectar
+                _hub = null;
                 await ConectarSignalRAsync();
                 _logger.LogInformation("SignalR reconectado tras refresh de token.");
             }
@@ -109,8 +122,8 @@ public class ApiService
             }
         }
 
-        // Re-intentar con nuevo token
-        var retry = await CrearRequestAsync(method, url, content);
+        // Re-intentar con nuevo token y content reconstruido desde los bytes originales
+        var retry = await CrearRequestAsync(method, url, Build());
         return await _http.SendAsync(retry);
     }
 
@@ -924,13 +937,16 @@ public class ApiService
         });
 
         // FIX-13: Reconectar SignalR tras desconexión definitiva
+        // BUG-3: Capturar referencia local — _hub puede ser null si DesconectarSignalRAsync se ejecuta durante el delay
         _hub.Closed += async (ex) =>
         {
             _logger.LogWarning(ex, "SignalR desconectado. Reintentando en 5 segundos...");
             await Task.Delay(5000);
+            var hub = _hub; // captura local antes del delay (ya aplicado) — pero re-capturar aquí es lo correcto
+            if (hub is null) return;
             try
             {
-                await _hub.StartAsync();
+                await hub.StartAsync();
                 _logger.LogInformation("SignalR reconectado tras desconexión.");
             }
             catch (Exception reconnectEx)

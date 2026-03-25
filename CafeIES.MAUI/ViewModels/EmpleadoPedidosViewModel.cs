@@ -94,4 +94,12 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
 
     /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
     public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
+
+    /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
+    public void Resubscribe()
+    {
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+        WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
+            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+    }
 }

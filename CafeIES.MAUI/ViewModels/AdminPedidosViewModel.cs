@@ -14,6 +14,8 @@ public partial class AdminPedidosViewModel : ObservableObject
     private const int PageSize = 30;
     private int _paginaActual;
     private int _totalCount;
+    // BUG-2+5: Lista backing para filtrado client-side sin recargar servidor
+    private List<PedidoDto> _todos = new();
 
     public AdminPedidosViewModel(ApiService api)
     {
@@ -26,12 +28,12 @@ public partial class AdminPedidosViewModel : ObservableObject
     [ObservableProperty] private bool _isCargandoMas;
     [ObservableProperty] private bool _hayMas;
 
-    // ── Filtro por estado (client-side sobre la página cargada) ──────────────
+    // ── Filtro por estado (client-side sobre todos los cargados) ─────────────
     private string _filtroEstado = string.Empty;
     public string FiltroEstado
     {
         get => _filtroEstado;
-        set { if (SetProperty(ref _filtroEstado, value)) _ = CargarAsync(); }
+        set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
     }
 
     // ── Filtro por instituto (server-side al recargar) ────────────────────────
@@ -46,11 +48,20 @@ public partial class AdminPedidosViewModel : ObservableObject
 
     public ObservableCollection<PedidoDto> Pedidos { get; } = new();
 
+    private void AplicarFiltro()
+    {
+        Pedidos.Clear();
+        var filtrados = string.IsNullOrEmpty(_filtroEstado)
+            ? _todos
+            : _todos.Where(p => p.Estado.ToString() == _filtroEstado).ToList();
+        foreach (var p in filtrados) Pedidos.Add(p);
+    }
+
     [RelayCommand]
     public async Task CargarAsync()
     {
         IsLoading = true;
-        Pedidos.Clear();
+        _todos.Clear();
         _paginaActual = 1;
 
         // Carga institutos la primera vez
@@ -67,9 +78,10 @@ public partial class AdminPedidosViewModel : ObservableObject
         if (result is not null)
         {
             _totalCount = result.TotalCount;
-            foreach (var p in result.Items) Pedidos.Add(p);
-            HayMas = Pedidos.Count < _totalCount;
+            foreach (var p in result.Items) _todos.Add(p);
+            HayMas = _todos.Count < _totalCount;
         }
+        AplicarFiltro();
         IsLoading = false;
     }
 
@@ -83,9 +95,10 @@ public partial class AdminPedidosViewModel : ObservableObject
         var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId);
         if (result is not null)
         {
-            foreach (var p in result.Items) Pedidos.Add(p);
-            HayMas = Pedidos.Count < _totalCount;
+            foreach (var p in result.Items) _todos.Add(p);
+            HayMas = _todos.Count < _totalCount;
         }
+        AplicarFiltro();
         IsCargandoMas = false;
     }
 
@@ -140,4 +153,12 @@ public partial class AdminPedidosViewModel : ObservableObject
 
     /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
     public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
+
+    /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
+    public void Resubscribe()
+    {
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+        WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
+            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+    }
 }

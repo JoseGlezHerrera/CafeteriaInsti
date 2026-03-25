@@ -13,6 +13,12 @@ public partial class EmpleadoPedidosPage : ContentPage
         BindingContext = vm;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        Vm.Resubscribe();
+    }
+
     // FIX-11: Desuscribir mensajes al desaparecer la página
     protected override void OnDisappearing()
     {
