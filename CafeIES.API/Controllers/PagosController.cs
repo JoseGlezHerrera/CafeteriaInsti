@@ -22,18 +22,20 @@ public class PagosController : ControllerBase
 {
     private readonly AppDbContext              _db;
     private readonly StripeService             _stripe;
+    private readonly HorarioService            _horario;
     private readonly IConfiguration            _config;
     private readonly IHubContext<CafeteriaHub> _hub;
     private readonly ILogger<PagosController>  _logger;
 
-    public PagosController(AppDbContext db, StripeService stripe, IConfiguration config,
-        IHubContext<CafeteriaHub> hub, ILogger<PagosController> logger)
+    public PagosController(AppDbContext db, StripeService stripe, HorarioService horario,
+        IConfiguration config, IHubContext<CafeteriaHub> hub, ILogger<PagosController> logger)
     {
-        _db     = db;
-        _stripe = stripe;
-        _config = config;
-        _hub    = hub;
-        _logger = logger;
+        _db      = db;
+        _stripe  = stripe;
+        _horario = horario;
+        _config  = config;
+        _hub     = hub;
+        _logger  = logger;
     }
 
     /// <summary>
@@ -54,6 +56,19 @@ public class PagosController : ControllerBase
     [Authorize]
     public async Task<ActionResult<PagoIntentResponse>> CrearIntent([FromBody] CrearPagoRequest req)
     {
+        // 0. Validar que el usuario está activo y puede pedir ahora
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var usuario = await _db.Usuarios.FindAsync(userId.Value);
+        if (usuario is null) return Unauthorized();
+        if (usuario.Estado != EstadoCuenta.Activa)
+            return StatusCode(403, new { mensaje = "Tu cuenta no está activa." });
+
+        var horario = await _horario.PuedePedirAhoraAsync(userId.Value);
+        if (!horario.Puede)
+            return BadRequest(new { mensaje = horario.Mensaje });
+
         // 1. Validar productos y calcular total en servidor
         decimal total = 0;
         var descripcionItems = new List<string>();
@@ -77,12 +92,12 @@ public class PagosController : ControllerBase
         // 2. Crear PaymentIntent en Stripe
         // Guardamos en metadata todo lo necesario para reconstruir el pedido
         // desde el webhook si el usuario cierra la app antes de confirmarlo.
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anon";
+        var userIdStr = userId.Value.ToString();
         var lineasJson = JsonSerializer.Serialize(
             req.Lineas.Select(l => new { l.ProductoId, l.Cantidad }));
         var metadata = new Dictionary<string, string>
         {
-            ["userId"]      = userId,
+            ["userId"]      = userIdStr,
             ["notas"]       = req.Notas ?? "",
             ["metodo_pago"] = ((int)MetodoPago.Tarjeta).ToString(),
             ["lineas"]      = lineasJson   // ej: [{"ProductoId":1,"Cantidad":2}]

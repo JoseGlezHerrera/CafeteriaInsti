@@ -8,7 +8,9 @@ public class StripeService
 
     public StripeService(IConfiguration config)
     {
-        StripeConfiguration.ApiKey = config["Stripe:SecretKey"];
+        StripeConfiguration.ApiKey = config["Stripe:SecretKey"]
+            ?? throw new InvalidOperationException(
+                "Stripe:SecretKey no está configurado. Añádelo como variable de entorno o en appsettings.");
         _currency = config["Stripe:Currency"] ?? "eur";
     }
 

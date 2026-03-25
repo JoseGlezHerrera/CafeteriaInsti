@@ -144,9 +144,14 @@ public class PedidosController : ControllerBase
             }
 
             // 4. Número de pedido secuencial del día (FIX-04: SARGable query)
-            var hoy = DateTime.UtcNow.Date;
+            // Usar zona horaria España para que el contador se reinicie a medianoche local,
+            // no a las 23:00 UTC (01:00 CET) del invierno o 22:00 UTC (00:00 CEST) del verano.
+            var spainTz  = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+            var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
+            var hoyEspUtcInicio = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
+            var hoyEspUtcFin    = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date.AddDays(1), spainTz);
             var ultimoNumero = await _db.Pedidos
-                .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < hoy.AddDays(1))
+                .Where(p => p.FechaCreacion >= hoyEspUtcInicio && p.FechaCreacion < hoyEspUtcFin)
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
 
             var pedido = new Pedido
