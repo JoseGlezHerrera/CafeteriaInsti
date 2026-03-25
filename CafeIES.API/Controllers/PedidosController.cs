@@ -287,35 +287,44 @@ public class PedidosController : ControllerBase
         pedido.Estado = req.NuevoEstado;
         await _db.SaveChangesAsync();
 
-        // Notificar al usuario propietario del pedido vía SignalR (tiempo real en app abierta)
-        await _hub.Clients.Group($"user-{pedido.UsuarioId}")
-            .SendAsync("EstadoPedidoActualizado", new { pedido.Id, Estado = req.NuevoEstado.ToString() });
-
-        // Notificación push cuando el pedido está listo para recoger
-        if (req.NuevoEstado == EstadoPedido.Listo)
+        // Notificaciones: envueltas en try-catch para no revertir el cambio de estado si fallan
+        try
         {
-            var tokens = await _db.DispositivoTokens
-                .Where(t => t.UsuarioId == pedido.UsuarioId)
-                .Select(t => t.Token)
-                .ToListAsync();
+            // Notificar al usuario propietario del pedido vía SignalR (tiempo real en app abierta)
+            await _hub.Clients.Group($"user-{pedido.UsuarioId}")
+                .SendAsync("EstadoPedidoActualizado", new { pedido.Id, Estado = req.NuevoEstado.ToString() });
 
-            if (tokens.Count > 0)
+            // Notificación push cuando el pedido está listo para recoger
+            if (req.NuevoEstado == EstadoPedido.Listo)
             {
-                var invalidos = await _fcm.EnviarAsync(
-                    tokens,
-                    "¡Tu pedido está listo! ☕",
-                    $"Pedido #{pedido.NumeroPedido} — ya puedes pasar a recogerlo.",
-                    new Dictionary<string, string> { ["pedidoId"] = pedido.Id.ToString() });
+                var tokens = await _db.DispositivoTokens
+                    .Where(t => t.UsuarioId == pedido.UsuarioId)
+                    .Select(t => t.Token)
+                    .ToListAsync();
 
-                if (invalidos.Count > 0)
+                if (tokens.Count > 0)
                 {
-                    _db.DispositivoTokens.RemoveRange(
-                        _db.DispositivoTokens.Where(t => invalidos.Contains(t.Token)));
-                    await _db.SaveChangesAsync();
-                    _logger.LogInformation("Eliminados {N} tokens FCM expirados del usuario {UserId}.",
-                        invalidos.Count, pedido.UsuarioId);
+                    var invalidos = await _fcm.EnviarAsync(
+                        tokens,
+                        "¡Tu pedido está listo! ☕",
+                        $"Pedido #{pedido.NumeroPedido} — ya puedes pasar a recogerlo.",
+                        new Dictionary<string, string> { ["pedidoId"] = pedido.Id.ToString() });
+
+                    if (invalidos.Count > 0)
+                    {
+                        _db.DispositivoTokens.RemoveRange(
+                            _db.DispositivoTokens.Where(t => invalidos.Contains(t.Token)));
+                        await _db.SaveChangesAsync();
+                        _logger.LogInformation("Eliminados {N} tokens FCM expirados del usuario {UserId}.",
+                            invalidos.Count, pedido.UsuarioId);
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            // El estado ya fue guardado correctamente — las notificaciones son best-effort
+            _logger.LogWarning(ex, "Error en notificaciones tras cambiar estado del pedido {PedidoId}. Estado guardado correctamente.", id);
         }
 
         return NoContent();
