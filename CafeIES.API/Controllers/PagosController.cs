@@ -397,10 +397,13 @@ public class PagosController : ControllerBase
                 return;
             }
 
-            // FIX-04: SARGable date comparison
-            var hoy = DateTime.UtcNow.Date;
+            // Número de pedido: usar zona horaria España (igual que PedidosController)
+            var spainTz  = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+            var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
+            var hoyEspUtcInicio = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
+            var hoyEspUtcFin    = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date.AddDays(1), spainTz);
             var ultimoNumero = await _db.Pedidos
-                .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < hoy.AddDays(1))
+                .Where(p => p.FechaCreacion >= hoyEspUtcInicio && p.FechaCreacion < hoyEspUtcFin)
                 .MaxAsync(p => (int?)p.NumeroPedido) ?? 0;
 
             var notaFinal = notas?.Trim().Replace("<", "&lt;").Replace(">", "&gt;");
