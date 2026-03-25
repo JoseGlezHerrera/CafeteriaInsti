@@ -30,6 +30,18 @@ BEGIN
     CREATE INDEX [IX_DispositivoTokens_UsuarioId] ON [DispositivoTokens]([UsuarioId]);
 END
 ");
+            // Limpiar duplicados en ReferenciasPago antes de crear el índice único.
+            // Los pedidos duplicados del bug de double-submit comparten el mismo PaymentIntentId.
+            // Conservamos el pedido más antiguo (MIN Id) y ponemos NULL en los demás.
+            migrationBuilder.Sql(@"
+UPDATE [Pedidos] SET [ReferenciasPago] = NULL
+WHERE [Id] NOT IN (
+    SELECT MIN([Id]) FROM [Pedidos]
+    WHERE [ReferenciasPago] IS NOT NULL
+    GROUP BY [ReferenciasPago]
+) AND [ReferenciasPago] IS NOT NULL;
+");
+
             // Crea el índice único de ReferenciasPago solo si no existe.
             migrationBuilder.Sql(@"
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Pedidos_ReferenciasPago' AND object_id = OBJECT_ID('Pedidos'))
