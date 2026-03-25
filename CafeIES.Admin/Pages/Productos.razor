@@ -390,9 +390,7 @@
     {
         if (!await JS.InvokeAsync<bool>("confirm", "¿Eliminar este producto? Esta acción no se puede deshacer."))
             return;
-        var (ok, softDelete, mensaje) = await Api.EliminarProductoAsync(id);
-        if (ok && softDelete)
-            await JS.InvokeVoidAsync("alert", mensaje);
+        await Api.EliminarProductoAsync(id);
         _productos = await Api.GetProductosAsync();
     }
 

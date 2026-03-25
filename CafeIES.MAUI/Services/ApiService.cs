@@ -407,20 +407,29 @@ public class ApiService
     }
 
     // ── Pedidos ───────────────────────────────────────────────────────────────
-    public async Task<PedidoDto?> CrearPedidoAsync(CrearPedidoRequest req)
+    public async Task<(PedidoDto? Pedido, string? Error)> CrearPedidoAsync(CrearPedidoRequest req)
     {
         try
         {
             var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/pedidos",
                 JsonContent.Create(req));
-            return resp.IsSuccessStatusCode
-                ? await resp.Content.ReadFromJsonAsync<PedidoDto>()
-                : null;
+            if (resp.IsSuccessStatusCode)
+                return (await resp.Content.ReadFromJsonAsync<PedidoDto>(), null);
+
+            string? mensajeServidor = null;
+            try
+            {
+                var err = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                mensajeServidor = err?.GetValueOrDefault("mensaje");
+            }
+            catch { /* body no es JSON */ }
+
+            return (null, mensajeServidor);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al crear el pedido.");
-            return null;
+            return (null, null);
         }
     }
 

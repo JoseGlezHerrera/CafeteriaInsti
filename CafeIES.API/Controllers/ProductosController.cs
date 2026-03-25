@@ -180,17 +180,10 @@ public class ProductosController : ControllerBase
         var producto = await _db.Productos.FindAsync(id);
         if (producto is null) return NotFound();
 
-        // Si el producto tiene historial de pedidos, solo desactivarlo (preservar datos históricos)
-        var tieneHistorial = await _db.LineasPedido.AnyAsync(l => l.ProductoId == id);
-        if (tieneHistorial)
-        {
-            producto.Activo = false;
-            await _db.SaveChangesAsync();
-            return Ok(new { softDelete = true, mensaje = "El producto tiene pedidos históricos y ha sido desactivado en lugar de eliminado." });
-        }
-
-        // Sin historial: eliminar imagen si existe y borrar definitivamente
+        // Eliminar imagen del blob si existe
         await _blobs.EliminarAsync(producto.ImagenUrl);
+
+        // Las LineaPedido que referencian este producto pasarán a ProductoId = null (DeleteBehavior.SetNull)
         _db.Productos.Remove(producto);
         await _db.SaveChangesAsync();
         return NoContent();

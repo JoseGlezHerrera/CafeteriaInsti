@@ -85,22 +85,8 @@ public class AdminApiService
     public async Task<bool> ToggleActivoAsync(int id)
         => await SendBoolAsync(() => _http.PatchAsync($"api/productos/{id}/toggle", null));
 
-    public async Task<(bool Ok, bool SoftDelete, string Mensaje)> EliminarProductoAsync(int id)
-    {
-        try
-        {
-            var resp = await SendAsync(() => _http.DeleteAsync($"api/productos/{id}"));
-            if (!resp.IsSuccessStatusCode) return (false, false, string.Empty);
-            if (resp.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-                var mensaje = body.TryGetProperty("mensaje", out var m) ? m.GetString() ?? string.Empty : string.Empty;
-                return (true, true, mensaje);
-            }
-            return (true, false, string.Empty);
-        }
-        catch { return (false, false, string.Empty); }
-    }
+    public async Task<bool> EliminarProductoAsync(int id)
+        => await SendBoolAsync(() => _http.DeleteAsync($"api/productos/{id}"));
 
     // ── Categorías ────────────────────────────────────────────────────────────
     public async Task<List<CategoriaDto>> GetCategoriasAsync()

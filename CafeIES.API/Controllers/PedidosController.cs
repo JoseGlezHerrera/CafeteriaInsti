@@ -68,10 +68,14 @@ public class PedidosController : ControllerBase
         if (usuario.Estado != EstadoCuenta.Activa)
             return StatusCode(403, new { mensaje = "Tu cuenta no está activa. No puedes realizar pedidos." });
 
-        // 1. Comprobar horario
-        var horario = await _horario.PuedePedirAhoraAsync(userId.Value);
-        if (!horario.Puede)
-            return BadRequest(new { mensaje = horario.Mensaje });
+        // 1. Comprobar horario (omitir si el pago de Stripe ya fue procesado —
+        //    la ventana se validó al crear el PaymentIntent y revocar ahora dejaría al usuario pagado sin pedido)
+        if (string.IsNullOrEmpty(req.StripePaymentIntentId))
+        {
+            var horario = await _horario.PuedePedirAhoraAsync(userId.Value);
+            if (!horario.Puede)
+                return BadRequest(new { mensaje = horario.Mensaje });
+        }
 
         // Validar método de pago
         if (!Enum.IsDefined(typeof(MetodoPago), req.MetodoPago))
@@ -141,6 +145,19 @@ public class PedidosController : ControllerBase
                     return BadRequest(new { mensaje = $"El importe cobrado ({amount / 100m:F2}€) no coincide con el total del pedido ({total:F2}€)." });
 
                 referenciaPago = req.StripePaymentIntentId;
+
+                // Si el webhook ya creó el pedido antes de que llegara esta llamada, devolverlo directamente
+                var pedidoExistente = await _db.Pedidos
+                    .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+                    .Include(p => p.Usuario).ThenInclude(u => u!.Instituto)
+                    .FirstOrDefaultAsync(p => p.ReferenciasPago == referenciaPago);
+                if (pedidoExistente is not null)
+                {
+                    _logger.LogInformation("PaymentIntent {PI} ya tiene pedido #{Num} — devolviendo existente.",
+                        referenciaPago, pedidoExistente.NumeroPedido);
+                    await transaction.RollbackAsync();
+                    return CreatedAtAction(nameof(GetById), new { id = pedidoExistente.Id }, pedidoExistente.ToDto());
+                }
             }
 
             // 4. Número de pedido secuencial del día (FIX-04: SARGable query)
@@ -185,30 +202,6 @@ public class PedidosController : ControllerBase
             // Otro pedido simultáneo agotó el stock entre nuestra lectura y escritura
             await transaction.RollbackAsync();
             return Conflict(new { mensaje = "El stock de uno o más productos cambió mientras procesabas el pedido. Comprueba la disponibilidad y vuelve a intentarlo." });
-        }
-        catch (DbUpdateException dbEx) when (
-            dbEx.InnerException?.Message.Contains("ReferenciasPago", StringComparison.OrdinalIgnoreCase) == true ||
-            dbEx.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true ||
-            dbEx.InnerException?.Message.Contains("unique", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            // El webhook de Stripe ya creó el pedido antes de que llegara esta llamada.
-            // Devolver el pedido existente en lugar de error.
-            await transaction.RollbackAsync();
-            if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
-            {
-                var pedidoExistente = await _db.Pedidos
-                    .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-                    .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
-                    .FirstOrDefaultAsync(p => p.ReferenciasPago == req.StripePaymentIntentId);
-                if (pedidoExistente is not null)
-                {
-                    _logger.LogInformation("ReferenciasPago duplicada para PaymentIntent {PI}: devolviendo pedido existente #{Num}.",
-                        req.StripePaymentIntentId, pedidoExistente.NumeroPedido);
-                    return CreatedAtAction(nameof(GetById), new { id = pedidoExistente.Id }, pedidoExistente.ToDto());
-                }
-            }
-            _logger.LogError(dbEx, "DbUpdateException en pedido para usuario {UserId} (no es duplicado conocido).", userId);
-            return StatusCode(500, new { mensaje = "Error al procesar el pedido. Inténtalo de nuevo." });
         }
         catch (Exception ex)
         {

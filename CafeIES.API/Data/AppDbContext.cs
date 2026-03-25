@@ -105,7 +105,8 @@ public class AppDbContext : DbContext
             e.HasOne(l => l.Producto)
              .WithMany(p => p.Lineas)
              .HasForeignKey(l => l.ProductoId)
-             .OnDelete(DeleteBehavior.Restrict);
+             .OnDelete(DeleteBehavior.SetNull)
+             .IsRequired(false);
         });
 
         // ── DispositivoToken ─────────────────────────────────────────────────

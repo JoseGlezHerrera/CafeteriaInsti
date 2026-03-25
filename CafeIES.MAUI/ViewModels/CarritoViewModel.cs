@@ -109,19 +109,7 @@ public partial class CarritoViewModel : ObservableObject
         HayErrorPago = false;
         ErrorPago    = string.Empty;
         IsLoading    = true;
-        EstadoPago   = "Comprobando horario…";
-
-        // Validar horario antes de crear el PaymentIntent
-        var horario = await _api.GetHorarioStatusAsync();
-        if (horario is not null && !horario.PuedePedir)
-        {
-            IsLoading = false; EstadoPago = string.Empty;
-            HayErrorPago = true;
-            ErrorPago = horario.Mensaje;
-            return;
-        }
-
-        EstadoPago = "Iniciando pago…";
+        EstadoPago   = "Iniciando pago…";
 
         var lineas  = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList();
         var notas   = string.IsNullOrWhiteSpace(Notas) ? null : Notas;
@@ -169,7 +157,7 @@ public partial class CarritoViewModel : ObservableObject
             _pendingNotas,
             paymentIntentId);
 
-        var pedido = await _api.CrearPedidoAsync(pedidoReq);
+        var (pedido, errorPedido) = await _api.CrearPedidoAsync(pedidoReq);
         IsLoading = false; EstadoPago = string.Empty;
 
         if (pedido is null)
@@ -182,7 +170,7 @@ public partial class CarritoViewModel : ObservableObject
             _pendingLineas = new();
             _pendingNotas  = null;
             HayErrorPago = true;
-            ErrorPago = "El pago se procesó pero hubo un error al crear el pedido. Contacta con el administrador.";
+            ErrorPago = errorPedido ?? "El pago se procesó pero hubo un error al crear el pedido. Contacta con el administrador.";
             return;
         }
 

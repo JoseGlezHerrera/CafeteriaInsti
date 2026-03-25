@@ -15,7 +15,7 @@
         <option value="">Todos los institutos</option>
         @foreach (var i in _institutos)
         {
-            <option value="@i.Id">@i.Nombre</option>
+            <option @key="i.Id" value="@i.Id">@i.Nombre</option>
         }
     </select>
     <select class="filter-select" @bind="_estadoFiltro">
