@@ -173,6 +173,16 @@ using (var scope = app.Services.CreateScope())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var webEnv = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
+    // C1: Validar que el WebhookSecret de Stripe esté configurado en producción
+    if (!webEnv.IsDevelopment())
+    {
+        var webhookSecret = config["Stripe:WebhookSecret"];
+        if (string.IsNullOrEmpty(webhookSecret))
+            logger.LogCritical("⛔ Stripe:WebhookSecret no está configurado. " +
+                "El endpoint /api/pagos/webhook aceptará cualquier petición sin verificar firma. " +
+                "Configúralo en Azure > Configuration antes de recibir pagos reales.");
+    }
+
     try
     {
         await db.Database.MigrateAsync();                    // Aplica migraciones pendientes

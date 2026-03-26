@@ -61,7 +61,7 @@ public record UsuarioDto(
 
 // ── Instituto ─────────────────────────────────────────────────────────────────
 
-public record InstitutoDto(int Id, string Nombre, string CodigoCorto, bool Activo = true);
+public record InstitutoDto(int Id, string Nombre, string CodigoCorto, bool Activo = true, string? Direccion = null);
 
 /// <summary>FIX-24: Request para crear/actualizar instituto.</summary>
 public record CrearInstitutoRequest(
@@ -95,7 +95,7 @@ public record CrearProductoRequest(
     [Required, MinLength(3), MaxLength(120)] string  Nombre,
     [MaxLength(300)]           string  Descripcion,
     [Required, Range(0.01, 9999.99, ErrorMessage = "El precio debe estar entre 0.01€ y 9999.99€.")] decimal Precio,
-                               int     Stock,
+    [Range(-1, int.MaxValue, ErrorMessage = "El stock debe ser -1 (ilimitado) o un valor positivo.")] int Stock,
     [Required]                 int     CategoriaId,
                                string? ImagenUrl,
                                List<int>? AlergenoIds = null

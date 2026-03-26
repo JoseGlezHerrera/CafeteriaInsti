@@ -87,6 +87,9 @@ public class AppDbContext : DbContext
             // Índice para buscar pedidos de un usuario rápido
             e.HasIndex(p => new { p.UsuarioId, p.FechaCreacion });
 
+            // Índice para filtrar por estado (panel admin / cola de preparación)
+            e.HasIndex(p => p.Estado);
+
             // Unicidad de ReferenciasPago (PaymentIntentId de Stripe) — evita doble pedido
             // si el webhook llega dos veces antes de que el primero haga commit.
             e.HasIndex(p => p.ReferenciasPago)
@@ -119,6 +122,9 @@ public class AppDbContext : DbContext
 
             // Un token FCM es único por dispositivo (no por usuario)
             e.HasIndex(t => t.Token).IsUnique();
+
+            // Índice para buscar todos los tokens de un usuario (notificaciones push)
+            e.HasIndex(t => t.UsuarioId);
         });
 
         // ── Seed: Institutos iniciales ────────────────────────────────────────

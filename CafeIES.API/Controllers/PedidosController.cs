@@ -112,15 +112,15 @@ public class PedidosController : ControllerBase
 
             // 3. Detección de double-submit: rechazar si el mismo usuario tiene un pedido
             //    idéntico (mismas líneas y cantidades) creado en los últimos 30 segundos.
+            //    La comparación de líneas se hace en memoria para evitar predicados no traducibles a SQL.
             var ventana = DateTime.UtcNow.AddSeconds(-30);
-            var productoIds = lineas.Select(l => l.ProductoId).OrderBy(x => x).ToList();
-            var pedidoReciente = await _db.Pedidos
-                .Where(p => p.UsuarioId == userId.Value && p.FechaCreacion >= ventana)
+            var candidatos = await _db.Pedidos
+                .Where(p => p.UsuarioId == userId.Value && p.FechaCreacion >= ventana && p.Total == total)
                 .Include(p => p.Lineas)
-                .FirstOrDefaultAsync(p =>
-                    p.Total == total &&
-                    p.Lineas.Count == lineas.Count &&
-                    p.Lineas.All(l => lineas.Any(nl => nl.ProductoId == l.ProductoId && nl.Cantidad == l.Cantidad)));
+                .ToListAsync();
+            var pedidoReciente = candidatos.FirstOrDefault(p =>
+                p.Lineas.Count == lineas.Count &&
+                p.Lineas.All(l => lineas.Any(nl => nl.ProductoId == l.ProductoId && nl.Cantidad == l.Cantidad)));
             if (pedidoReciente is not null)
             {
                 _logger.LogWarning("Double-submit detectado para usuario {UserId}: pedido duplicado del pedido {PedidoId} rechazado.", userId, pedidoReciente.Id);
@@ -318,7 +318,7 @@ public class PedidosController : ControllerBase
         {
             foreach (var linea in pedido.Lineas)
             {
-                if (linea.Producto.Stock != -1)
+                if (linea.Producto is not null && linea.Producto.Stock != -1)
                     linea.Producto.Stock += linea.Cantidad;
             }
         }

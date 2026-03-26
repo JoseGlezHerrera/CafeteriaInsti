@@ -17,9 +17,10 @@ namespace CafeIES.API.Services;
 /// </summary>
 public class FcmService
 {
-    private readonly IHttpClientFactory _httpFactory;
-    private readonly IConfiguration     _config;
+    private readonly IHttpClientFactory  _httpFactory;
+    private readonly IConfiguration      _config;
     private readonly ILogger<FcmService> _logger;
+    private readonly ITokenAccess?       _credential; // cached per instance (singleton)
 
     private const string FcmScope = "https://www.googleapis.com/auth/firebase.messaging";
 
@@ -28,6 +29,19 @@ public class FcmService
         _httpFactory = httpFactory;
         _config      = config;
         _logger      = logger;
+
+        var json = config["Fcm:ServiceAccountJson"];
+        if (!string.IsNullOrEmpty(json))
+        {
+            try
+            {
+                _credential = (ITokenAccess)GoogleCredential.FromJson(json).CreateScoped(FcmScope);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo parsear Fcm:ServiceAccountJson en el constructor.");
+            }
+        }
     }
 
     /// <summary>
@@ -145,10 +159,7 @@ public class FcmService
 
     private async Task<string?> ObtenerAccessTokenAsync()
     {
-        var json = _config["Fcm:ServiceAccountJson"];
-        if (string.IsNullOrEmpty(json)) return null;
-
-        var credential = GoogleCredential.FromJson(json).CreateScoped(FcmScope);
-        return await ((ITokenAccess)credential).GetAccessTokenForRequestAsync();
+        if (_credential is null) return null;
+        return await _credential.GetAccessTokenForRequestAsync();
     }
 }

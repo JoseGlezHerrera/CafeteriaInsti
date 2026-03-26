@@ -108,7 +108,7 @@
         _editandoId = i.Id;
         _nombre = i.Nombre;
         _codigo = i.CodigoCorto;
-        _direccion = string.Empty;
+        _direccion = i.Direccion ?? string.Empty;
         _error = string.Empty;
         _mostrarModal = true;
     }

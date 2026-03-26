@@ -23,7 +23,7 @@ public class InstitutosController : ControllerBase
         var institutos = await _db.Institutos
             .Where(i => i.Activo)
             .OrderBy(i => i.Nombre)
-            .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto, i.Activo))
+            .Select(i => new InstitutoDto(i.Id, i.Nombre, i.CodigoCorto, i.Activo, i.Direccion))
             .ToListAsync();
         return Ok(institutos);
     }

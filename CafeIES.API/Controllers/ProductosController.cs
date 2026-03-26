@@ -102,9 +102,9 @@ public class ProductosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto.ToDto());
     }
 
-    // ── PUT /api/productos/{id}  (Admin / Empleado) ──────────────────────────
+    // ── PUT /api/productos/{id}  (Admin) ──────────────────────────────────────
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,Empleado")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductoDto>> Actualizar(int id, [FromBody] CrearProductoRequest req)
     {
         var producto = await _db.Productos

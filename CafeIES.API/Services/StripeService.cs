@@ -23,7 +23,7 @@ public class StripeService
     {
         var options = new PaymentIntentCreateOptions
         {
-            Amount             = (long)(total * 100), // Stripe trabaja en céntimos
+            Amount             = (long)Math.Round(total * 100, MidpointRounding.AwayFromZero), // Stripe trabaja en céntimos
             Currency           = _currency,
             Description        = descripcion,
             Metadata           = metadata ?? new(),
