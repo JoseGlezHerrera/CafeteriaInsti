@@ -401,7 +401,8 @@ public class AdminController : ControllerBase
         _logger.LogInformation("[AUDIT] {Admin} creó el instituto {Id} ({Nombre})",
             adminEmail, instituto.Id, instituto.Nombre);
 
-        return Ok(new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto, instituto.Activo, instituto.Direccion));
+        return CreatedAtAction(nameof(GetInstitutos),
+            new InstitutoDto(instituto.Id, instituto.Nombre, instituto.CodigoCorto, instituto.Activo, instituto.Direccion));
     }
 
     // ── PUT /api/admin/institutos/{id} ──────────────────────────────────────

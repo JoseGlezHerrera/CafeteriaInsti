@@ -81,6 +81,10 @@ public class PedidosController : ControllerBase
         if (!Enum.IsDefined(typeof(MetodoPago), req.MetodoPago))
             return BadRequest(new { mensaje = "Método de pago inválido." });
 
+        // Para pagos con tarjeta (Stripe) se debe proporcionar el PaymentIntentId
+        if (req.MetodoPago == MetodoPago.Tarjeta && string.IsNullOrEmpty(req.StripePaymentIntentId))
+            return BadRequest(new { mensaje = "Se requiere un identificador de pago de Stripe para pagos con tarjeta." });
+
         // FIX-03: Serializable para evitar race condition en NumeroPedido
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
