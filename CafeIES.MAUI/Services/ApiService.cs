@@ -49,6 +49,18 @@ public class ApiService
         _http   = http;
         _tokens = tokens;
         _logger = logger;
+
+        // Warmup: ping en background para despertar Azure App Service y reducir
+        // la latencia del primer login. Se ignora cualquier error.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                await _http.GetAsync("health", cts.Token);
+            }
+            catch { /* best-effort */ }
+        });
     }
 
     public async Task<string?> GetTokenAsync()
@@ -430,6 +442,27 @@ public class ApiService
         {
             _logger.LogError(ex, "Error al crear el pedido.");
             return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Recupera el pedido asociado a un PaymentIntent. Devuelve null si no existe o hay error.
+    /// Usado para recuperarse de un timeout en CrearPedidoAsync.
+    /// </summary>
+    public async Task<PedidoDto?> GetPedidoByIntentAsync(string paymentIntentId)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get,
+                $"api/pedidos/by-intent/{Uri.EscapeDataString(paymentIntentId)}");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<PedidoDto>()
+                : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al recuperar pedido por PaymentIntent.");
+            return null;
         }
     }
 

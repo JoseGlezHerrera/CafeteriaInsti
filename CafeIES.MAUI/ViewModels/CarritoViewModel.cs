@@ -162,8 +162,33 @@ public partial class CarritoViewModel : ObservableObject
 
         if (pedido is null)
         {
+            // Si no hay mensaje de error del servidor (errorPedido == null) significa
+            // que fue un timeout o error de red — el servidor pudo haber creado el pedido.
+            // Intentamos recuperarlo por el PaymentIntentId antes de mostrar error.
+            if (string.IsNullOrEmpty(errorPedido))
+            {
+                IsLoading = true;
+                EstadoPago = "Verificando pedido…";
+                await Task.Delay(2000); // dar margen al servidor para terminar
+                var pedidoRecuperado = await _api.GetPedidoByIntentAsync(paymentIntentId);
+                IsLoading = false; EstadoPago = string.Empty;
+
+                if (pedidoRecuperado is not null)
+                {
+                    // El pedido sí se creó, solo hubo timeout en la respuesta
+                    Items.Clear();
+                    TotalItems = 0;
+                    OnPropertyChanged(nameof(Total));
+                    Notas = string.Empty;
+                    var totalRecuperado = pedidoRecuperado.Total.ToString("F2", CultureInfo.InvariantCulture);
+                    await Shell.Current.GoToAsync(
+                        $"ConfirmacionPedido?numeroPedido={pedidoRecuperado.NumeroPedido}&total={totalRecuperado}");
+                    return;
+                }
+            }
+
+            // Error real del servidor o no se encontró el pedido tras el timeout.
             // El pago ya fue cobrado por Stripe, no se puede cancelar.
-            // Limpiar estado pendiente para que el usuario no quede bloqueado.
             PendingClientSecret    = string.Empty;
             PendingPublishableKey  = string.Empty;
             PendingPaymentIntentId = string.Empty;

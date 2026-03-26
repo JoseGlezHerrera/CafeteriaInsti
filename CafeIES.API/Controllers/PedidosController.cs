@@ -192,13 +192,14 @@ public class PedidosController : ControllerBase
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // 5. Notificar a la cafetería en tiempo real vía SignalR (por instituto)
+            // 5. Cargar DTO y notificar a la cafetería vía SignalR.
+            //    SignalR se lanza fire-and-forget para no bloquear la respuesta al cliente.
             var dto = await GetPedidoDtoAsync(pedido.Id);
             var institutoIdStr = User.FindFirst("institutoId")?.Value;
             var grupoInstituto = int.TryParse(institutoIdStr, out var instId) && instId > 0
                 ? $"cafeteria-{instId}"
                 : "cafeteria-global";
-            await _hub.Clients.Groups(grupoInstituto, "cafeteria-global")
+            _ = _hub.Clients.Groups(grupoInstituto, "cafeteria-global")
                 .SendAsync("NuevoPedido", dto);
 
             return CreatedAtAction(nameof(GetById), new { id = pedido.Id }, dto);
@@ -395,6 +396,25 @@ public class PedidosController : ControllerBase
 
         var pedidos = await query.ToListAsync();
         return Ok(pedidos.Select(p => p.ToDto()).ToList());
+    }
+
+    // ── GET /api/pedidos/by-intent/{paymentIntentId} ─────────────────────────
+    /// <summary>
+    /// Recupera el pedido asociado a un PaymentIntent de Stripe.
+    /// Usado por el cliente MAUI para recuperarse de un timeout en POST /api/pedidos.
+    /// </summary>
+    [HttpGet("by-intent/{paymentIntentId}")]
+    public async Task<ActionResult<PedidoDto>> GetByIntent(string paymentIntentId)
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var pedido = await _db.Pedidos
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Usuario).ThenInclude(u => u!.Instituto)
+            .FirstOrDefaultAsync(p => p.ReferenciasPago == paymentIntentId && p.UsuarioId == userId.Value);
+
+        return pedido is null ? NotFound() : Ok(pedido.ToDto());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

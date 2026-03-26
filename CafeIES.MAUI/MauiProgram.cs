@@ -50,7 +50,7 @@ public static class MauiProgram
             var http = new HttpClient(handler)
             {
                 BaseAddress = new Uri(apiBase),
-                Timeout     = TimeSpan.FromSeconds(15)
+                Timeout     = TimeSpan.FromSeconds(45)
             };
             var logger = sp.GetRequiredService<ILogger<ApiService>>();
             return new ApiService(http, sp.GetRequiredService<TokenService>(), logger);
