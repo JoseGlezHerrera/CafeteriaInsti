@@ -72,14 +72,8 @@ public partial class PagamentoWebPage : ContentPage
 
     private async Task HandleSuccessAsync(string piId)
     {
-        LoadingLabel.Text = "Procesando pedido…";
-        LoadingOverlay.IsVisible = true;
-
-        // Volver a CarritoPage primero (saca PagamentoWebPage del stack)
-        // OnDisappearing se disparará pero _procesando = true así que NO cancela el estado
-        await Shell.Current.GoToAsync("..");
-
-        // Luego finalizar: crea el pedido y navega a ConfirmacionPedido
+        // Navegar a confirmación inmediatamente — la creación del pedido ocurre en background.
+        // No hay "Creando pedido…": el pago ya fue cobrado, el usuario no debe esperar.
         await _carrito.FinalizarPagoAsync(piId);
     }
 

@@ -145,69 +145,47 @@ public partial class CarritoViewModel : ObservableObject
     }
 
     // ── Paso 2: llamado por PagamentoWebPage tras el pago exitoso ────────────
-    /// <summary>Crea el pedido y navega a la confirmación. Llamar desde el hilo principal.</summary>
+    /// <summary>
+    /// Navega a la confirmación INMEDIATAMENTE (el pago ya fue cobrado) y crea
+    /// el pedido en background. El número de pedido aparecerá cuando el servidor responda.
+    /// </summary>
     public async Task FinalizarPagoAsync(string paymentIntentId)
     {
-        IsLoading  = true;
-        EstadoPago = "Creando pedido…";
+        // Capturar estado antes de limpiar
+        var totalCarrito = Total;
+        var lineas       = _pendingLineas.ToList();
+        var notas        = _pendingNotas;
 
-        var pedidoReq = new CrearPedidoRequest(
-            _pendingLineas,
-            MetodoPago.Tarjeta,
-            _pendingNotas,
-            paymentIntentId);
-
-        var (pedido, errorPedido) = await _api.CrearPedidoAsync(pedidoReq);
-        IsLoading = false; EstadoPago = string.Empty;
-
-        if (pedido is null)
-        {
-            // Si no hay mensaje de error del servidor (errorPedido == null) significa
-            // que fue un timeout o error de red — el servidor pudo haber creado el pedido.
-            // Intentamos recuperarlo por el PaymentIntentId antes de mostrar error.
-            if (string.IsNullOrEmpty(errorPedido))
-            {
-                IsLoading = true;
-                EstadoPago = "Verificando pedido…";
-                await Task.Delay(2000); // dar margen al servidor para terminar
-                var pedidoRecuperado = await _api.GetPedidoByIntentAsync(paymentIntentId);
-                IsLoading = false; EstadoPago = string.Empty;
-
-                if (pedidoRecuperado is not null)
-                {
-                    // El pedido sí se creó, solo hubo timeout en la respuesta
-                    Items.Clear();
-                    TotalItems = 0;
-                    OnPropertyChanged(nameof(Total));
-                    Notas = string.Empty;
-                    var totalRecuperado = pedidoRecuperado.Total.ToString("F2", CultureInfo.InvariantCulture);
-                    await Shell.Current.GoToAsync(
-                        $"ConfirmacionPedido?numeroPedido={pedidoRecuperado.NumeroPedido}&total={totalRecuperado}");
-                    return;
-                }
-            }
-
-            // Error real del servidor o no se encontró el pedido tras el timeout.
-            // El pago ya fue cobrado por Stripe, no se puede cancelar.
-            PendingClientSecret    = string.Empty;
-            PendingPublishableKey  = string.Empty;
-            PendingPaymentIntentId = string.Empty;
-            _pendingLineas = new();
-            _pendingNotas  = null;
-            HayErrorPago = true;
-            ErrorPago = errorPedido ?? "El pago se procesó pero hubo un error al crear el pedido. Contacta con el administrador.";
-            return;
-        }
-
-        // Limpiar carrito
+        // Limpiar carrito y estado pendiente INMEDIATAMENTE
         Items.Clear();
         TotalItems = 0;
         OnPropertyChanged(nameof(Total));
-        Notas = string.Empty;
+        Notas                  = string.Empty;
+        PendingClientSecret    = string.Empty;
+        PendingPublishableKey  = string.Empty;
+        PendingPaymentIntentId = string.Empty;
+        _pendingLineas         = new();
+        _pendingNotas          = null;
+        HayErrorPago           = false;
+        ErrorPago              = string.Empty;
+        IsLoading              = false;
+        EstadoPago             = string.Empty;
 
-        var totalStr = pedido.Total.ToString("F2", CultureInfo.InvariantCulture);
+        // Navegar a confirmación sin esperar al servidor
+        var totalStr = totalCarrito.ToString("F2", CultureInfo.InvariantCulture);
         await Shell.Current.GoToAsync(
-            $"ConfirmacionPedido?numeroPedido={pedido.NumeroPedido}&total={totalStr}");
+            $"ConfirmacionPedido?paymentIntentId={Uri.EscapeDataString(paymentIntentId)}&total={totalStr}");
+
+        // Crear pedido en background — el servidor también lo crea vía webhook de Stripe
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var req = new CrearPedidoRequest(lineas, MetodoPago.Tarjeta, notas, paymentIntentId);
+                await _api.CrearPedidoAsync(req);
+            }
+            catch { /* best-effort: el webhook de Stripe es el respaldo */ }
+        });
     }
 
     /// <summary>

@@ -1,46 +1,81 @@
+using System.Globalization;
+using CafeIES.MAUI.Services;
+
 namespace CafeIES.MAUI.Views;
 
-[QueryProperty(nameof(NumeroPedido), "numeroPedido")]
-[QueryProperty(nameof(Total),        "total")]
+[QueryProperty(nameof(PaymentIntentId), "paymentIntentId")]
+[QueryProperty(nameof(Total),           "total")]
 public partial class ConfirmacionPedidoPage : ContentPage
 {
-    public string NumeroPedido
+    private readonly ApiService _api;
+    private string _paymentIntentId = string.Empty;
+    private CancellationTokenSource? _pollCts;
+
+    public ConfirmacionPedidoPage(ApiService api)
     {
-        set => NumeroPedidoLabel.Text = $"#{value.PadLeft(3, '0')}";
+        InitializeComponent();
+        _api = api;
+    }
+
+    public string PaymentIntentId
+    {
+        set => _paymentIntentId = value ?? string.Empty;
     }
 
     public string Total
     {
         set
         {
-            if (decimal.TryParse(value,
-                    System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    out var amount))
+            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
                 TotalLabel.Text = $"Total: {amount:F2}€";
             else
                 TotalLabel.Text = $"Total: {value}€";
         }
     }
 
-    public ConfirmacionPedidoPage()
+    protected override void OnAppearing()
     {
-        InitializeComponent();
+        base.OnAppearing();
+
+        if (string.IsNullOrEmpty(_paymentIntentId)) return;
+
+        NumeroPedidoLabel.Text = "…";
+        _pollCts = new CancellationTokenSource();
+        _ = PollNumeroPedidoAsync(_pollCts.Token);
     }
 
-    protected override bool OnBackButtonPressed()
+    protected override void OnDisappearing()
     {
-        // No permitir volver a la pasarela de pago desde la confirmación
-        return true;
+        base.OnDisappearing();
+        _pollCts?.Cancel();
+        _pollCts = null;
     }
+
+    /// <summary>Sondea el servidor hasta obtener el número de pedido o hasta agotar el tiempo.</summary>
+    private async Task PollNumeroPedidoAsync(CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (!ct.IsCancellationRequested && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(2000, ct).ConfigureAwait(false);
+            if (ct.IsCancellationRequested) return;
+
+            var pedido = await _api.GetPedidoByIntentAsync(_paymentIntentId);
+            if (pedido is not null)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                    NumeroPedidoLabel.Text = $"#{pedido.NumeroPedido:D3}");
+                return;
+            }
+        }
+        // Timeout: el pedido se creará igual (webhook), solo no tenemos el número ahora
+    }
+
+    protected override bool OnBackButtonPressed() => true; // no volver a la pasarela
 
     private async void OnVerPedidosClicked(object sender, EventArgs e)
-    {
-        await Shell.Current.GoToAsync("//Main/Pedidos");
-    }
+        => await Shell.Current.GoToAsync("//Main/Pedidos");
 
     private async void OnSeguirPidiendoClicked(object sender, EventArgs e)
-    {
-        await Shell.Current.GoToAsync("//Main/Inicio");
-    }
+        => await Shell.Current.GoToAsync("//Main/Inicio");
 }

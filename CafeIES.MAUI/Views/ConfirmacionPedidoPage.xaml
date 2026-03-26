@@ -37,6 +37,7 @@
                 <Label x:Name="TotalLabel" FontFamily="DMSans" FontSize="16"
                        TextColor="{StaticResource MutedColor}" HorizontalOptions="Center"/>
             </VerticalStackLayout>
+            <!-- El número aparece en cuanto el servidor confirma el pedido (~2s) -->
         </Border>
 
         <!-- Botón volver -->
