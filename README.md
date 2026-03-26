@@ -310,7 +310,7 @@ Las franjas horarias se gestionan desde `/horarios` en el panel admin, sin tocar
 
 ## Pagos con Stripe
 
-### Flujo completo
+### Flujo completo (instantáneo desde v0.12)
 
 ```
 1. App solicita PaymentIntent → POST /api/pagos/crear-intent
@@ -325,13 +325,23 @@ Las franjas horarias se gestionan desde `/horarios` en el panel admin, sin tocar
 
 5. Stripe redirige a cafeies://success/{paymentIntentId}
 
-6. App crea el pedido → POST /api/pedidos con el paymentIntentId
+6. App navega INMEDIATAMENTE a ConfirmacionPedido (sin esperar al servidor).
+   El carrito se limpia al instante. No hay "Creando pedido…".
 
-7. La API verifica con Stripe que el pago está succeeded
-   antes de crear el pedido en base de datos
+7. En background, la app llama POST /api/pedidos con el paymentIntentId.
+   La API verifica con Stripe que el pago está "succeeded" y crea el pedido.
 
-8. Stripe notifica via Webhook → POST /api/pagos/webhook
+8. ConfirmacionPedido sondea GET /api/pedidos/by-intent/{id} cada 2s
+   hasta obtener el número de pedido (aparece en pantalla en ~2-5s).
+
+9. Stripe notifica via Webhook → POST /api/pagos/webhook (respaldo extra
+   en caso de que el cliente no pueda hacer la llamada en background).
 ```
+
+### Idempotencia de pedidos
+- El campo `ReferenciasPago` tiene índice único en BD — si el webhook y el cliente llegan a la vez, solo se crea un pedido.
+- Si el cliente detecta un pedido duplicado (double-submit), devuelve el pedido existente como éxito (no error).
+- `GET /api/pedidos/by-intent/{paymentIntentId}` permite recuperar un pedido por su PaymentIntent.
 
 ### Configuración del webhook en Stripe Dashboard
 
@@ -402,22 +412,25 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Catálogo de productos con categorías, filtros y búsqueda
 - Carrito de compras con control de cantidad y stock
 - Validación horaria por turno antes de crear el pedido
-- **Pago real con Stripe** — WebView con Stripe.js, PaymentIntent + webhook + verificación server-side
+- **Pago real con Stripe** — flujo instantáneo: confirmación inmediata tras pago, pedido creado en background, número aparece en ~2s
 - Historial de pedidos con paginación
 - Detalle de pedido en tiempo real (SignalR)
 - Gestión de estado de pedidos con máquina de estados
 - **Panel admin web completo** — Dashboard, Productos, Categorías, Usuarios, Pedidos, Horarios, Invitaciones, Reportes
 - Funciones admin desde la app móvil (pedidos, productos, usuarios)
-- **Multi-instituto** — selector en registro, filtros por instituto en admin
+- **Multi-instituto** — selector en registro, filtros por instituto en admin, dirección visible
 - **Exportación de reportes** — Excel (3 hojas) y PDF, limitados a 1.000 registros
 - **Subida de imágenes de productos** — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
 - **Infraestructura Azure operativa** — App Service + SQL + Blob Storage + Static Web Apps
 - **CI/CD completo** — GitHub Actions para API, Admin y APK Android
-- **Test end-to-end de pagos verificado** en producción (Stripe `pm_card_visa`, 1.50 EUR)
+- **Test end-to-end de pagos verificado** en producción
 - **95 tests unitarios** — HorarioService, AuthService, dominio, validaciones
 - Sistema de invitaciones con QR descargable y expiración configurable
 - Tema dark & warm consistente en app y panel web
 - Health check en `/health` para Azure App Service
+- **Hard delete de productos** con FK nullable `SET NULL` en líneas históricas
+- **Borrado de productos** — siempre hard delete; el historial conserva nombre y precio
+- **Warmup automático** — ping a `/health` al arrancar la app para reducir lag del primer login
 
 ---
 
@@ -427,7 +440,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 #### Push Notifications (FCM)
 La infraestructura está preparada pero **no está activa**:
-- `FcmService.cs` existe en la API con lógica completa de FCM HTTP v1
+- `FcmService.cs` existe en la API con lógica completa de FCM HTTP v1 (GoogleCredential cacheado en constructor)
 - `PushNotificationService.cs` en MAUI es un stub vacío (pendiente de activar)
 - `DispositivoToken` y `NotificacionesController` están implementados
 
@@ -440,9 +453,6 @@ Para activarlo:
 6. Implementar el cuerpo de `PushNotificationService.cs` en MAUI para registrar el token
 
 Sin push notifications, los usuarios deben abrir la app para saber si su pedido está listo.
-
-#### Pedido recuperable tras pago huérfano
-Si el usuario paga con Stripe pero cierra la app antes de que se cree el pedido, el pago queda registrado en Stripe pero sin pedido asociado en la base de datos. El webhook lo detecta y registra un warning, pero **no crea el pedido automáticamente**. Habría que implementar esta lógica en el handler del webhook `payment_intent.succeeded`.
 
 ### 🟡 Media prioridad
 
@@ -480,12 +490,12 @@ El icono actual es el placeholder por defecto de MAUI.
 | Panel admin y SignalR | ✅ Completada | Blazor WASM, 8 páginas, tiempo real, invitaciones QR |
 | Seguridad y calidad | ✅ Completada | Rate limiting, audit trail, complejidad de contraseña, timeouts |
 | Multi-instituto | ✅ Completada | Entidad Instituto, filtros, claim en JWT |
-| Stripe + pagos reales | ✅ Completada | PaymentIntent, WebView con Stripe.js, webhook |
+| Stripe + pagos reales | ✅ Completada | PaymentIntent, WebView con Stripe.js, webhook, flujo instantáneo |
 | Reportes e imágenes | ✅ Completada | Excel, PDF, subida de imágenes, tests unitarios |
 | Azure + CI/CD | ✅ Completada | App Service, SQL, Blob, Static Web Apps, GitHub Actions |
 | Distribución Android | ✅ Completada | APK via GitHub Releases, pipeline automatizado |
+| Revisión quirúrgica | ✅ Completada | 37 tests E2E en prod, 12 bugs corregidos, flujo pago rediseñado |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
-| Pedido huérfano | ⏳ Pendiente | Recuperación automática de pago sin pedido via webhook |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) |
 | Paginación en API | ⏳ Pendiente | Listados con page/pageSize |
 
@@ -493,7 +503,46 @@ El icono actual es el placeholder por defecto de MAUI.
 
 ## Changelog
 
-### v0.11.0 — Auditoría de seguridad y calidad completa (actual)
+### v0.12.0 — Flujo de pago instantáneo + revisión quirúrgica completa (actual)
+
+#### Flujo de pago rediseñado
+- **Confirmación inmediata**: tras el pago, la app navega a la pantalla de confirmación **al instante** — sin bloquear al usuario esperando al servidor
+- El carrito se limpia en el acto; la creación del pedido ocurre en `Task.Run` background
+- `ConfirmacionPedidoPage` sondea `GET /api/pedidos/by-intent/{id}` cada 2s hasta mostrar el número (#001)
+- Webhook de Stripe actúa como respaldo si el cliente no puede completar la llamada background
+- Eliminado el estado "Creando pedido…" que bloqueaba la UI 10-45 segundos
+
+#### Hard delete de productos
+- `LineaPedido.ProductoId` es ahora `int?` con `DeleteBehavior.SetNull`
+- Borrar un producto siempre hace hard delete; el historial conserva nombre y precio del momento
+- Migración `NullableProductoIdEnLineas` aplicada en producción
+
+#### Bugs críticos/altos corregidos (revisión línea a línea)
+- **A1**: `NullReferenceException` al cancelar pedido con producto eliminado (`linea.Producto?.Stock`)
+- **A2**: Redondeo de céntimos Stripe: `(long)(total*100)` → `Math.Round(..., AwayFromZero)`
+- **C1**: Log crítico al arrancar si `Stripe:WebhookSecret` no está configurado en producción
+- **M1**: Double-submit: predicado `Lineas.All(...)` no traducible a SQL → movido a memoria tras `ToListAsync()`
+- **M2**: `PUT /api/productos` restringido a solo `Admin` (Empleado no puede editar precios)
+- **M6**: `AbrirEditar` en panel Institutos pre-rellena el campo Dirección; `InstitutoDto` expone `Direccion`
+- **M8**: `[Range(-1, int.MaxValue)]` en `CrearProductoRequest.Stock`
+- **B4**: `GoogleCredential` cacheado en constructor de `FcmService` (no re-parseado por llamada)
+- **B9**: Índices añadidos en `Pedidos.Estado` y `DispositivoTokens.UsuarioId`
+
+#### Bugs encontrados en prueba E2E real (37 tests contra producción)
+- `POST /api/pedidos` con `MetodoPago=Tarjeta` sin `StripePaymentIntentId` devuelve 400 explícito (antes 500)
+- `POST /api/admin/institutos` devuelve 201 Created (antes 200 OK)
+- Double-submit devuelve pedido existente como 201 (antes 409 Conflict que el cliente mostraba como error)
+
+#### Fixes de datos y rendimiento
+- Categoría "Café" con nombre y emoji corruptos en BD corregida via migración SQL directa (`N'Café'`, `N'☕'`)
+- `SignalR.SendAsync` en creación de pedido es ahora fire-and-forget (no bloquea la respuesta)
+- Nuevo endpoint `GET /api/pedidos/by-intent/{paymentIntentId}` para recuperación de pedidos
+- `ApiService` lanza ping warmup a `/health` al arrancar para reducir lag de cold start en Azure
+- Timeout `HttpClient` MAUI: 15s → 45s
+
+---
+
+### v0.11.0 — Auditoría de seguridad y calidad completa
 
 Revisión exhaustiva línea por línea. 40 problemas identificados y corregidos:
 
