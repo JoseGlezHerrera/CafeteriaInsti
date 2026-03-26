@@ -127,8 +127,10 @@ public class PedidosController : ControllerBase
                 p.Lineas.All(l => lineas.Any(nl => nl.ProductoId == l.ProductoId && nl.Cantidad == l.Cantidad)));
             if (pedidoReciente is not null)
             {
-                _logger.LogWarning("Double-submit detectado para usuario {UserId}: pedido duplicado del pedido {PedidoId} rechazado.", userId, pedidoReciente.Id);
-                return Conflict(new { mensaje = "Ya tienes un pedido idéntico reciente. Si no lo ves, espera unos segundos y refresca." });
+                _logger.LogWarning("Double-submit detectado para usuario {UserId}: devolviendo pedido existente #{Num}.", userId, pedidoReciente.NumeroPedido);
+                await transaction.RollbackAsync();
+                var dtoExistente = await GetPedidoDtoAsync(pedidoReciente.Id);
+                return CreatedAtAction(nameof(GetById), new { id = pedidoReciente.Id }, dtoExistente);
             }
 
             // 4. Verificar pago con Stripe (si se proporcionó)
