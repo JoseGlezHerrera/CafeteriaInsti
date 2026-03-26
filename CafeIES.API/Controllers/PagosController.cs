@@ -221,6 +221,12 @@ public class PagosController : ControllerBase
             _logger.LogDebug("PaymentIntent {Id} ya estaba en estado final.", req.PaymentIntentId);
             return Ok(new { mensaje = "El pago ya estaba finalizado." });
         }
+        catch (Stripe.StripeException ex) when (ex.StripeError?.Code == "resource_missing")
+        {
+            // El PaymentIntent no existe en Stripe (ID inválido o de otro entorno)
+            _logger.LogWarning("PaymentIntent {Id} no encontrado en Stripe.", req.PaymentIntentId);
+            return BadRequest(new { mensaje = "El identificador de pago no existe." });
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error al cancelar PaymentIntent {Id}.", req.PaymentIntentId);
