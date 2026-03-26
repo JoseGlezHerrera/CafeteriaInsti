@@ -16,6 +16,8 @@ public partial class AdminPedidosViewModel : ObservableObject
     private int _totalCount;
     // BUG-2+5: Lista backing para filtrado client-side sin recargar servidor
     private List<PedidoDto> _todos = new();
+    // Evita que dos llamadas concurrentes a CargarAsync() dupliquen los institutos
+    private bool _institutosCargados;
 
     public AdminPedidosViewModel(ApiService api)
     {
@@ -64,10 +66,14 @@ public partial class AdminPedidosViewModel : ObservableObject
         _todos.Clear();
         _paginaActual = 1;
 
-        // Carga institutos la primera vez
-        if (Institutos.Count == 0)
+        // Carga institutos la primera vez.
+        // _institutosCargados se fija ANTES del await para que si una segunda llamada concurrente
+        // entra mientras esperamos la respuesta HTTP, no vuelva a añadir los institutos.
+        if (!_institutosCargados)
         {
+            _institutosCargados = true;
             var institutos = await _api.GetInstitutosAsync();
+            Institutos.Clear();
             Institutos.Add(new InstitutoDto(0, "Todos los centros", "", true));
             foreach (var i in institutos) Institutos.Add(i);
             if (_filtroInstituto is null) _filtroInstituto = Institutos[0];
