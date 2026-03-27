@@ -33,9 +33,11 @@ public partial class CarritoViewModel : ObservableObject
     // ── Desayuno gratuito ─────────────────────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
+    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     private bool _zumoDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
+    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     private bool _bocataDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo))]
@@ -88,16 +90,21 @@ public partial class CarritoViewModel : ObservableObject
             bool bocataAplicado = !BocataDisponible;
             foreach (var item in Items)
             {
-                decimal precio = item.Precio;
                 if (!zumoAplicado && item.ComponenteDesayuno == ComponenteDesayuno.Zumo)
                 {
-                    precio = 0; zumoAplicado = true;
+                    // Solo la primera unidad es gratuita; el resto al precio normal
+                    total += item.Precio * (item.Cantidad - 1);
+                    zumoAplicado = true;
                 }
                 else if (!bocataAplicado && item.ComponenteDesayuno == ComponenteDesayuno.Bocata)
                 {
-                    precio = 0; bocataAplicado = true;
+                    total += item.Precio * (item.Cantidad - 1);
+                    bocataAplicado = true;
                 }
-                total += precio * item.Cantidad;
+                else
+                {
+                    total += item.Precio * item.Cantidad;
+                }
             }
             return total;
         }
@@ -255,6 +262,12 @@ public partial class CarritoViewModel : ObservableObject
     /// </summary>
     public async Task FinalizarPagoAsync(string paymentIntentId)
     {
+        // Capturar estado de desayuno ANTES de limpiar el carrito
+        bool consumioZumo   = TieneDesayunoGratuito && ZumoDisponible   &&
+                              Items.Any(i => i.ComponenteDesayuno == ComponenteDesayuno.Zumo);
+        bool consumioBocata = TieneDesayunoGratuito && BocataDisponible &&
+                              Items.Any(i => i.ComponenteDesayuno == ComponenteDesayuno.Bocata);
+
         // Capturar estado antes de limpiar
         var totalCarrito = Total;
         var lineas       = _pendingLineas.ToList();
@@ -280,6 +293,10 @@ public partial class CarritoViewModel : ObservableObject
         await Shell.Current.GoToAsync(
             $"ConfirmacionPedido?paymentIntentId={Uri.EscapeDataString(paymentIntentId)}&total={totalStr}");
 
+        // Actualización optimista: marcar como consumido sin esperar al servidor
+        if (consumioZumo)   ZumoDisponible   = false;
+        if (consumioBocata) BocataDisponible = false;
+
         // Crear pedido en background — el servidor también lo crea vía webhook de Stripe
         _ = Task.Run(async () =>
         {
@@ -287,6 +304,8 @@ public partial class CarritoViewModel : ObservableObject
             {
                 var req = new CrearPedidoRequest(lineas, MetodoPago.Tarjeta, notas, paymentIntentId);
                 await _api.CrearPedidoAsync(req);
+                // Confirmar estado real desde servidor una vez registrado el pedido
+                await MainThread.InvokeOnMainThreadAsync(CargarDesayunoStatusAsync);
             }
             catch { /* best-effort: el webhook de Stripe es el respaldo */ }
         });

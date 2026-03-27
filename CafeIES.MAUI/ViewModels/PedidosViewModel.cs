@@ -34,6 +34,7 @@ public partial class PedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;   // Evita ejecuciones concurrentes → duplicados
         Pedidos.Clear();
         _paginaActual = 1;
         IsLoading = true;
