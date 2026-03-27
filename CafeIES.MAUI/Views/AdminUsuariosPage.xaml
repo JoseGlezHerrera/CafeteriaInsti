@@ -147,6 +147,15 @@
                                                        FontFamily="SyneBold" FontSize="10"
                                                        TextColor="{Binding Estado, Converter={StaticResource EstadoCuentaTextColorConverter}}"/>
                                             </Border>
+                                            <!-- Desayuno gratuito: solo Alumno activo -->
+                                            <Button Text="🍊 Desayuno"
+                                                    FontFamily="SyneBold" FontSize="11"
+                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                                    IsVisible="{Binding Rol, Converter={StaticResource RolEsAlumnoConverter}}"
+                                                    BackgroundColor="{Binding DesayunoGratuito, Converter={StaticResource ActivoBgConverter}}"
+                                                    TextColor="{Binding DesayunoGratuito, Converter={StaticResource ActivoTextColorConverter}}"
+                                                    CommandParameter="{Binding .}"
+                                                    Clicked="OnToggleDesayunoClicked"/>
                                             <!-- Suspender: solo cuando Activa -->
                                             <Button Text="Suspender"
                                                     FontFamily="SyneBold" FontSize="11"

@@ -48,6 +48,7 @@
             <conv:ActivoBgConverter x:Key="ActivoBgConverter"/>
             <conv:ActivoTextColorConverter x:Key="ActivoTextColorConverter"/>
             <conv:RolNoEsAdminConverter x:Key="RolNoEsAdminConverter"/>
+            <conv:RolEsAlumnoConverter x:Key="RolEsAlumnoConverter"/>
             <conv:AlergenosToEmojiConverter x:Key="AlergenosToEmojiConverter"/>
             <conv:AlergenosVisibleConverter x:Key="AlergenosVisibleConverter"/>
             <conv:StockAcabadoConverter x:Key="StockAcabadoConverter"/>

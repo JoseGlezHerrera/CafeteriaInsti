@@ -345,6 +345,17 @@ public class RolNoEsAdminConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+// ── Admin: rol es alumno ──────────────────────────────────────────────────────
+
+public class RolEsAlumnoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is RolUsuario r && r == RolUsuario.Alumno;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Stock: nuevos converters para ocultar cantidad al usuario ─────────────────
 
 /// <summary>Devuelve true si Stock == 0 (mostrar badge "Agotado").</summary>

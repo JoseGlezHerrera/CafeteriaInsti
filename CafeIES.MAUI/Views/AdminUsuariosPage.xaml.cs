@@ -37,6 +37,12 @@ public partial class AdminUsuariosPage : ContentPage
             Vm.ReactivarCommand.Execute(u);
     }
 
+    private void OnToggleDesayunoClicked(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter is UsuarioDto u)
+            Vm.ToggleDesayunoCommand.Execute(u);
+    }
+
     private void OnEliminarClicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is UsuarioDto u)

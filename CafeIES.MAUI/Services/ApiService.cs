@@ -655,6 +655,20 @@ public class ApiService
         }
     }
 
+    public async Task<bool> SetDesayunoGratuitoAsync(int id, bool activo)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/admin/usuarios/{id}/desayuno-gratuito?activo={activo}", null);
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cambiar desayuno gratuito del usuario {Id}.", id);
+            return false;
+        }
+    }
+
     public async Task<bool> ReactivarUsuarioAsync(int id)
     {
         try

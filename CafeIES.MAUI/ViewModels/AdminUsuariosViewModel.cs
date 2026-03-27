@@ -142,6 +142,13 @@ public partial class AdminUsuariosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ToggleDesayunoAsync(UsuarioDto usuario)
+    {
+        await _api.SetDesayunoGratuitoAsync(usuario.Id, !usuario.DesayunoGratuito);
+        await CargarAsync();
+    }
+
+    [RelayCommand]
     private async Task EliminarAsync(UsuarioDto usuario)
     {
         var ok = await Shell.Current.DisplayAlert(
