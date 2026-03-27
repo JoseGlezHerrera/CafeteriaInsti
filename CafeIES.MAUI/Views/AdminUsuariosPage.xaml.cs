@@ -33,29 +33,33 @@ public partial class AdminUsuariosPage : ContentPage
     private async Task AbrirPanelAsync(VisualElement tarjeta, UsuarioDto usuario)
     {
         _panelAnimando = true;
+        try
+        {
+            // Si ya había una tarjeta activa, la restauramos sin animación de cierre
+            if (_tarjetaActiva is not null)
+                await _tarjetaActiva.ScaleTo(1.0, 80);
 
-        // Si ya había una tarjeta activa, la restauramos sin animación de cierre
-        if (_tarjetaActiva is not null)
-            await _tarjetaActiva.ScaleTo(1.0, 80);
+            _tarjetaActiva = tarjeta;
+            Vm.SeleccionarUsuario(usuario);
 
-        _tarjetaActiva = tarjeta;
-        Vm.SeleccionarUsuario(usuario);
+            // Preparar panel fuera de pantalla antes de hacerlo visible
+            PanelContextual.TranslationY = 700;
+            PanelContextual.Opacity      = 0;
+            Overlay.Opacity              = 0;
+            PanelContextual.IsVisible    = true;
+            Overlay.IsVisible            = true;
 
-        // Preparar panel fuera de pantalla antes de hacerlo visible
-        PanelContextual.TranslationY = 700;
-        PanelContextual.Opacity      = 0;
-        Overlay.Opacity              = 0;
-        PanelContextual.IsVisible    = true;
-        Overlay.IsVisible            = true;
-
-        await Task.WhenAll(
-            tarjeta.ScaleTo(1.04, 200, Easing.CubicOut),
-            Overlay.FadeTo(0.55, 220),
-            PanelContextual.TranslateTo(0, 0, 300, Easing.CubicOut),
-            PanelContextual.FadeTo(1, 220)
-        );
-
-        _panelAnimando = false;
+            await Task.WhenAll(
+                tarjeta.ScaleTo(1.04, 200, Easing.CubicOut),
+                Overlay.FadeTo(0.55, 220),
+                PanelContextual.TranslateTo(0, 0, 300, Easing.CubicOut),
+                PanelContextual.FadeTo(1, 220)
+            );
+        }
+        finally
+        {
+            _panelAnimando = false;
+        }
     }
 
     // ── Cierre del panel ──────────────────────────────────────────────────────
@@ -69,16 +73,22 @@ public partial class AdminUsuariosPage : ContentPage
         _tarjetaActiva = null;
         Vm.LimpiarSeleccion();
 
-        await Task.WhenAll(
-            tarjeta?.ScaleTo(1.0, 180, Easing.CubicIn) ?? Task.CompletedTask,
-            Overlay.FadeTo(0, 200),
-            PanelContextual.TranslateTo(0, 700, 260, Easing.CubicIn),
-            PanelContextual.FadeTo(0, 200)
-        );
+        try
+        {
+            await Task.WhenAll(
+                tarjeta?.ScaleTo(1.0, 180, Easing.CubicIn) ?? Task.CompletedTask,
+                Overlay.FadeTo(0, 200),
+                PanelContextual.TranslateTo(0, 700, 260, Easing.CubicIn),
+                PanelContextual.FadeTo(0, 200)
+            );
 
-        Overlay.IsVisible         = false;
-        PanelContextual.IsVisible = false;
-        _panelAnimando            = false;
+            Overlay.IsVisible         = false;
+            PanelContextual.IsVisible = false;
+        }
+        finally
+        {
+            _panelAnimando = false;
+        }
 
         if (recargar) await Vm.CargarAsync();
     }

@@ -92,6 +92,10 @@ public partial class LoginViewModel : ObservableObject
 
     public async Task TryAutoLoginAsync()
     {
+        // Limpiar cualquier error visible de sesiones anteriores
+        HayError     = false;
+        ErrorMessage = string.Empty;
+
         var usuario = await _tokens.GetUsuarioAsync();
         if (usuario is null) return;
 

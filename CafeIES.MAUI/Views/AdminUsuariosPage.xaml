@@ -56,8 +56,6 @@
                                 Style="{Binding FiltroEstadoTodosActivo,      Converter={StaticResource BoolToChipStyleConverter}}"/>
                         <Button Text="✅ Activos"     Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
                                 Style="{Binding FiltroEstadoActivoActivo,     Converter={StaticResource BoolToChipStyleConverter}}"/>
-                        <Button Text="⏳ Pendientes"  Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
-                                Style="{Binding FiltroEstadoPendienteActivo,  Converter={StaticResource BoolToChipStyleConverter}}"/>
                         <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
                                 Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
                     </HorizontalStackLayout>
