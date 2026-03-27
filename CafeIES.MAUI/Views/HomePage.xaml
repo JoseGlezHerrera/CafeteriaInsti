@@ -137,7 +137,8 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="dto:ProductoDto">
                             <Border Style="{StaticResource Card}" Padding="0"
-                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}">
+                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}"
+                                    InputTransparent="{Binding Stock, Converter={StaticResource StockAcabadoConverter}}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=VerDetalleProductoCommand}"

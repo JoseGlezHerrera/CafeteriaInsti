@@ -22,7 +22,7 @@ public partial class PedidosViewModel : ObservableObject
     {
         _api = api;
         WeakReferenceMessenger.Default.Register<PedidoActualizadoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
     [ObservableProperty] private bool _isLoading;
@@ -69,7 +69,7 @@ public partial class PedidosViewModel : ObservableObject
     {
         WeakReferenceMessenger.Default.UnregisterAll(this);
         WeakReferenceMessenger.Default.Register<PedidoActualizadoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 }
 
@@ -155,9 +155,10 @@ public partial class PerfilViewModel : ObservableObject
     private void ToggleCambioPassword()
     {
         MostrarCambioPassword = !MostrarCambioPassword;
-        PasswordMessage = string.Empty;
-        PasswordActual = string.Empty;
-        NuevaPassword = string.Empty;
+        PasswordMessage  = string.Empty;
+        PasswordIsError  = false;
+        PasswordActual   = string.Empty;
+        NuevaPassword    = string.Empty;
         ConfirmarPassword = string.Empty;
     }
 
@@ -196,11 +197,12 @@ public partial class PerfilViewModel : ObservableObject
 
         if (ok)
         {
-            PasswordActual = string.Empty;
-            NuevaPassword = string.Empty;
+            PasswordActual    = string.Empty;
+            NuevaPassword     = string.Empty;
             ConfirmarPassword = string.Empty;
             MostrarCambioPassword = false;
-            PasswordMessage = string.Empty;
+            PasswordMessage  = string.Empty;
+            PasswordIsError  = false;
 
             var toast = Toast.Make("✓ Contraseña actualizada correctamente", ToastDuration.Short, 14);
             await toast.Show();

@@ -70,7 +70,8 @@ public partial class CarritoViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ConfirmarPedidoCommand))]
     private int _totalItems;
 
-    public decimal Total      => Items.Sum(i => i.Subtotal);
+    public decimal Total        => Items.Sum(i => i.Subtotal);
+    public decimal Descuento    => Total - TotalEfectivo;
     public bool   CarritoVacio => !Items.Any();
 
     /// <summary>
@@ -130,6 +131,8 @@ public partial class CarritoViewModel : ObservableObject
         }
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
     }
 
     [RelayCommand]
@@ -139,6 +142,8 @@ public partial class CarritoViewModel : ObservableObject
         item.Cantidad++;
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
     }
 
     [RelayCommand]
@@ -148,6 +153,8 @@ public partial class CarritoViewModel : ObservableObject
         else Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
     }
 
     [RelayCommand]
@@ -156,6 +163,8 @@ public partial class CarritoViewModel : ObservableObject
         Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
     }
 
     // ── Paso 1: crear intent y navegar al WebView de Stripe (o flujo gratuito) ─
@@ -236,6 +245,7 @@ public partial class CarritoViewModel : ObservableObject
         ZumoDisponible        = status.ZumoDisponible;
         BocataDisponible      = status.BocataDisponible;
         OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
     }
 
     // ── Paso 2: llamado por PagamentoWebPage tras el pago exitoso ────────────

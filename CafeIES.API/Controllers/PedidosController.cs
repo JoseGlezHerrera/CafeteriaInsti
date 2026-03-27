@@ -334,8 +334,10 @@ public class PedidosController : ControllerBase
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
+        // BUG-008: una sola consulta con todos los includes necesarios para DTO y autorización
         var pedido = await _db.Pedidos
-            .Include(p => p.Usuario)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
 
@@ -353,8 +355,7 @@ public class PedidosController : ControllerBase
                 return Forbid();
         }
 
-        var dto = await GetPedidoDtoAsync(id);
-        return dto is null ? NotFound() : Ok(dto);
+        return Ok(pedido.ToDto());
     }
 
     // ── Transiciones de estado válidas ────────────────────────────────────────

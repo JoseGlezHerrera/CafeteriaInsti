@@ -23,7 +23,7 @@ public partial class AdminPedidosViewModel : ObservableObject
     {
         _api = api;
         WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
     [ObservableProperty] private bool _isLoading;
@@ -72,11 +72,19 @@ public partial class AdminPedidosViewModel : ObservableObject
         if (!_institutosCargados)
         {
             _institutosCargados = true;
-            var institutos = await _api.GetInstitutosAsync();
-            Institutos.Clear();
-            Institutos.Add(new InstitutoDto(0, "Todos los centros", "", true));
-            foreach (var i in institutos) Institutos.Add(i);
-            if (_filtroInstituto is null) _filtroInstituto = Institutos[0];
+            try
+            {
+                var institutos = await _api.GetInstitutosAsync();
+                Institutos.Clear();
+                Institutos.Add(new InstitutoDto(0, "Todos los centros", "", true));
+                foreach (var i in institutos) Institutos.Add(i);
+                if (_filtroInstituto is null) _filtroInstituto = Institutos[0];
+            }
+            catch
+            {
+                // BUG-015: resetear el flag para permitir reintento en la próxima llamada
+                _institutosCargados = false;
+            }
         }
 
         var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
@@ -165,6 +173,6 @@ public partial class AdminPedidosViewModel : ObservableObject
     {
         WeakReferenceMessenger.Default.UnregisterAll(this);
         WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 }

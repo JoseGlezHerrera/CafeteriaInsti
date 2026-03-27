@@ -124,6 +124,10 @@ public class AdminController : ControllerBase
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
 
+        // BUG-009: admin de instituto A no puede gestionar usuarios de instituto B
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
+
         var accion = aprobar ? "aprobó" : "rechazó";
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
 
@@ -145,6 +149,9 @@ public class AdminController : ControllerBase
         if (user is null) return NotFound();
         if (user.Rol == RolUsuario.Admin) return BadRequest(new { mensaje = "No se puede suspender al admin." });
 
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
+
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         user.Estado = EstadoCuenta.Suspendida;
         await _db.SaveChangesAsync();
@@ -161,6 +168,10 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
+
         if (user.Estado != EstadoCuenta.Suspendida && user.Estado != EstadoCuenta.Rechazada)
             return BadRequest(new { mensaje = "La cuenta no está suspendida ni rechazada." });
 
@@ -181,6 +192,9 @@ public class AdminController : ControllerBase
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
 
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
+
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         var turnoAnterior = user.Turno;
         user.Turno = req.Turno;
@@ -199,6 +213,9 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         user.DesayunoGratuito = activo;
@@ -258,6 +275,12 @@ public class AdminController : ControllerBase
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
 
+        // Admin de instituto solo puede gestionar sus propios usuarios y moverlos dentro de su instituto
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
+        if (adminInstitutoId.HasValue && req.InstitutoId.HasValue && req.InstitutoId != adminInstitutoId)
+            return Forbid();
+
         if (req.InstitutoId.HasValue && !await _db.Institutos.AnyAsync(i => i.Id == req.InstitutoId))
             return BadRequest(new { mensaje = "Instituto no encontrado." });
 
@@ -277,6 +300,9 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
 
         // FIX-07: No se puede cambiar el rol de otro admin
         if (user.Rol == RolUsuario.Admin)
@@ -299,6 +325,9 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
+
+        var adminInstitutoId = GetAdminInstitutoId();
+        if (adminInstitutoId.HasValue && user.InstitutoId != adminInstitutoId) return Forbid();
 
         if (user.Rol == RolUsuario.Admin)
             return BadRequest(new { mensaje = "No se puede eliminar la cuenta de administrador." });

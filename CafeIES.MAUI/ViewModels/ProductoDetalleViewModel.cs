@@ -47,6 +47,7 @@ public partial class ProductoDetalleViewModel : ObservableObject
     public async Task CargarAsync()
     {
         if (ProductoId <= 0) return;
+        if (IsLoading) return; // evitar doble carga (OnProductoIdChanged + EventToCommandBehavior)
 
         IsLoading = true;
         Producto  = await _api.GetProductoByIdAsync(ProductoId);

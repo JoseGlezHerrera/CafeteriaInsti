@@ -10,12 +10,14 @@ public partial class LoginViewModel : ObservableObject
 {
     private readonly ApiService              _api;
     private readonly PushNotificationService _push;
+    private readonly TokenService            _tokens;
     private readonly ILogger<LoginViewModel> _logger;
 
-    public LoginViewModel(ApiService api, PushNotificationService push, ILogger<LoginViewModel> logger)
+    public LoginViewModel(ApiService api, PushNotificationService push, TokenService tokens, ILogger<LoginViewModel> logger)
     {
         _api    = api;
         _push   = push;
+        _tokens = tokens;
         _logger = logger;
     }
 
@@ -85,6 +87,34 @@ public partial class LoginViewModel : ObservableObject
             _logger.LogError(ex, "Error de navegación al destino {Destino} tras el login.", destino);
             HayError     = true;
             ErrorMessage = $"Error al abrir la aplicación: {ex.Message}";
+        }
+    }
+
+    public async Task TryAutoLoginAsync()
+    {
+        var usuario = await _tokens.GetUsuarioAsync();
+        if (usuario is null) return;
+
+        IsLoading = true;
+        try
+        {
+            _ = _api.ConectarSignalRAsync();
+            _ = _push.RegistrarAsync();
+            var destino = usuario.Rol switch
+            {
+                RolUsuario.Admin    => "//Admin",
+                RolUsuario.Empleado => "//Empleado",
+                _                   => "//Main"
+            };
+            await Shell.Current.GoToAsync(destino);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Auto-login fallido.");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

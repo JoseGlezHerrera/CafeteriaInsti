@@ -163,7 +163,7 @@
                                     <Label.FormattedText>
                                         <FormattedString>
                                             <Span Text="-"/>
-                                            <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                            <Span Text="{Binding Descuento, StringFormat='{0:F2}'}"/>
                                             <Span Text=" €"/>
                                         </FormattedString>
                                     </Label.FormattedText>
@@ -234,7 +234,7 @@
                            Margin="0,0,0,8" IsVisible="{Binding IsLoading}"/>
 
                     <!-- Botón pagar -->
-                    <Button Text="{Binding Total, StringFormat='Pagar {0:F2} €'}"
+                    <Button Text="{Binding TotalEfectivo, StringFormat='Pagar {0:F2} €'}"
                             Style="{StaticResource PrimaryButton}"
                             Command="{Binding ConfirmarPedidoCommand}"
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}"/>

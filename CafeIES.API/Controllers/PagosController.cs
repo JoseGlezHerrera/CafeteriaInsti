@@ -277,6 +277,13 @@ public class PagosController : ControllerBase
         var signature = Request.Headers["Stripe-Signature"].FirstOrDefault();
         var webhookSecret = _config["Stripe:WebhookSecret"] ?? "";
 
+        // BUG-002: Si el secret no está configurado, rechazar cualquier petición al webhook
+        if (string.IsNullOrEmpty(webhookSecret))
+        {
+            _logger.LogError("Stripe:WebhookSecret no está configurado. Webhook rechazado para evitar fraude.");
+            return StatusCode(503, "Webhook no configurado.");
+        }
+
         if (string.IsNullOrEmpty(signature))
             return BadRequest();
 

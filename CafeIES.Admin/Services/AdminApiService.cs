@@ -18,7 +18,7 @@ public class AdminApiService
     }
 
     /// <summary>FIX-18: Expone la URL base de la API para conexiones SignalR.</summary>
-    public string GetApiBaseUrl() => _http.BaseAddress?.ToString().TrimEnd('/') + "/" ?? "";
+    public string GetApiBaseUrl() => (_http.BaseAddress?.ToString().TrimEnd('/') ?? "") + "/";
 
     // ── Helper: ejecuta request con auto-refresh en 401 ──────────────────────
     private async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> action)
@@ -252,14 +252,21 @@ public class AdminApiService
     {
         try
         {
-            using var content     = new MultipartFormDataContent();
-            var       fileContent = new StreamContent(
-                archivo.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024));
-            fileContent.Headers.ContentType =
-                new MediaTypeHeaderValue(archivo.ContentType);
-            content.Add(fileContent, "imagen", archivo.Name);
+            // BUG-005: leer bytes en memoria antes de reintentar para evitar "stream already consumed"
+            using var stream = archivo.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var bytes = new byte[archivo.Size];
+            await stream.ReadAsync(bytes);
+            var contentType = archivo.ContentType;
+            var fileName    = archivo.Name;
 
-            var resp = await SendAsync(() => _http.PostAsync($"api/productos/{id}/imagen", content));
+            var resp = await SendAsync(() =>
+            {
+                var content     = new MultipartFormDataContent();
+                var fileContent = new ByteArrayContent(bytes);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                content.Add(fileContent, "imagen", fileName);
+                return _http.PostAsync($"api/productos/{id}/imagen", content);
+            });
             if (!resp.IsSuccessStatusCode) return null;
 
             var result = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();

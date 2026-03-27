@@ -16,7 +16,7 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     {
         _api = api;
         WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
     [ObservableProperty] private bool _isLoading;
@@ -100,6 +100,6 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     {
         WeakReferenceMessenger.Default.UnregisterAll(this);
         WeakReferenceMessenger.Default.Register<NuevoPedidoMessage>(this, (_, _) =>
-            MainThread.BeginInvokeOnMainThread(async () => await CargarAsync()));
+            MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 }
