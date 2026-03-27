@@ -6,7 +6,7 @@
              x:DataType="vm:LoginViewModel"
              BackgroundColor="{StaticResource BgColor}">
 
-    <ScrollView>
+    <ScrollView x:Name="ContenidoLogin" Opacity="0">
         <Grid RowDefinitions="*, Auto" MinimumHeightRequest="700" Padding="32">
 
             <!-- Círculos decorativos de fondo -->

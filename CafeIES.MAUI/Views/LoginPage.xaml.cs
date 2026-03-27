@@ -16,5 +16,7 @@ public partial class LoginPage : ContentPage
     {
         base.OnAppearing();
         await _vm.TryAutoLoginAsync();
+        // Si seguimos aquí, no hay sesión guardada — mostrar el formulario
+        await ContenidoLogin.FadeTo(1, 180);
     }
 }

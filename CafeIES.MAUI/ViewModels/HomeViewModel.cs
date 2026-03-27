@@ -77,6 +77,7 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
 
         var usarCache = _cacheProductos is not null
