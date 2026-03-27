@@ -12,184 +12,307 @@
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <!-- Root Grid: contenido principal + overlay + panel apilados -->
+    <Grid>
 
-        <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
-            <Label Text="Usuarios" FontFamily="SyneBold" FontSize="22"
-                   TextColor="{StaticResource TextColor}"/>
-        </Grid>
+        <!-- ══════════════════════════════════════════════════════════
+             LAYER 1 — Contenido principal
+        ═══════════════════════════════════════════════════════════ -->
+        <Grid RowDefinitions="Auto,Auto,*">
 
-        <!-- Filtros -->
-        <VerticalStackLayout Grid.Row="1" BackgroundColor="{StaticResource SurfaceColor}"
-                             Padding="16,0,16,14" Spacing="10">
-            <!-- Búsqueda -->
-            <Border StrokeThickness="1" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
-                <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
-                <Entry Style="{StaticResource InputEntry}" HeightRequest="42"
-                       Placeholder="🔍  Buscar por nombre o email"
-                       Text="{Binding TextoBusqueda}"/>
-            </Border>
-            <!-- Chips Rol -->
-            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                <HorizontalStackLayout Spacing="8">
-                    <Button Text="Todos" Command="{Binding SetFiltroRolCommand}" CommandParameter="Todos"
-                            Style="{Binding FiltroRolTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="🎓 Alumno" Command="{Binding SetFiltroRolCommand}" CommandParameter="Alumno"
-                            Style="{Binding FiltroRolAlumnoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="👨‍🏫 Profesor" Command="{Binding SetFiltroRolCommand}" CommandParameter="Profesor"
-                            Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="🏢 Personal" Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
-                            Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="☕ Empleado" Command="{Binding SetFiltroRolCommand}" CommandParameter="Empleado"
-                            Style="{Binding FiltroRolEmpleadoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                </HorizontalStackLayout>
-            </ScrollView>
-            <!-- Chips Estado -->
-            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                <HorizontalStackLayout Spacing="8">
-                    <Button Text="Todos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Todos"
-                            Style="{Binding FiltroEstadoTodosActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="✅ Activos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
-                            Style="{Binding FiltroEstadoActivoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="⏳ Pendientes" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
-                            Style="{Binding FiltroEstadoPendienteActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                    <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
-                            Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
-                </HorizontalStackLayout>
-            </ScrollView>
-        </VerticalStackLayout>
+            <!-- Header -->
+            <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
+                <Label Text="Usuarios" FontFamily="SyneBold" FontSize="22"
+                       TextColor="{StaticResource TextColor}"/>
+            </Grid>
 
-        <RefreshView Grid.Row="2"
-                     IsRefreshing="{Binding IsLoading}"
-                     Command="{Binding CargarCommand}">
-            <ScrollView>
-                <VerticalStackLayout Padding="16,12" Spacing="16">
+            <!-- Filtros -->
+            <VerticalStackLayout Grid.Row="1" BackgroundColor="{StaticResource SurfaceColor}"
+                                 Padding="16,0,16,14" Spacing="10">
+                <Border StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Entry Style="{StaticResource InputEntry}" HeightRequest="42"
+                           Placeholder="🔍  Buscar por nombre o email"
+                           Text="{Binding TextoBusqueda}"/>
+                </Border>
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="Todos"        Command="{Binding SetFiltroRolCommand}" CommandParameter="Todos"
+                                Style="{Binding FiltroRolTodosActivo,    Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="🎓 Alumno"    Command="{Binding SetFiltroRolCommand}" CommandParameter="Alumno"
+                                Style="{Binding FiltroRolAlumnoActivo,   Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="👨‍🏫 Profesor" Command="{Binding SetFiltroRolCommand}" CommandParameter="Profesor"
+                                Style="{Binding FiltroRolProfesorActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="🏢 Personal"  Command="{Binding SetFiltroRolCommand}" CommandParameter="Personal"
+                                Style="{Binding FiltroRolPersonalActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="☕ Empleado"  Command="{Binding SetFiltroRolCommand}" CommandParameter="Empleado"
+                                Style="{Binding FiltroRolEmpleadoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    </HorizontalStackLayout>
+                </ScrollView>
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="Todos"          Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Todos"
+                                Style="{Binding FiltroEstadoTodosActivo,      Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="✅ Activos"     Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Activa"
+                                Style="{Binding FiltroEstadoActivoActivo,     Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="⏳ Pendientes"  Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Pendiente"
+                                Style="{Binding FiltroEstadoPendienteActivo,  Converter={StaticResource BoolToChipStyleConverter}}"/>
+                        <Button Text="🚫 Suspendidos" Command="{Binding SetFiltroEstadoCommand}" CommandParameter="Suspendida"
+                                Style="{Binding FiltroEstadoSuspendidoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </VerticalStackLayout>
 
-                    <!-- Pendientes de validacion -->
-                    <VerticalStackLayout IsVisible="{Binding HayPendientes}" Spacing="10">
-                        <Grid ColumnDefinitions="3,*" ColumnSpacing="10" HeightRequest="26">
-                            <BoxView Grid.Column="0" Color="#f5a623" CornerRadius="2"/>
-                            <Label Grid.Column="1" Text="Pendientes de validacion"
-                                   FontFamily="SyneBold" FontSize="16"
-                                   TextColor="#f5a623" VerticalOptions="Center"/>
+            <!-- Lista -->
+            <RefreshView Grid.Row="2"
+                         IsRefreshing="{Binding IsLoading}"
+                         Command="{Binding CargarCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="16,12" Spacing="16">
+
+                        <!-- Pendientes -->
+                        <VerticalStackLayout IsVisible="{Binding HayPendientes}" Spacing="10">
+                            <Grid ColumnDefinitions="3,*" ColumnSpacing="10" HeightRequest="26">
+                                <BoxView Grid.Column="0" Color="#f5a623" CornerRadius="2"/>
+                                <Label   Grid.Column="1" Text="Pendientes de validación"
+                                         FontFamily="SyneBold" FontSize="16"
+                                         TextColor="#f5a623" VerticalOptions="Center"/>
+                            </Grid>
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pendientes}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="dto:UsuarioDto">
+                                        <Border x:Name="TarjetaPendiente"
+                                                Style="{StaticResource Card}" Margin="0,0,0,8">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTarjetaTapped"/>
+                                            </Border.GestureRecognizers>
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                                                    <Label Text="{Binding NombreCompleto}"
+                                                           FontFamily="SyneBold" FontSize="14"
+                                                           TextColor="{StaticResource TextColor}"
+                                                           LineBreakMode="TailTruncation"/>
+                                                    <Label Text="{Binding Email}"
+                                                           FontFamily="DMSans" FontSize="12"
+                                                           TextColor="{StaticResource MutedColor}"
+                                                           LineBreakMode="TailTruncation"/>
+                                                    <Label Text="{Binding Rol, Converter={StaticResource RolTextoConverter}}"
+                                                           FontFamily="DMSans" FontSize="11"
+                                                           TextColor="{StaticResource MutedColor}"/>
+                                                </VerticalStackLayout>
+                                                <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                                    <Border BackgroundColor="#26f5a623"
+                                                            Padding="8,3" StrokeThickness="0">
+                                                        <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                                        <Label Text="Pendiente" FontFamily="SyneBold" FontSize="10" TextColor="#f5a623"/>
+                                                    </Border>
+                                                    <Label Text="›" FontSize="20" TextColor="{StaticResource MutedColor}"
+                                                           HorizontalOptions="Center"/>
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+
+                        <!-- Todos los usuarios -->
+                        <Grid ColumnDefinitions="3,*" ColumnSpacing="10" Margin="0,8,0,0" HeightRequest="26">
+                            <BoxView Grid.Column="0" Color="{StaticResource MutedColor}" CornerRadius="2"/>
+                            <Label   Grid.Column="1" Text="Todos los usuarios"
+                                     FontFamily="SyneBold" FontSize="16"
+                                     TextColor="{StaticResource MutedColor}" VerticalOptions="Center"/>
                         </Grid>
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pendientes}">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Todos}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="dto:UsuarioDto">
-                                    <Border Style="{StaticResource Card}" Margin="0,0,0,8">
-                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
-                                            <Label Grid.Row="0" Grid.Column="0"
-                                                   Text="{Binding NombreCompleto}"
-                                                   FontFamily="SyneBold" FontSize="14"
-                                                   TextColor="{StaticResource TextColor}"/>
-                                            <Label Grid.Row="1" Grid.Column="0"
-                                                   Text="{Binding Email}"
-                                                   FontFamily="DMSans" FontSize="12"
-                                                   TextColor="{StaticResource MutedColor}"/>
-                                            <HorizontalStackLayout Grid.Row="0" Grid.RowSpan="2"
-                                                                   Grid.Column="1" Spacing="6"
-                                                                   VerticalOptions="Center">
-                                                <Button Text="Aprobar"
-                                                        FontFamily="SyneBold" FontSize="12"
-                                                        BackgroundColor="#264caf82" TextColor="#4caf82"
-                                                        CornerRadius="10" HeightRequest="34" Padding="14,0"
-                                                        CommandParameter="{Binding .}"
-                                                        Clicked="OnAprobarClicked"/>
-                                                <Button Text="Rechazar"
-                                                        FontFamily="SyneBold" FontSize="12"
-                                                        BackgroundColor="#26e05252" TextColor="#e05252"
-                                                        CornerRadius="10" HeightRequest="34" Padding="14,0"
-                                                        CommandParameter="{Binding .}"
-                                                        Clicked="OnRechazarClicked"/>
-                                            </HorizontalStackLayout>
+                                    <Border x:Name="TarjetaUsuario"
+                                            Style="{StaticResource Card}" Margin="0,0,0,8"
+                                            Stroke="{Binding Estado, Converter={StaticResource EstadoCuentaBorderConverter}}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnTarjetaTapped"/>
+                                        </Border.GestureRecognizers>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                                                <Label Text="{Binding NombreCompleto}"
+                                                       FontFamily="SyneBold" FontSize="14"
+                                                       TextColor="{StaticResource TextColor}"
+                                                       LineBreakMode="TailTruncation"/>
+                                                <Label Text="{Binding Email}"
+                                                       FontFamily="DMSans" FontSize="12"
+                                                       TextColor="{StaticResource MutedColor}"
+                                                       LineBreakMode="TailTruncation"/>
+                                                <HorizontalStackLayout Spacing="6" Margin="0,2,0,0">
+                                                    <Label Text="{Binding Rol, Converter={StaticResource RolTextoConverter}}"
+                                                           FontFamily="DMSans" FontSize="11"
+                                                           TextColor="{StaticResource MutedColor}"/>
+                                                    <!-- Indicador desayuno gratuito en la tarjeta -->
+                                                    <Label Text="🍊"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding DesayunoGratuito}"/>
+                                                </HorizontalStackLayout>
+                                            </VerticalStackLayout>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                                <Border BackgroundColor="{Binding Estado, Converter={StaticResource EstadoCuentaBgConverter}}"
+                                                        Padding="8,3" StrokeThickness="0" HorizontalOptions="End">
+                                                    <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                                    <Label Text="{Binding Estado, Converter={StaticResource EstadoCuentaTextoConverter}}"
+                                                           FontFamily="SyneBold" FontSize="10"
+                                                           TextColor="{Binding Estado, Converter={StaticResource EstadoCuentaTextColorConverter}}"/>
+                                                </Border>
+                                                <Label Text="›" FontSize="20" TextColor="{StaticResource MutedColor}"
+                                                       HorizontalOptions="Center"/>
+                                            </VerticalStackLayout>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>
-                    </VerticalStackLayout>
 
-                    <!-- Todos los usuarios -->
-                    <Grid ColumnDefinitions="3,*" ColumnSpacing="10" Margin="0,8,0,0" HeightRequest="26">
-                        <BoxView Grid.Column="0" Color="{StaticResource MutedColor}" CornerRadius="2"/>
-                        <Label Grid.Column="1" Text="Todos los usuarios"
-                               FontFamily="SyneBold" FontSize="16"
-                               TextColor="{StaticResource MutedColor}" VerticalOptions="Center"/>
-                    </Grid>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Todos}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="dto:UsuarioDto">
-                                <Border Style="{StaticResource Card}" Margin="0,0,0,8"
-                                        Stroke="{Binding Estado, Converter={StaticResource EstadoCuentaBorderConverter}}">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
-                                        <Label Grid.Row="0" Grid.Column="0"
-                                               Text="{Binding NombreCompleto}"
-                                               FontFamily="SyneBold" FontSize="14"
-                                               TextColor="{StaticResource TextColor}"/>
-                                        <Label Grid.Row="1" Grid.Column="0"
-                                               Text="{Binding Email}"
-                                               FontFamily="DMSans" FontSize="12"
-                                               TextColor="{StaticResource MutedColor}"/>
-                                        <Label Grid.Row="2" Grid.Column="0"
-                                               Text="{Binding Rol, Converter={StaticResource RolTextoConverter}}"
-                                               FontFamily="DMSans" FontSize="11"
-                                               TextColor="{StaticResource MutedColor}"/>
-                                        <VerticalStackLayout Grid.Row="0" Grid.RowSpan="3"
-                                                             Grid.Column="1" Spacing="6"
-                                                             VerticalOptions="Center">
-                                            <!-- Estado badge -->
-                                            <Border BackgroundColor="{Binding Estado, Converter={StaticResource EstadoCuentaBgConverter}}"
-                                                    Padding="10,4" StrokeThickness="0" HorizontalOptions="End">
-                                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
-                                                <Label Text="{Binding Estado, Converter={StaticResource EstadoCuentaTextoConverter}}"
-                                                       FontFamily="SyneBold" FontSize="10"
-                                                       TextColor="{Binding Estado, Converter={StaticResource EstadoCuentaTextColorConverter}}"/>
-                                            </Border>
-                                            <!-- Desayuno gratuito: solo Alumno activo -->
-                                            <Button Text="🍊 Desayuno"
-                                                    FontFamily="SyneBold" FontSize="11"
-                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
-                                                    IsVisible="{Binding Rol, Converter={StaticResource RolEsAlumnoConverter}}"
-                                                    BackgroundColor="{Binding DesayunoGratuito, Converter={StaticResource ActivoBgConverter}}"
-                                                    TextColor="{Binding DesayunoGratuito, Converter={StaticResource ActivoTextColorConverter}}"
-                                                    CommandParameter="{Binding .}"
-                                                    Clicked="OnToggleDesayunoClicked"/>
-                                            <!-- Suspender: solo cuando Activa -->
-                                            <Button Text="Suspender"
-                                                    FontFamily="SyneBold" FontSize="11"
-                                                    BackgroundColor="#26e05252" TextColor="#e05252"
-                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
-                                                    IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Activa}"
-                                                    CommandParameter="{Binding .}"
-                                                    Clicked="OnSuspenderClicked"/>
-                                            <!-- Reactivar: solo cuando Suspendida -->
-                                            <Button Text="Reactivar"
-                                                    FontFamily="SyneBold" FontSize="11"
-                                                    BackgroundColor="#264caf82" TextColor="#4caf82"
-                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
-                                                    IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Suspendida}"
-                                                    CommandParameter="{Binding .}"
-                                                    Clicked="OnReactivarClicked"/>
-                                            <!-- Eliminar: todos excepto Admin -->
-                                            <Button Text="Eliminar"
-                                                    FontFamily="SyneBold" FontSize="11"
-                                                    BackgroundColor="#26e05252" TextColor="#e05252"
-                                                    CornerRadius="10" HeightRequest="34" Padding="12,0"
-                                                    IsVisible="{Binding Rol, Converter={StaticResource RolNoEsAdminConverter}}"
-                                                    CommandParameter="{Binding .}"
-                                                    Clicked="OnEliminarClicked"/>
-                                        </VerticalStackLayout>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════════════════
+             LAYER 2 — Overlay oscuro (cubre todo al abrir el panel)
+        ═══════════════════════════════════════════════════════════ -->
+        <BoxView x:Name="Overlay"
+                 Color="Black" Opacity="0" IsVisible="False"
+                 InputTransparent="False">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnOverlayTapped"/>
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- ══════════════════════════════════════════════════════════
+             LAYER 3 — Panel contextual (bottom sheet)
+        ═══════════════════════════════════════════════════════════ -->
+        <Border x:Name="PanelContextual"
+                BackgroundColor="{StaticResource SurfaceColor}"
+                VerticalOptions="End"
+                TranslationY="700"
+                Opacity="0"
+                IsVisible="False"
+                StrokeThickness="0">
+            <Border.StrokeShape><RoundRectangle CornerRadius="24,24,0,0"/></Border.StrokeShape>
+
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Handle bar -->
+                <BoxView HeightRequest="4" WidthRequest="40" CornerRadius="2"
+                         Color="{StaticResource BorderColor}"
+                         HorizontalOptions="Center" Margin="0,14,0,18"/>
+
+                <!-- Info del usuario seleccionado -->
+                <Grid ColumnDefinitions="56,*" ColumnSpacing="14" Padding="20,0,20,16">
+                    <!-- Avatar -->
+                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                            WidthRequest="52" HeightRequest="52"
+                            StrokeThickness="0" VerticalOptions="Center">
+                        <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                        <Label Text="👤" FontSize="24"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                    <!-- Nombre, email, badges -->
+                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                        <Label Text="{Binding UsuarioSeleccionado.NombreCompleto}"
+                               FontFamily="SyneBold" FontSize="16"
+                               TextColor="{StaticResource TextColor}"
+                               LineBreakMode="TailTruncation"/>
+                        <Label Text="{Binding UsuarioSeleccionado.Email}"
+                               FontFamily="DMSans" FontSize="12"
+                               TextColor="{StaticResource MutedColor}"
+                               LineBreakMode="TailTruncation"/>
+                        <HorizontalStackLayout Spacing="6" Margin="0,3,0,0">
+                            <Border BackgroundColor="{StaticResource Surface2Color}"
+                                    Padding="8,3" StrokeThickness="0">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                <Label Text="{Binding UsuarioSeleccionado.Rol, Converter={StaticResource RolTextoConverter}}"
+                                       FontFamily="SyneBold" FontSize="10"
+                                       TextColor="{StaticResource MutedColor}"/>
+                            </Border>
+                            <Border BackgroundColor="{Binding UsuarioSeleccionado.Estado, Converter={StaticResource EstadoCuentaBgConverter}}"
+                                    Padding="8,3" StrokeThickness="0">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                <Label Text="{Binding UsuarioSeleccionado.Estado, Converter={StaticResource EstadoCuentaTextoConverter}}"
+                                       FontFamily="SyneBold" FontSize="10"
+                                       TextColor="{Binding UsuarioSeleccionado.Estado, Converter={StaticResource EstadoCuentaTextColorConverter}}"/>
+                            </Border>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Separador -->
+                <BoxView HeightRequest="1" Color="{StaticResource BorderColor}" Margin="20,0,20,12"/>
+
+                <!-- Botones de acción -->
+                <VerticalStackLayout Padding="16,0" Spacing="8">
+
+                    <!-- Aprobar (pendientes) -->
+                    <Button Text="✓  Aprobar solicitud"
+                            IsVisible="{Binding PanelPuedeAprobar}"
+                            BackgroundColor="#1f4caf82" TextColor="#4caf82"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelAprobarClicked"/>
+
+                    <!-- Rechazar (pendientes) -->
+                    <Button Text="✕  Rechazar solicitud"
+                            IsVisible="{Binding PanelPuedeAprobar}"
+                            BackgroundColor="#1fe05252" TextColor="#e05252"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelRechazarClicked"/>
+
+                    <!-- Desayuno gratuito (alumnos activos) -->
+                    <Button IsVisible="{Binding PanelPuedeDesayuno}"
+                            Text="{Binding PanelDesayunoTexto}"
+                            BackgroundColor="{Binding PanelDesayunoActivo, Converter={StaticResource ActivoBgConverter}}"
+                            TextColor="{Binding PanelDesayunoActivo, Converter={StaticResource ActivoTextColorConverter}}"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelDesayunoClicked"/>
+
+                    <!-- Suspender (activos no-admin) -->
+                    <Button Text="🔒  Suspender cuenta"
+                            IsVisible="{Binding PanelPuedeSuspender}"
+                            BackgroundColor="#1fe05252" TextColor="#e05252"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelSuspenderClicked"/>
+
+                    <!-- Reactivar (suspendidos / rechazados) -->
+                    <Button Text="✅  Reactivar cuenta"
+                            IsVisible="{Binding PanelPuedeReactivar}"
+                            BackgroundColor="#1f4caf82" TextColor="#4caf82"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelReactivarClicked"/>
+
+                    <!-- Eliminar (no-admin) -->
+                    <Button Text="🗑  Eliminar usuario"
+                            IsVisible="{Binding PanelPuedeEliminar}"
+                            BackgroundColor="Transparent" TextColor="#e05252"
+                            BorderColor="#33e05252" BorderWidth="1"
+                            FontFamily="SyneBold" FontSize="14"
+                            CornerRadius="14" HeightRequest="50"
+                            Clicked="OnPanelEliminarClicked"/>
 
                 </VerticalStackLayout>
-            </ScrollView>
-        </RefreshView>
+
+                <!-- Cerrar -->
+                <Button Text="Cancelar"
+                        BackgroundColor="Transparent"
+                        TextColor="{StaticResource MutedColor}"
+                        FontFamily="DMSans" FontSize="14"
+                        Margin="16,6,16,36"
+                        Clicked="OnCerrarPanelClicked"/>
+
+            </VerticalStackLayout>
+        </Border>
 
     </Grid>
 </ContentPage>

@@ -17,7 +17,8 @@ public partial class AdminUsuariosViewModel : ObservableObject
     [ObservableProperty] private bool   _hayPendientes;
     [ObservableProperty] private string _textoBusqueda = string.Empty;
 
-    // Filtros activos
+    // ── Filtros ───────────────────────────────────────────────────────────────
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FiltroRolTodosActivo))]
     [NotifyPropertyChangedFor(nameof(FiltroRolAlumnoActivo))]
@@ -44,6 +45,36 @@ public partial class AdminUsuariosViewModel : ObservableObject
     public bool FiltroEstadoPendienteActivo  => FiltroEstado == "Pendiente";
     public bool FiltroEstadoSuspendidoActivo => FiltroEstado == "Suspendida";
 
+    // ── Panel contextual ─────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PanelPuedeDesayuno))]
+    [NotifyPropertyChangedFor(nameof(PanelPuedeSuspender))]
+    [NotifyPropertyChangedFor(nameof(PanelPuedeReactivar))]
+    [NotifyPropertyChangedFor(nameof(PanelPuedeAprobar))]
+    [NotifyPropertyChangedFor(nameof(PanelPuedeEliminar))]
+    [NotifyPropertyChangedFor(nameof(PanelDesayunoTexto))]
+    [NotifyPropertyChangedFor(nameof(PanelDesayunoActivo))]
+    private UsuarioDto? _usuarioSeleccionado;
+
+    public bool   PanelPuedeDesayuno  => UsuarioSeleccionado?.Rol == RolUsuario.Alumno &&
+                                         UsuarioSeleccionado?.Estado == EstadoCuenta.Activa;
+    public bool   PanelPuedeSuspender => UsuarioSeleccionado?.Rol != RolUsuario.Admin &&
+                                         UsuarioSeleccionado?.Estado == EstadoCuenta.Activa;
+    public bool   PanelPuedeReactivar => UsuarioSeleccionado?.Estado is EstadoCuenta.Suspendida
+                                                                      or EstadoCuenta.Rechazada;
+    public bool   PanelPuedeAprobar   => UsuarioSeleccionado?.Estado == EstadoCuenta.PendienteValidacion;
+    public bool   PanelPuedeEliminar  => UsuarioSeleccionado?.Rol != RolUsuario.Admin;
+    public bool   PanelDesayunoActivo => UsuarioSeleccionado?.DesayunoGratuito ?? false;
+    public string PanelDesayunoTexto  => PanelDesayunoActivo
+        ? "🍊  Quitar desayuno gratuito"
+        : "🍊  Activar desayuno gratuito";
+
+    public void SeleccionarUsuario(UsuarioDto u) => UsuarioSeleccionado = u;
+    public void LimpiarSeleccion()              => UsuarioSeleccionado = null;
+
+    // ── Colecciones ───────────────────────────────────────────────────────────
+
     public ObservableCollection<UsuarioDto> Pendientes { get; } = new();
     public ObservableCollection<UsuarioDto> Todos      { get; } = new();
 
@@ -64,36 +95,30 @@ public partial class AdminUsuariosViewModel : ObservableObject
     {
         var query = _todos.AsEnumerable();
 
-        // Pendientes siempre se muestran aparte sin filtros de rol/estado
         Pendientes.Clear();
         foreach (var u in _todos.Where(u => u.Estado == EstadoCuenta.PendienteValidacion))
             Pendientes.Add(u);
         HayPendientes = Pendientes.Count > 0;
 
-        // Excluir pendientes de la lista principal
         query = query.Where(u => u.Estado != EstadoCuenta.PendienteValidacion);
 
-        // Filtro rol
         if (FiltroRol != "Todos")
         {
             if (Enum.TryParse<RolUsuario>(FiltroRol, out var rol))
                 query = query.Where(u => u.Rol == rol);
         }
 
-        // Filtro estado
         query = FiltroEstado switch
         {
             "Activa"     => query.Where(u => u.Estado == EstadoCuenta.Activa),
             "Suspendida" => query.Where(u => u.Estado == EstadoCuenta.Suspendida),
-            // Pendientes se muestran en la sección superior; aquí la lista queda vacía
             "Pendiente"  => Enumerable.Empty<UsuarioDto>(),
             _            => query
         };
 
-        // Búsqueda por nombre o email
         if (!string.IsNullOrWhiteSpace(TextoBusqueda))
         {
-            var t = TextoBusqueda.Trim().ToLowerInvariant();
+            var t = TextoBusqueda.Trim();
             query = query.Where(u =>
                 u.NombreCompleto.Contains(t, StringComparison.OrdinalIgnoreCase) ||
                 u.Email.Contains(t, StringComparison.OrdinalIgnoreCase));
@@ -107,15 +132,17 @@ public partial class AdminUsuariosViewModel : ObservableObject
     [RelayCommand] private void SetFiltroRol(string rol)    { FiltroRol    = rol; }
     [RelayCommand] private void SetFiltroEstado(string est) { FiltroEstado = est; }
 
+    // ── Acciones (llamadas desde el panel) ────────────────────────────────────
+
     [RelayCommand]
-    private async Task AprobarAsync(UsuarioDto usuario)
+    public async Task AprobarAsync(UsuarioDto usuario)
     {
         await _api.ValidarAlumnoAsync(usuario.Id, true);
         await CargarAsync();
     }
 
     [RelayCommand]
-    private async Task RechazarAsync(UsuarioDto usuario)
+    public async Task RechazarAsync(UsuarioDto usuario)
     {
         var ok = await Shell.Current.DisplayAlert(
             "Rechazar", $"¿Rechazar a {usuario.NombreCompleto}?", "Sí, rechazar", "Cancelar");
@@ -125,7 +152,7 @@ public partial class AdminUsuariosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SuspenderAsync(UsuarioDto usuario)
+    public async Task SuspenderAsync(UsuarioDto usuario)
     {
         var ok = await Shell.Current.DisplayAlert(
             "Suspender", $"¿Suspender la cuenta de {usuario.NombreCompleto}?", "Sí", "Cancelar");
@@ -135,21 +162,21 @@ public partial class AdminUsuariosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ReactivarAsync(UsuarioDto usuario)
+    public async Task ReactivarAsync(UsuarioDto usuario)
     {
         await _api.ReactivarUsuarioAsync(usuario.Id);
         await CargarAsync();
     }
 
     [RelayCommand]
-    private async Task ToggleDesayunoAsync(UsuarioDto usuario)
+    public async Task ToggleDesayunoAsync(UsuarioDto usuario)
     {
         await _api.SetDesayunoGratuitoAsync(usuario.Id, !usuario.DesayunoGratuito);
         await CargarAsync();
     }
 
     [RelayCommand]
-    private async Task EliminarAsync(UsuarioDto usuario)
+    public async Task EliminarAsync(UsuarioDto usuario)
     {
         var ok = await Shell.Current.DisplayAlert(
             "Eliminar usuario",
