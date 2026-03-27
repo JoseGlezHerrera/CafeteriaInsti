@@ -69,10 +69,25 @@ public class PagosController : ControllerBase
         if (!horario.Puede)
             return BadRequest(new { mensaje = horario.Mensaje });
 
-        // 1. Validar productos y calcular total en servidor
+        // 1. Validar productos y calcular total en servidor (aplicando descuento de desayuno)
         decimal total = 0;
         var descripcionItems = new List<string>();
 
+        // Comprobar estado de desayuno gratuito del usuario
+        var spainTzPago = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+        var hoyPago = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzPago));
+        ConsumoDesayuno? consumoPago = null;
+        bool zumoAplicadoPago    = false;
+        bool bocataAplicadoPago  = false;
+        if (usuario.DesayunoGratuito)
+        {
+            consumoPago = await _db.ConsumoDesayunos
+                .FirstOrDefaultAsync(c => c.UsuarioId == userId.Value && c.Fecha == hoyPago);
+            zumoAplicadoPago   = consumoPago?.ZumoConsumido   ?? false;
+            bocataAplicadoPago = consumoPago?.BocataConsumido ?? false;
+        }
+
+        var lineasConPrecio = new List<(int ProductoId, int Cantidad, decimal Precio)>();
         foreach (var l in req.Lineas)
         {
             var producto = await _db.Productos.FindAsync(l.ProductoId);
@@ -82,25 +97,39 @@ public class PagosController : ControllerBase
             if (producto.Stock != -1 && producto.Stock < l.Cantidad)
                 return BadRequest(new { mensaje = $"Stock insuficiente para '{producto.Nombre}'." });
 
-            total += producto.Precio * l.Cantidad;
+            decimal precio = producto.Precio;
+            if (usuario.DesayunoGratuito)
+            {
+                if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo && !zumoAplicadoPago)
+                {
+                    precio = 0; zumoAplicadoPago = true;
+                }
+                else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata && !bocataAplicadoPago)
+                {
+                    precio = 0; bocataAplicadoPago = true;
+                }
+            }
+
+            total += precio * l.Cantidad;
             descripcionItems.Add($"{producto.Nombre} ×{l.Cantidad}");
+            lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio));
         }
 
         if (total < 0.50m)
-            return BadRequest(new { mensaje = "El importe mínimo es 0.50€." });
+            return BadRequest(new { mensaje = "El importe mínimo para pago con tarjeta es 0.50€. Si tu pedido es completamente gratuito, usa el flujo de desayuno gratuito." });
 
         // 2. Crear PaymentIntent en Stripe
-        // Guardamos en metadata todo lo necesario para reconstruir el pedido
-        // desde el webhook si el usuario cierra la app antes de confirmarlo.
+        // La metadata incluye PrecioUnitario para que el webhook pueda reconstruir el pedido
+        // con los mismos precios (ya descontados) sin necesidad de re-aplicar la lógica.
         var userIdStr = userId.Value.ToString();
         var lineasJson = JsonSerializer.Serialize(
-            req.Lineas.Select(l => new { l.ProductoId, l.Cantidad }));
+            lineasConPrecio.Select(l => new { l.ProductoId, l.Cantidad, l.Precio }));
         var metadata = new Dictionary<string, string>
         {
             ["userId"]      = userIdStr,
             ["notas"]       = req.Notas ?? "",
             ["metodo_pago"] = ((int)MetodoPago.Tarjeta).ToString(),
-            ["lineas"]      = lineasJson   // ej: [{"ProductoId":1,"Cantidad":2}]
+            ["lineas"]      = lineasJson
         };
 
         var (clientSecret, paymentIntentId) = await _stripe.CrearPaymentIntentAsync(
@@ -323,8 +352,8 @@ public class PagosController : ControllerBase
             ? (MetodoPago)mp
             : MetodoPago.Tarjeta;
 
-        // Parsear las líneas del pedido
-        List<(int ProductoId, int Cantidad)> lineas;
+        // Parsear las líneas del pedido (incluyen PrecioUnitario ya descontado si hay desayuno gratuito)
+        List<(int ProductoId, int Cantidad, decimal? PrecioUnitario)> lineas;
         try
         {
             var parsed = JsonSerializer.Deserialize<List<JsonElement>>(lineasJson);
@@ -335,7 +364,8 @@ public class PagosController : ControllerBase
             }
             lineas = parsed.Select(e => (
                 e.GetProperty("ProductoId").GetInt32(),
-                e.GetProperty("Cantidad").GetInt32()
+                e.GetProperty("Cantidad").GetInt32(),
+                e.TryGetProperty("Precio", out var pElem) && pElem.TryGetDecimal(out var p) ? (decimal?)p : null
             )).ToList();
         }
         catch (Exception ex)
@@ -352,7 +382,7 @@ public class PagosController : ControllerBase
             var notasAjuste  = new List<string>();
             decimal total = 0;
 
-            foreach (var (productoId, cantidad) in lineas)
+            foreach (var (productoId, cantidad, precioMetadata) in lineas)
             {
                 var producto = await _db.Productos.FindAsync(productoId);
                 if (producto is null || !producto.Activo)
@@ -363,6 +393,10 @@ public class PagosController : ControllerBase
                     continue;
                 }
 
+                // Usar el precio de la metadata (ya refleja descuento de desayuno gratuito si aplica)
+                // Fallback al precio actual del producto si la metadata es antigua y no lo incluye
+                var precioUnitario = precioMetadata ?? producto.Precio;
+
                 if (producto.Stock != -1)
                 {
                     if (producto.Stock < cantidad)
@@ -371,16 +405,15 @@ public class PagosController : ControllerBase
                             "⚠️ Webhook: stock insuficiente para producto {PId} — ajustando cantidad.",
                             productoId);
                         if (producto.Stock <= 0) continue;
-                        // Usar el stock disponible si no alcanza para la cantidad original
                         var cantidadReal = Math.Min(cantidad, producto.Stock);
                         notasAjuste.Add($"{producto.Nombre} (pedido: {cantidad}, servido: {cantidadReal})");
                         producto.Stock -= cantidadReal;
                         lineasPedido.Add(new LineaPedido
                         {
                             ProductoId = productoId, Cantidad = cantidadReal,
-                            PrecioUnitario = producto.Precio
+                            PrecioUnitario = precioUnitario
                         });
-                        total += producto.Precio * cantidadReal;
+                        total += precioUnitario * cantidadReal;
                         continue;
                     }
                     producto.Stock -= cantidad;
@@ -389,9 +422,9 @@ public class PagosController : ControllerBase
                 lineasPedido.Add(new LineaPedido
                 {
                     ProductoId = productoId, Cantidad = cantidad,
-                    PrecioUnitario = producto.Precio
+                    PrecioUnitario = precioUnitario
                 });
-                total += producto.Precio * cantidad;
+                total += precioUnitario * cantidad;
             }
 
             if (lineasPedido.Count == 0)

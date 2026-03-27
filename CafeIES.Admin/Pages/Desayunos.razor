@@ -1,0 +1,134 @@
+@page "/desayunos"
+@inject AdminApiService Api
+@using System.Text.Json
+
+<PageTitle>Desayunos gratuitos · CaféIES Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Desayunos gratuitos 🍊</h1>
+</div>
+
+<!-- Filtro de fecha -->
+<div class="filters-bar" style="margin-bottom:24px">
+    <label style="color:var(--muted);font-size:13px;margin-right:8px">Fecha:</label>
+    <input type="date" class="form-input" style="width:auto;max-width:180px"
+           @bind="_fecha" @bind:format="yyyy-MM-dd"/>
+    <button class="btn-primary" style="margin-left:8px" @onclick="Cargar">Ver consumos</button>
+</div>
+
+@if (_cargando)
+{
+    <p style="color:var(--muted)">Cargando...</p>
+}
+else if (_datos is not null)
+{
+    <!-- Resumen -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+        <div class="stat-card" style="min-width:160px">
+            <div class="stat-value">@_totalBeneficiarios</div>
+            <div class="stat-label">Beneficiarios activos</div>
+        </div>
+        <div class="stat-card" style="min-width:160px">
+            <div class="stat-value">@_consumos.Count</div>
+            <div class="stat-label">Usaron el desayuno hoy</div>
+        </div>
+        <div class="stat-card" style="min-width:160px">
+            <div class="stat-value">@_consumos.Count(c => c.ZumoConsumido)</div>
+            <div class="stat-label">Zumos servidos</div>
+        </div>
+        <div class="stat-card" style="min-width:160px">
+            <div class="stat-value">@_consumos.Count(c => c.BocataConsumido)</div>
+            <div class="stat-label">Bocatas servidos</div>
+        </div>
+    </div>
+
+    <!-- Tabla de consumos -->
+    @if (_consumos.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No hay consumos registrados para esta fecha.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Instituto</th>
+                        <th>Zumo</th>
+                        <th>Bocata</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _consumos.OrderBy(c => c.Nombre))
+                    {
+                        <tr>
+                            <td>
+                                <div class="user-name">@c.Nombre</div>
+                                <div class="user-email">@c.Email</div>
+                            </td>
+                            <td>@c.Instituto</td>
+                            <td>
+                                <span class="status-pill @(c.ZumoConsumido ? "pill--on" : "pill--off")">
+                                    @(c.ZumoConsumido ? "Consumido" : "No")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-pill @(c.BocataConsumido ? "pill--on" : "pill--off")">
+                                    @(c.BocataConsumido ? "Consumido" : "No")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private DateOnly _fecha = DateOnly.FromDateTime(DateTime.Today);
+    private bool     _cargando;
+    private JsonElement? _datos;
+    private int      _totalBeneficiarios;
+    private List<ConsumoRow> _consumos = new();
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _cargando = true;
+        _datos    = null;
+        _consumos.Clear();
+
+        var raw = await Api.GetConsumosDesayunoAsync(_fecha);
+        if (raw is JsonElement je)
+        {
+            _datos = je;
+            _totalBeneficiarios = je.GetProperty("totalBeneficiarios").GetInt32();
+            foreach (var item in je.GetProperty("consumos").EnumerateArray())
+            {
+                _consumos.Add(new ConsumoRow
+                {
+                    Nombre          = item.GetProperty("nombre").GetString() ?? "",
+                    Email           = item.GetProperty("email").GetString() ?? "",
+                    Instituto       = item.GetProperty("instituto").GetString() ?? "—",
+                    ZumoConsumido   = item.GetProperty("zumoConsumido").GetBoolean(),
+                    BocataConsumido = item.GetProperty("bocataConsumido").GetBoolean()
+                });
+            }
+        }
+        _cargando = false;
+    }
+
+    private record ConsumoRow
+    {
+        public string Nombre          { get; init; } = "";
+        public string Email           { get; init; } = "";
+        public string Instituto       { get; init; } = "";
+        public bool   ZumoConsumido   { get; init; }
+        public bool   BocataConsumido { get; init; }
+    }
+}

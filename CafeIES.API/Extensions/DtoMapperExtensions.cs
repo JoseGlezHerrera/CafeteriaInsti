@@ -10,7 +10,7 @@ public static class DtoMapperExtensions
 {
     public static UsuarioDto ToDto(this Usuario u) => new(
         u.Id, u.NombreCompleto, u.Email, u.Rol, u.Turno, u.Estado,
-        u.InstitutoId, u.Instituto?.Nombre);
+        u.InstitutoId, u.Instituto?.Nombre, u.DesayunoGratuito);
 
     public static FranjaHorariaDto ToDto(this FranjaHoraria f) => new(
         f.Id, f.Turno, f.Descripcion, f.HoraInicio, f.HoraFin, f.Activa, f.EsBloqueada);
@@ -21,7 +21,8 @@ public static class DtoMapperExtensions
         p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
         p.ImagenUrl, p.Activo, p.NivelStock,
         p.CategoriaId, p.Categoria?.Nombre ?? string.Empty, p.Categoria?.Emoji ?? string.Empty,
-        p.Alergenos.Select(a => a.ToDto()).ToList());
+        p.Alergenos.Select(a => a.ToDto()).ToList(),
+        p.ComponenteDesayuno);
 
     public static PedidoDto ToDto(this Pedido p) => new(
         p.Id, p.NumeroPedido,

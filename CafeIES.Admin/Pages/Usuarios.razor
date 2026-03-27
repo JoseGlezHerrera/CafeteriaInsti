@@ -114,6 +114,12 @@
                             </span>
                         </td>
                         <td>
+                            @if (u.Rol == RolUsuario.Alumno && u.Estado == EstadoCuenta.Activa)
+                            {
+                                <button class="btn-icon @(u.DesayunoGratuito ? "btn-icon--success" : "")"
+                                        title="@(u.DesayunoGratuito ? "Desayuno gratuito activo — clic para desactivar" : "Activar desayuno gratuito")"
+                                        @onclick="() => ToggleDesayuno(u)">🍊</button>
+                            }
                             @if (u.Rol != RolUsuario.Admin && u.Estado == EstadoCuenta.Activa)
                             {
                                 <button class="btn-icon btn-icon--danger" title="Suspender"
@@ -206,6 +212,12 @@
     private async Task Reactivar(int id)
     {
         await Api.ReactivarUsuarioAsync(id);
+        await Recargar();
+    }
+
+    private async Task ToggleDesayuno(UsuarioDto u)
+    {
+        await Api.SetDesayunoGratuitoAsync(u.Id, !u.DesayunoGratuito);
         await Recargar();
     }
 

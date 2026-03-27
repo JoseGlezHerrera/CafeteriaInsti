@@ -158,6 +158,19 @@
                     }
                 </div>
 
+                <!-- Desayuno gratuito -->
+                <div class="form-group">
+                    <label>Desayuno gratuito 🍊</label>
+                    <select class="form-input" @bind="_form.ComponenteDesayuno">
+                        <option value="@ComponenteDesayuno.Ninguno">No forma parte del desayuno gratuito</option>
+                        <option value="@ComponenteDesayuno.Zumo">Zumo (componente zumo)</option>
+                        <option value="@ComponenteDesayuno.Bocata">Bocadillo / sándwich (componente bocata)</option>
+                    </select>
+                    <p style="color:var(--muted);font-size:11px;margin-top:4px">
+                        Los beneficiarios pueden obtener 1 zumo + 1 bocata al día gratis.
+                    </p>
+                </div>
+
                 <!-- Alérgenos -->
                 @if (_alergenos.Count > 0)
                 {
@@ -288,13 +301,14 @@
         _editandoId = p.Id;
         _form = new ProductoForm
         {
-            Nombre        = p.Nombre,
-            Descripcion   = p.Descripcion,
-            Precio        = p.Precio,
-            Stock         = p.Stock,
-            CategoriaId   = p.CategoriaId,
-            ImagenUrl     = p.ImagenUrl,
-            AlergenoIds   = p.Alergenos.Select(a => a.Id).ToList()
+            Nombre             = p.Nombre,
+            Descripcion        = p.Descripcion,
+            Precio             = p.Precio,
+            Stock              = p.Stock,
+            CategoriaId        = p.CategoriaId,
+            ImagenUrl          = p.ImagenUrl,
+            AlergenoIds        = p.Alergenos.Select(a => a.Id).ToList(),
+            ComponenteDesayuno = p.ComponenteDesayuno
         };
         _errorModal    = string.Empty;
         _imagenArchivo = null;
@@ -332,7 +346,8 @@
         _errorModal = string.Empty;
 
         var req = new CrearProductoRequest(_form.Nombre, _form.Descripcion,
-            _form.Precio, _form.Stock, _form.CategoriaId, _form.ImagenUrl, _form.AlergenoIds);
+            _form.Precio, _form.Stock, _form.CategoriaId, _form.ImagenUrl, _form.AlergenoIds,
+            _form.ComponenteDesayuno);
 
         bool ok = _editandoId.HasValue
             ? await Api.ActualizarProductoAsync(_editandoId.Value, req)
@@ -408,12 +423,13 @@
 
     private class ProductoForm
     {
-        public string    Nombre      { get; set; } = string.Empty;
-        public string    Descripcion { get; set; } = string.Empty;
-        public decimal   Precio      { get; set; }
-        public int       Stock       { get; set; } = -1;
-        public int       CategoriaId { get; set; }
-        public string?   ImagenUrl   { get; set; }
-        public List<int> AlergenoIds { get; set; } = new();
+        public string             Nombre             { get; set; } = string.Empty;
+        public string             Descripcion        { get; set; } = string.Empty;
+        public decimal            Precio             { get; set; }
+        public int                Stock              { get; set; } = -1;
+        public int                CategoriaId        { get; set; }
+        public string?            ImagenUrl          { get; set; }
+        public List<int>          AlergenoIds        { get; set; } = new();
+        public ComponenteDesayuno ComponenteDesayuno { get; set; } = ComponenteDesayuno.Ninguno;
     }
 }

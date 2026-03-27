@@ -76,13 +76,14 @@ public class ProductosController : ControllerBase
 
         var producto = new Producto
         {
-            Nombre      = req.Nombre,
-            Descripcion = req.Descripcion,
-            Precio      = req.Precio,
-            Stock       = req.Stock,
-            CategoriaId = req.CategoriaId,
-            ImagenUrl   = req.ImagenUrl,
-            Activo      = true
+            Nombre             = req.Nombre,
+            Descripcion        = req.Descripcion,
+            Precio             = req.Precio,
+            Stock              = req.Stock,
+            CategoriaId        = req.CategoriaId,
+            ImagenUrl          = req.ImagenUrl,
+            Activo             = true,
+            ComponenteDesayuno = req.ComponenteDesayuno
         };
 
         // Vincular alérgenos
@@ -121,12 +122,13 @@ public class ProductosController : ControllerBase
              (uriResult2.Scheme != Uri.UriSchemeHttp && uriResult2.Scheme != Uri.UriSchemeHttps)))
             return BadRequest(new { mensaje = "La URL de imagen debe ser una URL HTTP/HTTPS válida." });
 
-        producto.Nombre      = req.Nombre;
-        producto.Descripcion = req.Descripcion;
-        producto.Precio      = req.Precio;
-        producto.Stock       = req.Stock;
-        producto.CategoriaId = req.CategoriaId;
-        producto.ImagenUrl   = req.ImagenUrl;
+        producto.Nombre             = req.Nombre;
+        producto.Descripcion        = req.Descripcion;
+        producto.Precio             = req.Precio;
+        producto.Stock              = req.Stock;
+        producto.CategoriaId        = req.CategoriaId;
+        producto.ImagenUrl          = req.ImagenUrl;
+        producto.ComponenteDesayuno = req.ComponenteDesayuno;
 
         // Reemplazar alérgenos
         producto.Alergenos.Clear();

@@ -112,6 +112,19 @@
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
 
+                <!-- Banner desayuno gratuito -->
+                <Border IsVisible="{Binding TieneDesayunoGratuito}"
+                        BackgroundColor="#1a4caf82" StrokeThickness="1" Stroke="#4caf82"
+                        Padding="16,12" Margin="16,0,16,8">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Label Grid.Column="0" Text="🍊" FontSize="26" VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="{Binding MensajeDesayuno}"
+                               FontFamily="DMSans" FontSize="13"
+                               TextColor="{StaticResource GreenColor}" VerticalOptions="Center"/>
+                    </Grid>
+                </Border>
+
                 <!-- Resumen + Pago -->
                 <VerticalStackLayout BackgroundColor="{StaticResource SurfaceColor}"
                                      Padding="24,16,24,28" Spacing="0">
@@ -139,6 +152,23 @@
                                     </Label.FormattedText>
                                 </Label>
                             </Grid>
+                            <!-- Descuento desayuno gratuito (solo si hay beneficio) -->
+                            <Grid ColumnDefinitions="*,Auto"
+                                  IsVisible="{Binding HayDesayunoDisponible}">
+                                <Label Grid.Column="0" Text="Desayuno gratuito 🍊"
+                                       Style="{StaticResource SubtitleLabel}"
+                                       TextColor="{StaticResource GreenColor}"/>
+                                <Label Grid.Column="1" FontFamily="DMSans" FontSize="14"
+                                       TextColor="{StaticResource GreenColor}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="-"/>
+                                            <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                            <Span Text=" €"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </Grid>
                             <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderColor}"/>
                             <Grid ColumnDefinitions="*,Auto">
                                 <Label Grid.Column="0" Text="Total" FontFamily="SyneBold"
@@ -147,7 +177,7 @@
                                        TextColor="{StaticResource AccentColor}">
                                     <Label.FormattedText>
                                         <FormattedString>
-                                            <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                            <Span Text="{Binding TotalEfectivo, StringFormat='{0:F2}'}"/>
                                             <Span Text=" €"/>
                                         </FormattedString>
                                     </Label.FormattedText>

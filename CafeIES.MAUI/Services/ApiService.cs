@@ -418,6 +418,22 @@ public class ApiService
         }
     }
 
+    // ── Desayuno gratuito ────────────────────────────────────────────────────
+    public async Task<DesayunoStatusDto?> GetDesayunoStatusAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/pedidos/desayuno-status");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<DesayunoStatusDto>() : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener estado de desayuno gratuito.");
+            return null;
+        }
+    }
+
     // ── Pedidos ───────────────────────────────────────────────────────────────
     public async Task<(PedidoDto? Pedido, string? Error)> CrearPedidoAsync(CrearPedidoRequest req)
     {

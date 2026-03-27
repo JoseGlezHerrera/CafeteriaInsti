@@ -54,7 +54,19 @@ public enum MetodoPago
 {
     Tarjeta    = 0,
     GooglePay  = 1,
-    ApplePay   = 2
+    ApplePay   = 2,
+    Gratuito   = 3   // Desayuno gratuito (familias desfavorecidas) — sin pasarela de pago
+}
+
+/// <summary>
+/// Rol del producto dentro del desayuno gratuito para familias desfavorecidas.
+/// Un beneficiario puede obtener 1 Zumo + 1 Bocata al día sin coste.
+/// </summary>
+public enum ComponenteDesayuno
+{
+    Ninguno = 0,  // No forma parte del desayuno gratuito
+    Zumo    = 1,  // Zumo o bebida del desayuno
+    Bocata  = 2   // Bocadillo o sándwich del desayuno
 }
 
 /// <summary>

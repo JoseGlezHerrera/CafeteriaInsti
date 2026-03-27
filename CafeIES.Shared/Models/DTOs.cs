@@ -56,7 +56,8 @@ public record UsuarioDto(
     Turno?      Turno,
     EstadoCuenta Estado,
     int?        InstitutoId,
-    string?     InstitutoNombre
+    string?     InstitutoNombre,
+    bool        DesayunoGratuito = false
 );
 
 // ── Instituto ─────────────────────────────────────────────────────────────────
@@ -88,7 +89,8 @@ public record ProductoDto(
     int      CategoriaId,
     string   CategoriaNombre,
     string   CategoriaEmoji,
-    IReadOnlyList<AlergenoDto> Alergenos
+    IReadOnlyList<AlergenoDto> Alergenos,
+    ComponenteDesayuno ComponenteDesayuno = ComponenteDesayuno.Ninguno
 );
 
 public record CrearProductoRequest(
@@ -98,7 +100,8 @@ public record CrearProductoRequest(
     [Range(-1, int.MaxValue, ErrorMessage = "El stock debe ser -1 (ilimitado) o un valor positivo.")] int Stock,
     [Required]                 int     CategoriaId,
                                string? ImagenUrl,
-                               List<int>? AlergenoIds = null
+                               List<int>? AlergenoIds = null,
+                               ComponenteDesayuno ComponenteDesayuno = ComponenteDesayuno.Ninguno
 );
 
 public record ActualizarStockRequest([Required] int NuevoStock);
@@ -165,6 +168,18 @@ public record InvitacionDto(
     int             UsosActuales,
     string          UrlInvitacion,
     bool            EsValida
+);
+
+// ── Desayuno gratuito ─────────────────────────────────────────────────────────
+
+/// <summary>
+/// Estado del desayuno gratuito del usuario para hoy.
+/// Se usa en MAUI para mostrar el banner y calcular el total efectivo.
+/// </summary>
+public record DesayunoStatusDto(
+    bool TieneDesayunoGratuito,   // el usuario es beneficiario del programa
+    bool ZumoDisponible,           // no ha consumido zumo hoy
+    bool BocataDisponible          // no ha consumido bocata hoy
 );
 
 // ── Horarios ──────────────────────────────────────────────────────────────────

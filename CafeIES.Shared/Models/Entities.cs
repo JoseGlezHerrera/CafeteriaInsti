@@ -71,6 +71,12 @@ public class Usuario
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
 
+    /// <summary>
+    /// Si true, el usuario pertenece a una familia desfavorecida y tiene derecho
+    /// a 1 zumo + 1 bocata gratuitos por día (programa de desayuno escolar).
+    /// </summary>
+    public bool DesayunoGratuito { get; set; } = false;
+
     // Navegación
     public ICollection<Pedido> Pedidos { get; set; } = new List<Pedido>();
 }
@@ -237,6 +243,12 @@ public class Producto
 
     public bool Activo { get; set; } = true;
 
+    /// <summary>
+    /// Indica si este producto forma parte del desayuno gratuito (zumo o bocata).
+    /// Usado para aplicar precio 0 a beneficiarios del programa de desayuno escolar.
+    /// </summary>
+    public ComponenteDesayuno ComponenteDesayuno { get; set; } = ComponenteDesayuno.Ninguno;
+
     public int CategoriaId { get; set; }
     public Categoria Categoria { get; set; } = null!;
 
@@ -311,6 +323,34 @@ public class LineaPedido
 
     [NotMapped]
     public decimal Subtotal => Cantidad * PrecioUnitario;
+}
+
+
+// ─────────────────────────────────────────────
+//  TOKEN DE NOTIFICACIONES PUSH
+// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+//  DESAYUNO GRATUITO
+// ─────────────────────────────────────────────
+
+/// <summary>
+/// Registra el consumo diario del desayuno gratuito por beneficiario.
+/// Un registro por usuario por día. ZumoConsumido/BocataConsumido se fijan
+/// en la transacción del pedido para evitar doble uso.
+/// </summary>
+public class ConsumoDesayuno
+{
+    public int Id { get; set; }
+
+    public int UsuarioId { get; set; }
+    public Usuario Usuario { get; set; } = null!;
+
+    /// <summary>Fecha del día en hora española (Europe/Madrid).</summary>
+    public DateOnly Fecha { get; set; }
+
+    public bool ZumoConsumido  { get; set; } = false;
+    public bool BocataConsumido { get; set; } = false;
 }
 
 

@@ -192,6 +192,65 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    // ── PATCH /api/admin/usuarios/{id}/desayuno-gratuito ─────────────────────
+    /// <summary>Activa o desactiva el desayuno gratuito de un usuario beneficiario.</summary>
+    [HttpPatch("usuarios/{id}/desayuno-gratuito")]
+    public async Task<ActionResult> SetDesayunoGratuito(int id, [FromQuery] bool activo)
+    {
+        var user = await _db.Usuarios.FindAsync(id);
+        if (user is null) return NotFound();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        user.DesayunoGratuito = activo;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] {Admin} {Accion} desayuno gratuito al usuario {UserId} ({Email})",
+            adminEmail, activo ? "activó" : "desactivó", id, user.Email);
+
+        return NoContent();
+    }
+
+    // ── GET /api/admin/desayunos/consumos ─────────────────────────────────────
+    /// <summary>
+    /// Devuelve los consumos de desayuno gratuito de hoy (o de la fecha indicada).
+    /// </summary>
+    [HttpGet("desayunos/consumos")]
+    public async Task<ActionResult> GetConsumosDesayuno([FromQuery] DateOnly? fecha, [FromQuery] int? institutoId)
+    {
+        var spainTz = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+        var dia = fecha ?? DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
+
+        var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
+
+        var query = _db.ConsumoDesayunos
+            .Include(c => c.Usuario).ThenInclude(u => u.Instituto)
+            .Where(c => c.Fecha == dia);
+
+        if (institutoEfectivo.HasValue)
+            query = query.Where(c => c.Usuario.InstitutoId == institutoEfectivo);
+
+        var consumos = await query
+            .OrderBy(c => c.Usuario.NombreCompleto)
+            .Select(c => new
+            {
+                UsuarioId     = c.UsuarioId,
+                Nombre        = c.Usuario.NombreCompleto,
+                Email         = c.Usuario.Email,
+                Instituto     = c.Usuario.Instituto != null ? c.Usuario.Instituto.Nombre : "—",
+                ZumoConsumido = c.ZumoConsumido,
+                BocataConsumido = c.BocataConsumido,
+                Fecha         = c.Fecha
+            })
+            .ToListAsync();
+
+        var totalBeneficiarios = await _db.Usuarios
+            .Where(u => u.DesayunoGratuito && u.Estado == EstadoCuenta.Activa &&
+                        (institutoEfectivo == null || u.InstitutoId == institutoEfectivo))
+            .CountAsync();
+
+        return Ok(new { Fecha = dia, TotalBeneficiarios = totalBeneficiarios, Consumos = consumos });
+    }
+
     // ── PATCH /api/admin/usuarios/{id}/instituto ──────────────────────────────
     [HttpPatch("usuarios/{id}/instituto")]
     public async Task<ActionResult> CambiarInstituto(int id, [FromBody] CambiarInstitutoRequest req)

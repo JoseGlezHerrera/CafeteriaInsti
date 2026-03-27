@@ -40,9 +40,19 @@ public partial class ConfirmacionPedidoPage : ContentPage
         if (string.IsNullOrEmpty(_paymentIntentId)) return;
 
         NumeroPedidoLabel.Text = "…";
+
+        // Pedidos gratuitos incluyen el NumeroPedido en el token (formato "gratuito-{numero}")
+        if (_paymentIntentId.StartsWith("gratuito-", StringComparison.OrdinalIgnoreCase))
+        {
+            var numeroStr = _paymentIntentId["gratuito-".Length..];
+            NumeroPedidoLabel.Text = int.TryParse(numeroStr, out var num) ? $"#{num:D3}" : numeroStr;
+            return;
+        }
+
         _pollCts = new CancellationTokenSource();
         _ = PollNumeroPedidoAsync(_pollCts.Token);
     }
+
 
     protected override void OnDisappearing()
     {

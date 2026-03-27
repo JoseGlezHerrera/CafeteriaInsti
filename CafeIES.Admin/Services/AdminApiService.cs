@@ -117,6 +117,23 @@ public class AdminApiService
     public async Task<bool> ReactivarUsuarioAsync(int id)
         => await SendBoolAsync(() => _http.PatchAsync($"api/admin/usuarios/{id}/reactivar", null));
 
+    public async Task<bool> SetDesayunoGratuitoAsync(int id, bool activo)
+        => await SendBoolAsync(() => _http.PatchAsync($"api/admin/usuarios/{id}/desayuno-gratuito?activo={activo}", null));
+
+    public async Task<object?> GetConsumosDesayunoAsync(DateOnly? fecha = null)
+    {
+        try
+        {
+            var url = fecha.HasValue
+                ? $"api/admin/desayunos/consumos?fecha={fecha:yyyy-MM-dd}"
+                : "api/admin/desayunos/consumos";
+            var resp = await SendAsync(() => _http.GetAsync(url));
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<object>() : null;
+        }
+        catch { return null; }
+    }
+
     public async Task<(bool Ok, string? Error)> EliminarUsuarioAsync(int id)
     {
         try

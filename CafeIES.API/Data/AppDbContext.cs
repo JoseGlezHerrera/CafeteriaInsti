@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<LineaPedido>       LineasPedido      => Set<LineaPedido>();
     public DbSet<DispositivoToken>  DispositivoTokens => Set<DispositivoToken>();
     public DbSet<Alergeno>          Alergenos         => Set<Alergeno>();
+    public DbSet<ConsumoDesayuno>   ConsumoDesayunos  => Set<ConsumoDesayuno>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -71,6 +72,8 @@ public class AppDbContext : DbContext
              .WithMany(c => c.Productos)
              .HasForeignKey(p => p.CategoriaId)
              .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(p => p.ComponenteDesayuno).HasConversion<int>();
         });
 
         // ── Pedido ───────────────────────────────────────────────────────────
@@ -125,6 +128,18 @@ public class AppDbContext : DbContext
 
             // Índice para buscar todos los tokens de un usuario (notificaciones push)
             e.HasIndex(t => t.UsuarioId);
+        });
+
+        // ── ConsumoDesayuno ───────────────────────────────────────────────────
+        mb.Entity<ConsumoDesayuno>(e =>
+        {
+            e.HasOne(c => c.Usuario)
+             .WithMany()
+             .HasForeignKey(c => c.UsuarioId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            // Un solo registro por usuario y día (unicidad que evita doble consumo)
+            e.HasIndex(c => new { c.UsuarioId, c.Fecha }).IsUnique();
         });
 
         // ── Seed: Institutos iniciales ────────────────────────────────────────

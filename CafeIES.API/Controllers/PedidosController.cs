@@ -37,6 +37,36 @@ public class PedidosController : ControllerBase
         _logger  = logger;
     }
 
+    // ── GET /api/pedidos/desayuno-status ────────────────────────────────────
+    /// <summary>
+    /// Devuelve si el usuario es beneficiario del desayuno gratuito y qué
+    /// componentes quedan disponibles para hoy.
+    /// </summary>
+    [HttpGet("desayuno-status")]
+    public async Task<ActionResult<DesayunoStatusDto>> DesayunoStatus()
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var usuario = await _db.Usuarios.FindAsync(userId.Value);
+        if (usuario is null) return Unauthorized();
+
+        if (!usuario.DesayunoGratuito)
+            return Ok(new DesayunoStatusDto(false, false, false));
+
+        var spainTz = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
+
+        var consumo = await _db.ConsumoDesayunos
+            .FirstOrDefaultAsync(c => c.UsuarioId == userId.Value && c.Fecha == hoy);
+
+        return Ok(new DesayunoStatusDto(
+            TieneDesayunoGratuito: true,
+            ZumoDisponible:   consumo is null || !consumo.ZumoConsumido,
+            BocataDisponible: consumo is null || !consumo.BocataConsumido
+        ));
+    }
+
     // ── GET /api/pedidos/puedo-pedir ─────────────────────────────────────────
     /// <summary>La app consulta esto al abrir la pantalla para mostrar/ocultar el banner.</summary>
     [HttpGet("puedo-pedir")]
@@ -85,6 +115,10 @@ public class PedidosController : ControllerBase
         if (req.MetodoPago == MetodoPago.Tarjeta && string.IsNullOrEmpty(req.StripePaymentIntentId))
             return BadRequest(new { mensaje = "Se requiere un identificador de pago de Stripe para pagos con tarjeta." });
 
+        // Pago gratuito solo permitido a beneficiarios del programa de desayuno
+        if (req.MetodoPago == MetodoPago.Gratuito && !usuario.DesayunoGratuito)
+            return StatusCode(403, new { mensaje = "No tienes acceso al desayuno gratuito." });
+
         // FIX-03: Serializable para evitar race condition en NumeroPedido
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
@@ -92,6 +126,23 @@ public class PedidosController : ControllerBase
             // 2. Calcular total y validar stock
             var lineas = new List<LineaPedido>();
             decimal total = 0;
+
+            // Zona horaria España para el desayuno (coincide con la fecha del día del alumno)
+            var spainTzDes = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+            var hoyDes = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzDes));
+
+            // Cargar o crear consumo de desayuno del día (solo si es beneficiario)
+            ConsumoDesayuno? consumoDesayuno = null;
+            if (usuario.DesayunoGratuito)
+            {
+                consumoDesayuno = await _db.ConsumoDesayunos
+                    .FirstOrDefaultAsync(c => c.UsuarioId == userId.Value && c.Fecha == hoyDes);
+                if (consumoDesayuno is null)
+                {
+                    consumoDesayuno = new ConsumoDesayuno { UsuarioId = userId.Value, Fecha = hoyDes };
+                    _db.ConsumoDesayunos.Add(consumoDesayuno);
+                }
+            }
 
             foreach (var l in req.Lineas)
             {
@@ -105,13 +156,29 @@ public class PedidosController : ControllerBase
                 // Decrementar stock inmediatamente para evitar doble lectura
                 if (producto.Stock != -1) producto.Stock -= l.Cantidad;
 
+                // ── Desayuno gratuito: aplicar precio 0 si le corresponde ─────
+                decimal precio = producto.Precio;
+                if (consumoDesayuno is not null)
+                {
+                    if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo && !consumoDesayuno.ZumoConsumido)
+                    {
+                        precio = 0;
+                        consumoDesayuno.ZumoConsumido = true;
+                    }
+                    else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata && !consumoDesayuno.BocataConsumido)
+                    {
+                        precio = 0;
+                        consumoDesayuno.BocataConsumido = true;
+                    }
+                }
+
                 lineas.Add(new LineaPedido
                 {
                     ProductoId     = l.ProductoId,
                     Cantidad       = l.Cantidad,
-                    PrecioUnitario = producto.Precio
+                    PrecioUnitario = precio
                 });
-                total += producto.Precio * l.Cantidad;
+                total += precio * l.Cantidad;
             }
 
             // 3. Detección de double-submit: rechazar si el mismo usuario tiene un pedido
@@ -133,9 +200,15 @@ public class PedidosController : ControllerBase
                 return CreatedAtAction(nameof(GetById), new { id = pedidoReciente.Id }, dtoExistente);
             }
 
-            // 4. Verificar pago con Stripe (si se proporcionó)
+            // 4. Verificar pago (Stripe o Gratuito)
             string? referenciaPago = null;
-            if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
+            if (req.MetodoPago == MetodoPago.Gratuito)
+            {
+                // Pedido de desayuno gratuito: total debe ser 0
+                if (total != 0)
+                    return BadRequest(new { mensaje = "El pedido no es completamente gratuito. Revisa el carrito." });
+            }
+            else if (!string.IsNullOrEmpty(req.StripePaymentIntentId))
             {
                 var (pagado, status, amount, metaUserId) = await _stripe.VerificarPagoAsync(req.StripePaymentIntentId);
                 if (!pagado)
@@ -145,8 +218,8 @@ public class PedidosController : ControllerBase
                 if (metaUserId != userId.Value.ToString())
                     return StatusCode(403, new { mensaje = "Este pago no pertenece a tu cuenta." });
 
-                // FIX-02: Verificar que el importe cobrado coincida con el total calculado
-                var totalEsperadoCentimos = (long)Math.Round(total * 100);
+                // FIX-02: Verificar que el importe cobrado coincida con el total calculado (con descuentos aplicados)
+                var totalEsperadoCentimos = (long)Math.Round(total * 100, MidpointRounding.AwayFromZero);
                 if (totalEsperadoCentimos != amount)
                     return BadRequest(new { mensaje = $"El importe cobrado ({amount / 100m:F2}€) no coincide con el total del pedido ({total:F2}€)." });
 
