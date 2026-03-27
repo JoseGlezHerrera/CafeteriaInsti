@@ -156,29 +156,37 @@ public class PedidosController : ControllerBase
                 // Decrementar stock inmediatamente para evitar doble lectura
                 if (producto.Stock != -1) producto.Stock -= l.Cantidad;
 
-                // ── Desayuno gratuito: aplicar precio 0 si le corresponde ─────
-                decimal precio = producto.Precio;
+                // ── Desayuno gratuito: solo la primera unidad es gratis ───────
+                bool primeraUnidadGratis = false;
                 if (consumoDesayuno is not null)
                 {
                     if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo && !consumoDesayuno.ZumoConsumido)
                     {
-                        precio = 0;
+                        primeraUnidadGratis = true;
                         consumoDesayuno.ZumoConsumido = true;
                     }
                     else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata && !consumoDesayuno.BocataConsumido)
                     {
-                        precio = 0;
+                        primeraUnidadGratis = true;
                         consumoDesayuno.BocataConsumido = true;
                     }
                 }
 
-                lineas.Add(new LineaPedido
+                if (primeraUnidadGratis)
                 {
-                    ProductoId     = l.ProductoId,
-                    Cantidad       = l.Cantidad,
-                    PrecioUnitario = precio
-                });
-                total += precio * l.Cantidad;
+                    // 1 unidad gratis; el resto (si hay) al precio normal
+                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0 });
+                    if (l.Cantidad > 1)
+                    {
+                        lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad - 1, PrecioUnitario = producto.Precio });
+                        total += producto.Precio * (l.Cantidad - 1);
+                    }
+                }
+                else
+                {
+                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad, PrecioUnitario = producto.Precio });
+                    total += producto.Precio * l.Cantidad;
+                }
             }
 
             // 3. Detección de double-submit: rechazar si el mismo usuario tiene un pedido
@@ -465,7 +473,9 @@ public class PedidosController : ControllerBase
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .AsQueryable();
 
-        if (esEmpleado && institutoId.HasValue)
+        // Empleado y Personal solo ven pedidos de su propio instituto
+        var esPersonal = User.IsInRole("Personal");
+        if ((esEmpleado || esPersonal) && institutoId.HasValue)
             query = query.Where(p => p.Usuario.InstitutoId == institutoId);
 
         var pedidos = await query.ToListAsync();

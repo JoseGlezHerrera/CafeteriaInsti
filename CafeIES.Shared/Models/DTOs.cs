@@ -109,7 +109,7 @@ public record ActualizarStockRequest([Required] int NuevoStock);
 // ── Pedidos ───────────────────────────────────────────────────────────────────
 
 public record CrearPedidoRequest(
-    [Required, MinLength(1)] List<LineaPedidoRequest> Lineas,
+    [Required, MinLength(1), MaxLength(30)] List<LineaPedidoRequest> Lineas,
     MetodoPago MetodoPago,
     string? Notas,
     string? StripePaymentIntentId

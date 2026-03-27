@@ -54,6 +54,7 @@ public class PagosController : ControllerBase
     /// </summary>
     [HttpPost("crear-intent")]
     [Authorize]
+    [EnableRateLimiting("pagos")]
     public async Task<ActionResult<PagoIntentResponse>> CrearIntent([FromBody] CrearPagoRequest req)
     {
         // 0. Validar que el usuario está activo y puede pedir ahora
@@ -98,19 +99,23 @@ public class PagosController : ControllerBase
                 return BadRequest(new { mensaje = $"Stock insuficiente para '{producto.Nombre}'." });
 
             decimal precio = producto.Precio;
+            bool primeraGratisPago = false;
             if (usuario.DesayunoGratuito)
             {
                 if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo && !zumoAplicadoPago)
                 {
-                    precio = 0; zumoAplicadoPago = true;
+                    primeraGratisPago = true; zumoAplicadoPago = true;
                 }
                 else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata && !bocataAplicadoPago)
                 {
-                    precio = 0; bocataAplicadoPago = true;
+                    primeraGratisPago = true; bocataAplicadoPago = true;
                 }
             }
 
-            total += precio * l.Cantidad;
+            // Solo 1 unidad gratuita; el resto al precio normal
+            total += primeraGratisPago
+                ? producto.Precio * (l.Cantidad - 1)   // 1 gratis + (cantidad-1) de pago
+                : precio * l.Cantidad;
             descripcionItems.Add($"{producto.Nombre} ×{l.Cantidad}");
             lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio));
         }

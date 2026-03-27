@@ -106,6 +106,15 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit           = 0;
     });
 
+    // Política pagos: 20 req/min/IP — para crear PaymentIntents (evita abuso de Stripe API)
+    options.AddFixedWindowLimiter("pagos", opt =>
+    {
+        opt.PermitLimit          = 20;
+        opt.Window               = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit           = 0;
+    });
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (ctx, _) =>
     {
