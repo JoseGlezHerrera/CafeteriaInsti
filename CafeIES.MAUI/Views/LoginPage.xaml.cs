@@ -15,8 +15,9 @@ public partial class LoginPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.TryAutoLoginAsync();
-        // Si seguimos aquí, no hay sesión guardada — mostrar el formulario
-        await ContenidoLogin.FadeTo(1, 180);
+        var navego = await _vm.TryAutoLoginAsync();
+        // Solo mostrar el formulario si no hubo auto-login (evita FadeTo sobre página desenganchada)
+        if (!navego)
+            await ContenidoLogin.FadeTo(1, 180);
     }
 }

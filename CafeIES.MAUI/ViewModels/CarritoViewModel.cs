@@ -34,10 +34,14 @@ public partial class CarritoViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
     [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
+    [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
+    [NotifyPropertyChangedFor(nameof(Descuento))]
     private bool _zumoDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
     [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
+    [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
+    [NotifyPropertyChangedFor(nameof(Descuento))]
     private bool _bocataDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo))]

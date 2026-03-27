@@ -90,14 +90,15 @@ public partial class LoginViewModel : ObservableObject
         }
     }
 
-    public async Task TryAutoLoginAsync()
+    /// <returns>true si se navegó a otra pantalla, false si no había sesión.</returns>
+    public async Task<bool> TryAutoLoginAsync()
     {
         // Limpiar cualquier error visible de sesiones anteriores
         HayError     = false;
         ErrorMessage = string.Empty;
 
         var usuario = await _tokens.GetUsuarioAsync();
-        if (usuario is null) return;
+        if (usuario is null) return false;
 
         IsLoading = true;
         try
@@ -111,10 +112,12 @@ public partial class LoginViewModel : ObservableObject
                 _                   => "//Main"
             };
             await Shell.Current.GoToAsync(destino);
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Auto-login fallido.");
+            return false;
         }
         finally
         {
