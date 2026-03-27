@@ -8,21 +8,109 @@
     <h1>Desayunos gratuitos 🍊</h1>
 </div>
 
-<!-- Filtro de fecha -->
-<div class="filters-bar" style="margin-bottom:24px">
-    <label style="color:var(--muted);font-size:13px;margin-right:8px">Fecha:</label>
-    <input type="date" class="form-input" style="width:auto;max-width:180px"
-           @bind="_fecha" @bind:format="yyyy-MM-dd"/>
-    <button class="btn-primary" style="margin-left:8px" @onclick="Cargar">Ver consumos</button>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 1 — Gestión de beneficiarios
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="margin-bottom:40px">
+    <div class="section-header">
+        <h2>Beneficiarios</h2>
+        <div class="filters-inline">
+            <input class="search-input" placeholder="Buscar alumno..."
+                   @bind="_busquedaBenef" @bind:event="oninput"/>
+            <select class="filter-select-sm" @bind="_filtroBenef">
+                <option value="">Todos</option>
+                <option value="activo">Con desayuno gratuito</option>
+                <option value="sin">Sin desayuno gratuito</option>
+            </select>
+        </div>
+    </div>
+
+    @if (_cargandoBenef)
+    {
+        <p style="color:var(--muted)">Cargando alumnos...</p>
+    }
+    else if (!AlumnosFiltrados.Any())
+    {
+        <div class="empty-state"><p>No hay alumnos que coincidan con el filtro.</p></div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Instituto</th>
+                        <th>Turno</th>
+                        <th style="text-align:center">Desayuno gratuito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in AlumnosFiltrados)
+                    {
+                        <tr>
+                            <td>
+                                <div class="user-name">@u.NombreCompleto</div>
+                                <div class="user-email">@u.Email</div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(u.InstitutoNombre))
+                                {
+                                    <span class="instituto-badge">@u.InstitutoNombre</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (u.Turno.HasValue)
+                                {
+                                    <span>@GetTurnoEmoji(u.Turno) @u.Turno</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td style="text-align:center">
+                                <button class="btn-icon @(u.DesayunoGratuito ? "btn-icon--success" : "")"
+                                        style="font-size:20px;padding:4px 10px"
+                                        title="@(u.DesayunoGratuito ? "Clic para desactivar" : "Clic para activar")"
+                                        @onclick="() => ToggleDesayuno(u)">
+                                    🍊
+                                </button>
+                                <div style="font-size:11px;color:var(--muted);margin-top:2px">
+                                    @(u.DesayunoGratuito ? "Activo" : "Inactivo")
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
-@if (_cargando)
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 2 — Consumos del día
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="section-header" style="margin-bottom:12px">
+    <h2>Consumos del día</h2>
+    <div style="display:flex;align-items:center;gap:8px">
+        <label style="color:var(--muted);font-size:13px">Fecha:</label>
+        <input type="date" class="form-input" style="width:auto;max-width:180px"
+               @bind="_fecha" @bind:format="yyyy-MM-dd"/>
+        <button class="btn-primary" @onclick="CargarConsumos">Ver</button>
+    </div>
+</div>
+
+@if (_cargandoConsumos)
 {
-    <p style="color:var(--muted)">Cargando...</p>
+    <p style="color:var(--muted)">Cargando consumos...</p>
 }
 else if (_datos is not null)
 {
-    <!-- Resumen -->
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
         <div class="stat-card" style="min-width:160px">
             <div class="stat-value">@_totalBeneficiarios</div>
@@ -30,7 +118,7 @@ else if (_datos is not null)
         </div>
         <div class="stat-card" style="min-width:160px">
             <div class="stat-value">@_consumos.Count</div>
-            <div class="stat-label">Usaron el desayuno hoy</div>
+            <div class="stat-label">Usaron el desayuno</div>
         </div>
         <div class="stat-card" style="min-width:160px">
             <div class="stat-value">@_consumos.Count(c => c.ZumoConsumido)</div>
@@ -42,7 +130,6 @@ else if (_datos is not null)
         </div>
     </div>
 
-    <!-- Tabla de consumos -->
     @if (_consumos.Count == 0)
     {
         <div class="empty-state">
@@ -89,18 +176,49 @@ else if (_datos is not null)
 }
 
 @code {
-    private DateOnly _fecha = DateOnly.FromDateTime(DateTime.Today);
-    private bool     _cargando;
-    private JsonElement? _datos;
-    private int      _totalBeneficiarios;
+    // ── Beneficiarios ──────────────────────────────────────────────────────────
+    private List<UsuarioDto> _alumnos    = new();
+    private bool             _cargandoBenef;
+    private string           _busquedaBenef = string.Empty;
+    private string           _filtroBenef   = string.Empty;
+
+    private IEnumerable<UsuarioDto> AlumnosFiltrados =>
+        _alumnos
+            .Where(u => string.IsNullOrEmpty(_busquedaBenef) ||
+                        u.NombreCompleto.Contains(_busquedaBenef, StringComparison.OrdinalIgnoreCase) ||
+                        u.Email.Contains(_busquedaBenef, StringComparison.OrdinalIgnoreCase))
+            .Where(u => _filtroBenef switch
+            {
+                "activo" => u.DesayunoGratuito,
+                "sin"    => !u.DesayunoGratuito,
+                _        => true
+            });
+
+    private async Task CargarAlumnos()
+    {
+        _cargandoBenef = true;
+        var todos = await Api.GetTodosUsuariosAsync();
+        _alumnos = todos.Where(u => u.Rol == RolUsuario.Alumno && u.Estado == EstadoCuenta.Activa).ToList();
+        _cargandoBenef = false;
+    }
+
+    private async Task ToggleDesayuno(UsuarioDto u)
+    {
+        await Api.SetDesayunoGratuitoAsync(u.Id, !u.DesayunoGratuito);
+        await CargarAlumnos();
+    }
+
+    // ── Consumos ───────────────────────────────────────────────────────────────
+    private DateOnly      _fecha = DateOnly.FromDateTime(DateTime.Today);
+    private bool          _cargandoConsumos;
+    private JsonElement?  _datos;
+    private int           _totalBeneficiarios;
     private List<ConsumoRow> _consumos = new();
 
-    protected override async Task OnInitializedAsync() => await Cargar();
-
-    private async Task Cargar()
+    private async Task CargarConsumos()
     {
-        _cargando = true;
-        _datos    = null;
+        _cargandoConsumos = true;
+        _datos   = null;
         _consumos.Clear();
 
         var raw = await Api.GetConsumosDesayunoAsync(_fecha);
@@ -120,8 +238,21 @@ else if (_datos is not null)
                 });
             }
         }
-        _cargando = false;
+        _cargandoConsumos = false;
     }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(CargarAlumnos(), CargarConsumos());
+    }
+
+    private static string GetTurnoEmoji(Turno? t) => t switch
+    {
+        Turno.Manana => "🌅",
+        Turno.Tarde  => "🌤️",
+        Turno.Noche  => "🌙",
+        _            => ""
+    };
 
     private record ConsumoRow
     {
