@@ -38,6 +38,29 @@ public partial class AdminPedidosViewModel : ObservableObject
         set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
     }
 
+    // ── Filtro por fecha (server-side: recarga al cambiar) ────────────────────
+    private string _filtroFecha = "Hoy";
+    public string FiltroFecha
+    {
+        get => _filtroFecha;
+        set
+        {
+            if (SetProperty(ref _filtroFecha, value))
+            {
+                OnPropertyChanged(nameof(FiltroHoyActivo));
+                OnPropertyChanged(nameof(FiltroSemanaActivo));
+                OnPropertyChanged(nameof(FiltroTodoActivo));
+                _ = CargarAsync();
+            }
+        }
+    }
+
+    public bool FiltroHoyActivo    => FiltroFecha == "Hoy";
+    public bool FiltroSemanaActivo => FiltroFecha == "Semana";
+    public bool FiltroTodoActivo   => FiltroFecha == "Todo";
+
+    [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
+
     // ── Filtro por instituto (server-side al recargar) ────────────────────────
     public ObservableCollection<InstitutoDto> Institutos { get; } = new();
 
@@ -62,6 +85,7 @@ public partial class AdminPedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
         _todos.Clear();
         _paginaActual = 1;
@@ -88,7 +112,8 @@ public partial class AdminPedidosViewModel : ObservableObject
         }
 
         var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
-        var result = await _api.GetPedidosAdminPaginadoAsync(page: 1, pageSize: PageSize, institutoId: institutoId);
+        var desde       = DesdeParaFiltro();
+        var result = await _api.GetPedidosAdminPaginadoAsync(page: 1, pageSize: PageSize, institutoId: institutoId, desde: desde);
         if (result is not null)
         {
             _totalCount = result.TotalCount;
@@ -99,6 +124,13 @@ public partial class AdminPedidosViewModel : ObservableObject
         IsLoading = false;
     }
 
+    private DateTime? DesdeParaFiltro() => FiltroFecha switch
+    {
+        "Hoy"    => DateTime.UtcNow.Date,
+        "Semana" => DateTime.UtcNow.Date.AddDays(-6),
+        _        => null
+    };
+
     [RelayCommand]
     private async Task CargarMasAsync()
     {
@@ -106,7 +138,7 @@ public partial class AdminPedidosViewModel : ObservableObject
         IsCargandoMas = true;
         _paginaActual++;
         var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
-        var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId);
+        var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId, desde: DesdeParaFiltro());
         if (result is not null)
         {
             foreach (var p in result.Items) _todos.Add(p);

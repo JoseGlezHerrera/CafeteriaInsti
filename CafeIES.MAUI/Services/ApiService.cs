@@ -549,13 +549,14 @@ public class ApiService
 
     // ── Admin: Pedidos (paginado) ────────────────────────────────────────────
     // FIX-19: Método paginado para evitar cargar todos los pedidos en memoria
-    public async Task<PaginatedResponse<PedidoDto>?> GetPedidosAdminPaginadoAsync(int page = 1, int pageSize = 30, int? institutoId = null)
+    public async Task<PaginatedResponse<PedidoDto>?> GetPedidosAdminPaginadoAsync(int page = 1, int pageSize = 30, int? institutoId = null, DateTime? desde = null)
     {
         try
         {
             var institutoParam = institutoId.HasValue ? $"&institutoId={institutoId}" : "";
+            var desdeParam     = desde.HasValue ? $"&desde={desde.Value:yyyy-MM-dd}" : "";
             var resp = await EnviarConRefreshAsync(HttpMethod.Get,
-                $"api/admin/pedidos?page={page}&pageSize={pageSize}{institutoParam}");
+                $"api/admin/pedidos?page={page}&pageSize={pageSize}{institutoParam}{desdeParam}");
             if (!resp.IsSuccessStatusCode) return null;
             return await resp.Content.ReadFromJsonAsync<PaginatedResponse<PedidoDto>>();
         }

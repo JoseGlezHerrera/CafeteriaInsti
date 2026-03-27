@@ -10,18 +10,29 @@
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
         <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
             <Label Text="Pedidos en curso" FontFamily="SyneBold" FontSize="22" TextColor="{StaticResource TextColor}"/>
         </Grid>
-        <ScrollView Grid.Row="1" Orientation="Horizontal" BackgroundColor="{StaticResource SurfaceColor}" Padding="16,10,16,14">
+        <!-- Filtro por fecha -->
+        <ScrollView Grid.Row="1" Orientation="Horizontal" BackgroundColor="{StaticResource SurfaceColor}"
+                    Padding="16,10,16,4" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Hoy"  Command="{Binding SetFiltroFechaCommand}" CommandParameter="Hoy"
+                        Style="{Binding FiltroHoyActivo,  Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="Todo" Command="{Binding SetFiltroFechaCommand}" CommandParameter="Todo"
+                        Style="{Binding FiltroTodoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+            </HorizontalStackLayout>
+        </ScrollView>
+        <!-- Filtro por estado -->
+        <ScrollView Grid.Row="2" Orientation="Horizontal" BackgroundColor="{StaticResource SurfaceColor}" Padding="16,4,16,14" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="En curso" Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter=""/>
                 <Button Text="Pendiente" Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter="Pendiente"/>
                 <Button Text="En prep." Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter="EnPreparacion"/>
             </HorizontalStackLayout>
         </ScrollView>
-        <RefreshView Grid.Row="2" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
+        <RefreshView Grid.Row="3" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Margin="0,80">

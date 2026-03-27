@@ -28,6 +28,27 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
         set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
     }
 
+    // ── Filtro por fecha ──────────────────────────────────────────────────────
+    private string _filtroFecha = "Hoy";
+    public string FiltroFecha
+    {
+        get => _filtroFecha;
+        set
+        {
+            if (SetProperty(ref _filtroFecha, value))
+            {
+                OnPropertyChanged(nameof(FiltroHoyActivo));
+                OnPropertyChanged(nameof(FiltroTodoActivo));
+                AplicarFiltro();
+            }
+        }
+    }
+
+    public bool FiltroHoyActivo  => FiltroFecha == "Hoy";
+    public bool FiltroTodoActivo => FiltroFecha == "Todo";
+
+    [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
+
     public ObservableCollection<PedidoDto> Pedidos { get; } = new();
 
     [RelayCommand]
@@ -45,9 +66,15 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     private void AplicarFiltro()
     {
         Pedidos.Clear();
-        var filtrados = string.IsNullOrEmpty(FiltroEstado)
-            ? _todos
-            : _todos.Where(p => p.Estado.ToString() == FiltroEstado).ToList();
+        var hoy = DateTime.Now.Date;
+        var filtrados = _todos.AsEnumerable();
+
+        if (FiltroFecha == "Hoy")
+            filtrados = filtrados.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy);
+
+        if (!string.IsNullOrEmpty(FiltroEstado))
+            filtrados = filtrados.Where(p => p.Estado.ToString() == FiltroEstado);
+
         foreach (var p in filtrados) Pedidos.Add(p);
     }
 

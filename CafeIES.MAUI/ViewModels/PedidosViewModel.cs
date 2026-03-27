@@ -17,6 +17,8 @@ public partial class PedidosViewModel : ObservableObject
 
     private readonly ApiService _api;
     private int _paginaActual;
+    private bool _hayMasServidor;
+    private List<PedidoDto> _todos = new();
 
     public PedidosViewModel(ApiService api)
     {
@@ -29,18 +31,40 @@ public partial class PedidosViewModel : ObservableObject
     [ObservableProperty] private bool _isCargandoMas;
     [ObservableProperty] private bool _hayMas;
 
+    // ── Filtro por fecha ──────────────────────────────────────────────────────
+    private string _filtroFecha = "Hoy";
+    public string FiltroFecha
+    {
+        get => _filtroFecha;
+        set
+        {
+            if (SetProperty(ref _filtroFecha, value))
+            {
+                OnPropertyChanged(nameof(FiltroHoyActivo));
+                OnPropertyChanged(nameof(FiltroTodoActivo));
+                AplicarFiltro();
+            }
+        }
+    }
+
+    public bool FiltroHoyActivo  => FiltroFecha == "Hoy";
+    public bool FiltroTodoActivo => FiltroFecha == "Todo";
+
+    [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
+
     public ObservableCollection<PedidoDto> Pedidos { get; } = new();
 
     [RelayCommand]
     public async Task CargarAsync()
     {
         if (IsLoading) return;   // Evita ejecuciones concurrentes → duplicados
-        Pedidos.Clear();
+        _todos.Clear();
         _paginaActual = 1;
         IsLoading = true;
         var pedidos = await _api.GetMisPedidosAsync(page: 1, pageSize: PageSize);
-        foreach (var p in pedidos) Pedidos.Add(p);
-        HayMas = pedidos.Count == PageSize;
+        _todos.AddRange(pedidos);
+        _hayMasServidor = pedidos.Count == PageSize;
+        AplicarFiltro();
         IsLoading = false;
     }
 
@@ -51,9 +75,22 @@ public partial class PedidosViewModel : ObservableObject
         IsCargandoMas = true;
         _paginaActual++;
         var pedidos = await _api.GetMisPedidosAsync(page: _paginaActual, pageSize: PageSize);
-        foreach (var p in pedidos) Pedidos.Add(p);
-        HayMas = pedidos.Count == PageSize;
+        _todos.AddRange(pedidos);
+        _hayMasServidor = pedidos.Count == PageSize;
+        AplicarFiltro();
         IsCargandoMas = false;
+    }
+
+    private void AplicarFiltro()
+    {
+        Pedidos.Clear();
+        var hoy = DateTime.Now.Date;
+        var query = FiltroFecha == "Hoy"
+            ? _todos.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy)
+            : _todos.AsEnumerable();
+        foreach (var p in query) Pedidos.Add(p);
+        // "Cargar más" solo disponible en modo "Todo" (en "Hoy" caben en página 1)
+        HayMas = FiltroFecha != "Hoy" && _hayMasServidor;
     }
 
     [RelayCommand]

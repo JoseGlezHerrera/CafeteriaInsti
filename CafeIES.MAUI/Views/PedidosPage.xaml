@@ -12,14 +12,26 @@
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="24,16">
             <Label Text="Mis pedidos" FontFamily="SyneBold" FontSize="22"
                    TextColor="{StaticResource TextColor}"/>
         </Grid>
 
-        <RefreshView Grid.Row="1" Command="{Binding CargarCommand}"
+        <!-- Filtro por fecha -->
+        <ScrollView Grid.Row="1" Orientation="Horizontal"
+                    BackgroundColor="{StaticResource SurfaceColor}"
+                    Padding="16,10,16,14" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Hoy"  Command="{Binding SetFiltroFechaCommand}" CommandParameter="Hoy"
+                        Style="{Binding FiltroHoyActivo,  Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="Todo" Command="{Binding SetFiltroFechaCommand}" CommandParameter="Todo"
+                        Style="{Binding FiltroTodoActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <RefreshView Grid.Row="2" Command="{Binding CargarCommand}"
                      IsRefreshing="{Binding IsLoading}"
                      RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="24,16">

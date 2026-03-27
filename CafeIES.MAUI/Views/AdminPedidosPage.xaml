@@ -12,7 +12,7 @@
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
@@ -34,10 +34,24 @@
             </Border>
         </Border>
 
-        <!-- Filtro por estado -->
+        <!-- Filtro por fecha -->
         <ScrollView Grid.Row="2" Orientation="Horizontal"
                     BackgroundColor="{StaticResource SurfaceColor}"
-                    Padding="16,10,16,14">
+                    Padding="16,10,16,4" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Hoy"    Command="{Binding SetFiltroFechaCommand}" CommandParameter="Hoy"
+                        Style="{Binding FiltroHoyActivo,    Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="Semana" Command="{Binding SetFiltroFechaCommand}" CommandParameter="Semana"
+                        Style="{Binding FiltroSemanaActivo, Converter={StaticResource BoolToChipStyleConverter}}"/>
+                <Button Text="Todo"   Command="{Binding SetFiltroFechaCommand}" CommandParameter="Todo"
+                        Style="{Binding FiltroTodoActivo,   Converter={StaticResource BoolToChipStyleConverter}}"/>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- Filtro por estado -->
+        <ScrollView Grid.Row="3" Orientation="Horizontal"
+                    BackgroundColor="{StaticResource SurfaceColor}"
+                    Padding="16,4,16,14" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Todos"     Style="{StaticResource ChipButton}"
                         Command="{Binding SetFiltroCommand}" CommandParameter=""/>
@@ -54,7 +68,7 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <RefreshView Grid.Row="3"
+        <RefreshView Grid.Row="4"
                      IsRefreshing="{Binding IsLoading}"
                      Command="{Binding CargarCommand}"
                      RefreshColor="{StaticResource AccentColor}">
