@@ -27,9 +27,15 @@
         <!-- Filtro por estado -->
         <ScrollView Grid.Row="2" Orientation="Horizontal" BackgroundColor="{StaticResource SurfaceColor}" Padding="16,4,16,14" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
-                <Button Text="En curso" Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter=""/>
-                <Button Text="Pendiente" Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter="Pendiente"/>
-                <Button Text="En prep." Style="{StaticResource ChipButton}" Command="{Binding SetFiltroCommand}" CommandParameter="EnPreparacion"/>
+                <Button Text="En curso"
+                        Style="{Binding FiltroEnCursoActivo,   Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter=""/>
+                <Button Text="Pendiente"
+                        Style="{Binding FiltroPendienteActivo, Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter="Pendiente"/>
+                <Button Text="En prep."
+                        Style="{Binding FiltroEnPrepActivo,    Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter="EnPreparacion"/>
             </HorizontalStackLayout>
         </ScrollView>
         <RefreshView Grid.Row="3" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
@@ -59,17 +65,29 @@
                                 <Label Grid.Row="1" Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}" Style="{StaticResource SubtitleLabel}" FontSize="13" LineBreakMode="TailTruncation"/>
                                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
                                     <Label Grid.Column="0" Text="{Binding FechaCreacion, StringFormat='{0:dd/MM HH:mm}'}" Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
-                                    <HorizontalStackLayout Grid.Column="1" Spacing="8">
-                                        <Button Text="Preparar" FontFamily="SyneBold" FontSize="11" BackgroundColor="#26e8834a" TextColor="#e8834a" CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                                        <Button Text="Preparar" FontFamily="SyneBold" FontSize="11"
+                                                BackgroundColor="#1ae8834a" TextColor="#e8834a"
+                                                BorderColor="#e8834a" BorderWidth="1"
+                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
                                                 IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Pendiente}"
                                                 CommandParameter="{Binding .}" Clicked="OnPrepararClicked"/>
-                                        <Button Text="Listo" FontFamily="SyneBold" FontSize="11" BackgroundColor="#264caf82" TextColor="#4caf82" CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                        <Button Text="Listo" FontFamily="SyneBold" FontSize="11"
+                                                BackgroundColor="#1a4caf82" TextColor="#4caf82"
+                                                BorderColor="#4caf82" BorderWidth="1"
+                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
                                                 IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=EnPreparacion}"
                                                 CommandParameter="{Binding .}" Clicked="OnListoClicked"/>
-                                        <Button Text="Entregar" FontFamily="SyneBold" FontSize="11" BackgroundColor="#264caf82" TextColor="#4caf82" CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                        <Button Text="Entregar" FontFamily="SyneBold" FontSize="11"
+                                                BackgroundColor="#1a4caf82" TextColor="#4caf82"
+                                                BorderColor="#4caf82" BorderWidth="1"
+                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
                                                 IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Listo}"
                                                 CommandParameter="{Binding .}" Clicked="OnEntregarClicked"/>
-                                        <Button Text="Cancelar" FontFamily="SyneBold" FontSize="11" BackgroundColor="#26e05252" TextColor="#e05252" CornerRadius="10" HeightRequest="34" Padding="12,0"
+                                        <Button Text="Cancelar" FontFamily="SyneBold" FontSize="11"
+                                                BackgroundColor="#1ae05252" TextColor="#e05252"
+                                                BorderColor="#e05252" BorderWidth="1"
+                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
                                                 IsVisible="{Binding Estado, Converter={StaticResource EstadoCancelableConverter}}"
                                                 CommandParameter="{Binding .}" Clicked="OnCancelarClicked"/>
                                     </HorizontalStackLayout>

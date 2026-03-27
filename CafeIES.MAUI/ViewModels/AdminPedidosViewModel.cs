@@ -35,8 +35,27 @@ public partial class AdminPedidosViewModel : ObservableObject
     public string FiltroEstado
     {
         get => _filtroEstado;
-        set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
+        set
+        {
+            if (SetProperty(ref _filtroEstado, value))
+            {
+                AplicarFiltro();
+                OnPropertyChanged(nameof(FiltroTodosActivo));
+                OnPropertyChanged(nameof(FiltroPendienteActivo));
+                OnPropertyChanged(nameof(FiltroEnPrepActivo));
+                OnPropertyChanged(nameof(FiltroListoActivo));
+                OnPropertyChanged(nameof(FiltroEntregadoActivo));
+                OnPropertyChanged(nameof(FiltroCanceladoActivo));
+            }
+        }
     }
+
+    public bool FiltroTodosActivo     => FiltroEstado == "";
+    public bool FiltroPendienteActivo => FiltroEstado == "Pendiente";
+    public bool FiltroEnPrepActivo    => FiltroEstado == "EnPreparacion";
+    public bool FiltroListoActivo     => FiltroEstado == "Listo";
+    public bool FiltroEntregadoActivo => FiltroEstado == "Entregado";
+    public bool FiltroCanceladoActivo => FiltroEstado == "Cancelado";
 
     // ── Filtro por fecha (server-side: recarga al cambiar) ────────────────────
     private string _filtroFecha = "Hoy";

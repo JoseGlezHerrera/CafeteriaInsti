@@ -25,8 +25,21 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     public string FiltroEstado
     {
         get => _filtroEstado;
-        set { if (SetProperty(ref _filtroEstado, value)) AplicarFiltro(); }
+        set
+        {
+            if (SetProperty(ref _filtroEstado, value))
+            {
+                AplicarFiltro();
+                OnPropertyChanged(nameof(FiltroEnCursoActivo));
+                OnPropertyChanged(nameof(FiltroPendienteActivo));
+                OnPropertyChanged(nameof(FiltroEnPrepActivo));
+            }
+        }
     }
+
+    public bool FiltroEnCursoActivo   => FiltroEstado == "";
+    public bool FiltroPendienteActivo => FiltroEstado == "Pendiente";
+    public bool FiltroEnPrepActivo    => FiltroEstado == "EnPreparacion";
 
     // ── Filtro por fecha ──────────────────────────────────────────────────────
     private string _filtroFecha = "Hoy";
