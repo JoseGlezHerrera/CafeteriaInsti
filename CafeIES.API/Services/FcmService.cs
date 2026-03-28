@@ -78,13 +78,19 @@ public class FcmService
         var url  = $"https://fcm.googleapis.com/v1/projects/{projectId}/messages:send";
         using var http = _httpFactory.CreateClient("fcm");
 
-        var tokensInvalidos = new List<string>();
-        foreach (var token in tokens)
-        {
-            var esInvalido = await EnviarATokenAsync(http, token, titulo, cuerpo, datos ?? [], url, accessToken);
-            if (esInvalido) tokensInvalidos.Add(token);
-        }
-        return tokensInvalidos;
+        // HttpClient es thread-safe: enviar todas las notificaciones en paralelo
+        var tokenList = tokens.ToList();
+        if (tokenList.Count == 0) return [];
+
+        var tareas = tokenList.Select(token =>
+            EnviarATokenAsync(http, token, titulo, cuerpo, datos ?? [], url, accessToken));
+        var invalidos = await Task.WhenAll(tareas);
+
+        return tokenList
+            .Zip(invalidos)
+            .Where(par => par.Second)
+            .Select(par => par.First)
+            .ToList();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

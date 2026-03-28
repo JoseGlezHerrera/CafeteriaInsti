@@ -53,6 +53,12 @@ public class AuthService
         return Convert.ToBase64String(bytes);
     }
 
+    /// <summary>
+    /// Hash BCrypt precomputado (calculado una vez al arrancar) para que Login tenga
+    /// tiempo de respuesta uniforme aunque el email no exista — mitiga enumeración de cuentas por timing.
+    /// </summary>
+    public static readonly string DummyHash = BCrypt.Net.BCrypt.HashPassword("_cafeies_timing_guard_", workFactor: 12);
+
     /// <summary>Verifica contraseña contra el hash almacenado</summary>
     public bool VerificarPassword(string password, string hash)
         => BCrypt.Net.BCrypt.Verify(password, hash);

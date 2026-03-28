@@ -53,21 +53,35 @@ public class AdminController : ControllerBase
         }
 
         // FIX-04: SARGable date comparison
+        // PERF: pedidosHoy + ingresosHoy en una sola query (GroupBy); idem productosActivos + stockBajo
         var manana = hoy.AddDays(1);
-        var pedidosHoy    = await pedidosQuery.CountAsync(p => p.FechaCreacion >= hoy && p.FechaCreacion < manana && p.Estado != EstadoPedido.Cancelado);
-        var ingresosHoy   = await pedidosQuery
+        var statsHoy = await pedidosQuery
             .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < manana && p.Estado != EstadoPedido.Cancelado)
-            .SumAsync(p => (decimal?)p.Total) ?? 0;
-        var productosActivos   = await _db.Productos.CountAsync(p => p.Activo);
-        var productosStockBajo = await _db.Productos
-            .CountAsync(p => p.Activo && p.Stock >= 0 && p.Stock <= 5);
-        var alumnosPendientes  = await usuariosQuery
+            .GroupBy(_ => 0)
+            .Select(g => new { Pedidos = g.Count(), Ingresos = (decimal?)g.Sum(p => p.Total) })
+            .FirstOrDefaultAsync();
+        var pedidosHoy  = statsHoy?.Pedidos  ?? 0;
+        var ingresosHoy = statsHoy?.Ingresos ?? 0m;
+
+        var statsProductos = await _db.Productos
+            .Where(p => p.Activo)
+            .GroupBy(_ => 0)
+            .Select(g => new { Activos = g.Count(), StockBajo = g.Count(p => p.Stock >= 0 && p.Stock <= 5) })
+            .FirstOrDefaultAsync();
+        var productosActivos   = statsProductos?.Activos   ?? 0;
+        var productosStockBajo = statsProductos?.StockBajo ?? 0;
+
+        var alumnosPendientes = await usuariosQuery
             .CountAsync(u => u.Estado == EstadoCuenta.PendienteValidacion);
 
+        // Solo pedidos de los últimos 2 días: evita que pedidos "atascados" de semanas
+        // pasadas saturen la query de la pantalla de inicio del admin.
+        var dosDiasAtras = DateTime.UtcNow.AddDays(-2);
         var enCursoQuery = _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
-            .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion);
+            .Where(p => (p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
+                     && p.FechaCreacion >= dosDiasAtras);
         if (institutoEfectivo.HasValue)
             enCursoQuery = enCursoQuery.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
 

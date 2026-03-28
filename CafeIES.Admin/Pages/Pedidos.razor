@@ -134,27 +134,31 @@ else
                                 @if (p.Estado == EstadoPedido.Pendiente)
                                 {
                                     <button class="btn-sm btn-prep"
+                                            disabled="@(_procesandoId.HasValue)"
                                             @onclick="() => CambiarEstado(p.Id, EstadoPedido.EnPreparacion)">
-                                        🔧 Preparar
+                                        @(_procesandoId == p.Id ? "…" : "🔧 Preparar")
                                     </button>
                                 }
                                 else if (p.Estado == EstadoPedido.EnPreparacion)
                                 {
                                     <button class="btn-sm btn-ready"
+                                            disabled="@(_procesandoId.HasValue)"
                                             @onclick="() => CambiarEstado(p.Id, EstadoPedido.Listo)">
-                                        ✅ Listo
+                                        @(_procesandoId == p.Id ? "…" : "✅ Listo")
                                     </button>
                                 }
                                 else if (p.Estado == EstadoPedido.Listo)
                                 {
                                     <button class="btn-sm"
+                                            disabled="@(_procesandoId.HasValue)"
                                             @onclick="() => CambiarEstado(p.Id, EstadoPedido.Entregado)">
-                                        📦 Entregado
+                                        @(_procesandoId == p.Id ? "…" : "📦 Entregado")
                                     </button>
                                 }
                                 @if (p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
                                 {
                                     <button class="btn-icon btn-icon--danger" title="Cancelar"
+                                            disabled="@(_procesandoId.HasValue)"
                                             @onclick="() => ConfirmarCancelar(p.Id)">🗑</button>
                                 }
                             </div>
@@ -179,6 +183,7 @@ else
     private List<PedidoDto> _pedidos    = new();
     private List<InstitutoDto> _institutos = new();
     private bool            _cargando   = true;
+    private int?            _procesandoId;              // pedido cuya acción está en curso (deshabilita botones)
     private string          _estadoFiltro = string.Empty;
     private string          _institutoFiltro = string.Empty;
     private DateTime?       _desde = DateTime.Now.Date;   // por defecto: hoy
@@ -244,7 +249,10 @@ else
 
     private async Task CambiarEstado(int id, EstadoPedido nuevoEstado)
     {
+        _procesandoId = id;
+        StateHasChanged();
         await Api.CambiarEstadoPedidoAsync(id, nuevoEstado);
+        _procesandoId = null;
         await Recargar();
     }
 

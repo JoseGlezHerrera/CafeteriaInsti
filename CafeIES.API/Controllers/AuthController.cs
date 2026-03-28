@@ -31,7 +31,10 @@ public class AuthController : ControllerBase
             .Include(u => u.Instituto)
             .FirstOrDefaultAsync(u => u.Email == req.Email.ToLower());
 
-        if (usuario is null || !_auth.VerificarPassword(req.Password, usuario.PasswordHash))
+        // Ejecutar siempre BCrypt para tiempo de respuesta uniforme:
+        // si el email no existe se usa DummyHash, evitando enumeración de cuentas por timing.
+        var passwordOk = _auth.VerificarPassword(req.Password, usuario?.PasswordHash ?? AuthService.DummyHash);
+        if (usuario is null || !passwordOk)
             return Unauthorized(new { mensaje = "Credenciales incorrectas." });
 
         if (usuario.Estado != EstadoCuenta.Activa)
