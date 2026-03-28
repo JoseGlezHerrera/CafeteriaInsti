@@ -9,6 +9,16 @@
     <p class="page-sub">Genera QR o enlaces para que profesores y personal se registren con el rol correcto.</p>
 </div>
 
+@if (_cargando)
+{
+    <div class="loading-wrap"><div class="spinner"></div><p>Cargando...</p></div>
+}
+
+@if (!string.IsNullOrEmpty(_errorGen))
+{
+    <div class="alert alert-danger" style="margin-bottom:12px">⚠️ @_errorGen</div>
+}
+
 <div class="invite-grid">
 
     <!-- Card Profesores -->
@@ -204,8 +214,15 @@
     private TipoInvitacion     _tipoGenerando;
     private int                _diasValidez  = 7;
     private int?               _usosMaximos;
+    private bool               _cargando   = true;   // UX-015: spinner inicial
+    private bool               _generando  = false;  // BUG-019: evita doble-clic al generar
+    private string             _errorGen   = string.Empty;
 
-    protected override async Task OnInitializedAsync() => await Recargar();
+    protected override async Task OnInitializedAsync()
+    {
+        await Recargar();
+        _cargando = false;
+    }
 
     private async Task Recargar()
     {
@@ -220,14 +237,19 @@
         _tipoGenerando      = tipo;
         _diasValidez        = 7;
         _usosMaximos        = null;
+        _errorGen           = string.Empty;
         _mostrarOpcionesGen = true;
     }
 
     private async Task ConfirmarGeneracion()
     {
+        if (_generando) return;  // BUG-019: guard contra doble-clic
+        _generando          = true;
         _mostrarOpcionesGen = false;
-        await Api.CrearInvitacionAsync(new CrearInvitacionRequest(
+        var result = await Api.CrearInvitacionAsync(new CrearInvitacionRequest(
             _tipoGenerando, _usosMaximos, _diasValidez));
+        if (result is null) _errorGen = "Error al generar la invitación. Inténtalo de nuevo.";
+        _generando = false;
         await Recargar();
     }
 

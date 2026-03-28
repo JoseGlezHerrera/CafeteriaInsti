@@ -143,12 +143,22 @@ public partial class AdminPedidosViewModel : ObservableObject
         IsLoading = false;
     }
 
-    private DateTime? DesdeParaFiltro() => FiltroFecha switch
+    // BUG-022: usar zona horaria España para calcular medianoche local;
+    // DateTime.UtcNow.Date es medianoche UTC (≠ medianoche España en UTC+1/+2)
+    // y perdería las órdenes de las primeras 1–2 horas del día.
+    private static readonly TimeZoneInfo _spainTz = TimeZoneInfo.FindSystemTimeZoneById(
+        OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+
+    private DateTime? DesdeParaFiltro()
     {
-        "Hoy"    => DateTime.UtcNow.Date,
-        "Semana" => DateTime.UtcNow.Date.AddDays(-6),
-        _        => null
-    };
+        var hoyEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _spainTz).Date;
+        return FiltroFecha switch
+        {
+            "Hoy"    => TimeZoneInfo.ConvertTimeToUtc(hoyEsp, _spainTz),
+            "Semana" => TimeZoneInfo.ConvertTimeToUtc(hoyEsp.AddDays(-6), _spainTz),
+            _        => null
+        };
+    }
 
     [RelayCommand]
     private async Task CargarMasAsync()

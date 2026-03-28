@@ -69,7 +69,8 @@ public class HorarioServiceTests
     // ── Sin franjas configuradas ──────────────────────────────────────────────
 
     [Fact]
-    public async Task PuedePedirAhora_SinFranjasParaTurno_RetornaDenegado()
+    // BUG-028: BUG-013 (Round 12) cambió el comportamiento: sin franjas activas → Permitido, no Denegado
+    public async Task PuedePedirAhora_SinFranjasParaTurno_RetornaPermitido()
     {
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
@@ -79,12 +80,14 @@ public class HorarioServiceTests
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
-        Assert.False(result.Puede);
-        Assert.Contains("No hay franjas horarias", result.Mensaje);
+        Assert.True(result.Puede);   // sin franjas de bloqueo → permitido
+        Assert.False(result.EsError);
+        Assert.Contains("Sin franjas de bloqueo", result.Mensaje);
     }
 
     [Fact]
-    public async Task PuedePedirAhora_FranjasDesactivadas_RetornaDenegado()
+    // BUG-028: BUG-013 (Round 12) — franjas desactivadas equivalen a sin franjas → Permitido
+    public async Task PuedePedirAhora_FranjasDesactivadas_RetornaPermitido()
     {
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
@@ -94,102 +97,122 @@ public class HorarioServiceTests
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
-        // La franja existe pero está desactivada → sin franjas activas
-        Assert.False(result.Puede);
+        // La franja existe pero está desactivada → sin franjas activas → permitido
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
     }
 
     // ── Franja activa ahora mismo ─────────────────────────────────────────────
 
+    // BUG-028: BUG-013 eliminó el modelo "ventana de permiso" (default-deny) por
+    // "ventana de bloqueo" (default-allow). FranjaActiva ahora tiene EsBloqueada=false,
+    // por lo que NO bloquea → el usuario puede pedir. FranjaActual ya no se establece.
     [Fact]
-    public async Task PuedePedirAhora_FranjaActiva_RetornaPermitido()
+    public async Task PuedePedirAhora_FranjaNoBloqueoActiva_RetornaPermitido()
     {
-        // FranjaActiva abarca ±60 min; cruza medianoche en las horas 23 y 0.
         if (DateTime.Now.Hour is 0 or 23) return;
 
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
-        db.FranjasHorarias.Add(FranjaActiva(id: 1));   // abarca ±60min desde ahora
+        db.FranjasHorarias.Add(FranjaActiva(id: 1));   // EsBloqueada=false
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.True(result.Puede);
-        Assert.NotNull(result.FranjaActual);
+        Assert.False(result.EsError);
     }
 
     [Fact]
-    public async Task PuedePedirAhora_FranjaActiva_MensajeContieneHoraFin()
+    // BUG-028: mensaje ahora es "Pedidos disponibles." cuando hay franjas activas no bloqueantes
+    public async Task PuedePedirAhora_FranjaNoBloqueoActiva_MensajePedidosDisponibles()
     {
-        // FranjaActiva abarca ±60 min; cruza medianoche en las horas 23 y 0.
         if (DateTime.Now.Hour is 0 or 23) return;
 
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
-        var franja = FranjaActiva(id: 1);
-        db.FranjasHorarias.Add(franja);
+        db.FranjasHorarias.Add(FranjaActiva(id: 1));
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
-        Assert.Contains(franja.HoraFin, result.Mensaje);
+        Assert.True(result.Puede);
+        Assert.Contains("Pedidos disponibles", result.Mensaje);
     }
 
-    // ── Sin franja activa pero hay una futura ─────────────────────────────────
+    // ── Franja de bloqueo activa → bloqueado ─────────────────────────────────
 
     [Fact]
-    public async Task PuedePedirAhora_SinFranjaActivaConFranjaFutura_RetornaDenegadoConProxima()
+    public async Task PuedePedirAhora_FranjaBloqueoActiva_RetornaDenegado()
     {
-        // La franja futura empieza en +90 min; cruza medianoche si Hour >= 22 o == 0.
-        // HorarioService usa TimeOnly y no detectaría la franja como próxima → falso negativo.
-        if (DateTime.Now.Hour is 0 or 22 or 23) return;
+        if (DateTime.Now.Hour is 0 or 23) return;
 
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
-        db.FranjasHorarias.Add(FranjaFutura(id: 1));   // empieza en +90min
-        await db.SaveChangesAsync();
-
-        var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
-
-        Assert.False(result.Puede);
-        Assert.NotNull(result.ProximaFranja);
-    }
-
-    // ── Sin franja activa y sin franjas futuras ───────────────────────────────
-
-    [Fact]
-    public async Task PuedePedirAhora_SinFranjaActivaYSinFuturas_RetornaDenegado()
-    {
-        using var db = DbContextFactory.Create();
-        db.Usuarios.Add(AlumnoManana(id: 1));
-        db.FranjasHorarias.Add(FranjaPasada(id: 1));   // terminó hace rato
+        db.FranjasHorarias.Add(FranjaActiva(id: 1, esBloqueada: true));  // bloquea pedidos
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
-        Assert.Null(result.ProximaFranja);
-        Assert.Contains("No hay más franjas", result.Mensaje);
+        Assert.False(result.EsError);
     }
 
-    // ── Franja de otro turno no interfiere ────────────────────────────────────
+    // ── Franja no bloqueante → no afecta sin importar cuándo empiece/termine ─
 
     [Fact]
-    public async Task PuedePedirAhora_FranjaActivaDeOtroTurno_NoAfecta()
+    // BUG-028: con modelo default-allow, una franja de otro turno no tiene franjas Mañana
+    // → sin restricciones → Permitido (antes retornaba Denegado con modelo default-deny)
+    public async Task PuedePedirAhora_FranjaDeOtroTurno_SinRestriccionParaTurnoActual()
     {
         using var db = DbContextFactory.Create();
         db.Usuarios.Add(AlumnoManana(id: 1));
-        // Solo hay franja activa para el turno Tarde, no para Mañana
+        // Solo hay franja para Tarde, no para Mañana → sin franjas de bloqueo para Mañana
         db.FranjasHorarias.Add(FranjaActiva(id: 1, turno: Turno.Tarde));
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
-        Assert.False(result.Puede);
+        // Sin franjas Mañana → sin bloqueo → permitido
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
+    }
+
+    [Fact]
+    // BUG-028: FranjaFutura y FranjaPasada no bloqueantes → Permitido
+    public async Task PuedePedirAhora_FranjaNoBloqueoFutura_RetornaPermitido()
+    {
+        if (DateTime.Now.Hour is 0 or 22 or 23) return;
+
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        db.FranjasHorarias.Add(FranjaFutura(id: 1));   // empieza en +90min, EsBloqueada=false
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db);
+        var result = await sut.PuedePedirAhoraAsync(1);
+
+        Assert.True(result.Puede);  // no bloquea aunque esté "fuera de ventana"
+        Assert.False(result.EsError);
+    }
+
+    [Fact]
+    public async Task PuedePedirAhora_FranjaNoBloqueoYaPasada_RetornaPermitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        db.FranjasHorarias.Add(FranjaPasada(id: 1));   // terminó hace 90 min, EsBloqueada=false
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db);
+        var result = await sut.PuedePedirAhoraAsync(1);
+
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -205,7 +228,7 @@ public class HorarioServiceTests
     };
 
     /// <summary>Franja horaria que abarca desde 60 minutos antes hasta 60 minutos después de ahora.</summary>
-    private static FranjaHoraria FranjaActiva(int id, Turno turno = Turno.Manana, bool activa = true)
+    private static FranjaHoraria FranjaActiva(int id, Turno turno = Turno.Manana, bool activa = true, bool esBloqueada = false)
     {
         var inicio = DateTime.Now.AddMinutes(-60);
         var fin    = DateTime.Now.AddMinutes(60);
@@ -216,7 +239,8 @@ public class HorarioServiceTests
             Descripcion = "Test activa",
             HoraInicio  = inicio.ToString("HH:mm"),
             HoraFin     = fin.ToString("HH:mm"),
-            Activa      = activa
+            Activa      = activa,
+            EsBloqueada = esBloqueada
         };
     }
 
