@@ -101,16 +101,14 @@ public partial class HomeViewModel : ObservableObject
             _cacheTimestamp   = DateTime.UtcNow;
         }
 
-        // Estado horario
-        if (horario is not null)
-        {
-            PuedePedir          = horario.PuedePedir;
-            MensajeHorario      = horario.Mensaje;
-            MostrarBannerBloqueo = !horario.PuedePedir;
+        // Estado horario — si la API falla (horario null), asumir permisivo:
+        // el servidor hará la validación definitiva al crear el pedido.
+        PuedePedir           = horario?.PuedePedir ?? true;
+        MensajeHorario       = horario?.Mensaje ?? string.Empty;
+        MostrarBannerBloqueo = horario is not null && !horario.PuedePedir;
 
-            if (!horario.PuedePedir && horario.ProximaHora is not null)
-                ProximaFranja = $"Próxima ventana: {horario.ProximaFranja} a las {horario.ProximaHora}";
-        }
+        if (horario is not null && !horario.PuedePedir && horario.ProximaHora is not null)
+            ProximaFranja = $"Próxima ventana: {horario.ProximaFranja} a las {horario.ProximaHora}";
 
         // Categorías
         Categorias.Clear();
@@ -188,7 +186,16 @@ public partial class HomeViewModel : ObservableObject
             return;
         }
 
-        _carrito.AnadirProducto(producto);
+        bool añadido = _carrito.AnadirProducto(producto);
+
+        if (!añadido)
+        {
+            await Shell.Current.DisplayAlert(
+                "Límite alcanzado",
+                $"Ya tienes el máximo de 20 unidades de '{producto.Nombre}'.",
+                "OK");
+            return;
+        }
 
         // Toast de confirmación — try-catch por COMException en Windows unpackaged
         try

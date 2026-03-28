@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -12,13 +13,64 @@ public partial class CarritoViewModel : ObservableObject
 {
     private readonly ApiService _api;
 
+    private const string CarritoKey = "carrito_v1";
+
     public CarritoViewModel(ApiService api)
     {
         _api = api;
+        RestaurarCarrito();
 
         // Limpiar carrito si la sesión expira (refresh token caducado)
         WeakReferenceMessenger.Default.Register<SesionExpiradaMessage>(this, (_, _) =>
             MainThread.BeginInvokeOnMainThread(LimpiarCarrito));
+    }
+
+    // ── Persistencia del carrito ──────────────────────────────────────────────
+
+    private void GuardarCarrito()
+    {
+        try
+        {
+            var data = Items.Select(i => new CarritoItemData
+            {
+                ProductoId         = i.ProductoId,
+                Nombre             = i.Nombre,
+                Precio             = i.Precio,
+                Cantidad           = i.Cantidad,
+                ImagenUrl          = i.ImagenUrl,
+                ComponenteDesayuno = (int)i.ComponenteDesayuno
+            }).ToList();
+            Preferences.Default.Set(CarritoKey, JsonSerializer.Serialize(data));
+        }
+        catch { /* best-effort */ }
+    }
+
+    private void RestaurarCarrito()
+    {
+        try
+        {
+            var json = Preferences.Default.Get(CarritoKey, string.Empty);
+            if (string.IsNullOrEmpty(json)) return;
+            var data = JsonSerializer.Deserialize<List<CarritoItemData>>(json);
+            if (data is null) return;
+            foreach (var d in data)
+            {
+                Items.Add(new ItemCarrito
+                {
+                    ProductoId         = d.ProductoId,
+                    Nombre             = d.Nombre,
+                    Precio             = d.Precio,
+                    Cantidad           = d.Cantidad,
+                    ImagenUrl          = d.ImagenUrl,
+                    ComponenteDesayuno = (ComponenteDesayuno)d.ComponenteDesayuno
+                });
+            }
+            TotalItems = Items.Sum(i => i.Cantidad);
+            OnPropertyChanged(nameof(Total));
+            OnPropertyChanged(nameof(TotalEfectivo));
+            OnPropertyChanged(nameof(Descuento));
+        }
+        catch { Preferences.Default.Remove(CarritoKey); }
     }
 
     // ── Estado ────────────────────────────────────────────────────────────────
@@ -116,12 +168,13 @@ public partial class CarritoViewModel : ObservableObject
 
     // ── Gestión del carrito ───────────────────────────────────────────────────
 
-    public void AnadirProducto(ProductoDto producto)
+    /// <returns>true si se añadió o incrementó; false si el producto ya está en el límite de 20.</returns>
+    public bool AnadirProducto(ProductoDto producto)
     {
         var existente = Items.FirstOrDefault(i => i.ProductoId == producto.Id);
         if (existente is not null)
         {
-            if (existente.Cantidad >= 20) return;
+            if (existente.Cantidad >= 20) return false;
             existente.Cantidad++;
         }
         else
@@ -144,6 +197,8 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        GuardarCarrito();
+        return true;
     }
 
     [RelayCommand]
@@ -155,6 +210,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        GuardarCarrito();
     }
 
     [RelayCommand]
@@ -166,6 +222,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        GuardarCarrito();
     }
 
     [RelayCommand]
@@ -176,6 +233,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        GuardarCarrito();
     }
 
     // ── Paso 1: crear intent y navegar al WebView de Stripe (o flujo gratuito) ─
@@ -345,9 +403,22 @@ public partial class CarritoViewModel : ObservableObject
         CancelarPendingPago();
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(CarritoVacio));
+        Preferences.Default.Remove(CarritoKey);
     }
 
     private bool PuedeConfirmar() => !CarritoVacio && !IsLoading;
+}
+
+// ── DTO de serialización para Preferences ────────────────────────────────────
+
+file sealed class CarritoItemData
+{
+    public int     ProductoId         { get; set; }
+    public string  Nombre             { get; set; } = string.Empty;
+    public decimal Precio             { get; set; }
+    public int     Cantidad           { get; set; }
+    public string? ImagenUrl          { get; set; }
+    public int     ComponenteDesayuno { get; set; }
 }
 
 // ── Modelo de item del carrito ────────────────────────────────────────────────

@@ -68,7 +68,16 @@ public partial class ProductoDetalleViewModel : ObservableObject
             return;
         }
 
-        _carrito.AnadirProducto(Producto);
+        bool añadido = _carrito.AnadirProducto(Producto);
+
+        if (!añadido)
+        {
+            await Shell.Current.DisplayAlert(
+                "Límite alcanzado",
+                $"Ya tienes el máximo de 20 unidades de '{Producto.Nombre}'.",
+                "OK");
+            return;
+        }
 
         try
         {
