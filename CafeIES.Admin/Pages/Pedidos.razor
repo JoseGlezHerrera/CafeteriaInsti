@@ -34,6 +34,11 @@
     <button class="btn-primary" @onclick="Recargar">Filtrar</button>
 </div>
 
+@if (!string.IsNullOrEmpty(_errorAccion))
+{
+    <div class="alert alert-error" style="margin-bottom:12px">⚠️ @_errorAccion</div>
+}
+
 @* Resumen activo por centro (solo visible cuando no hay filtro de instituto) *@
 @if (!_cargando && string.IsNullOrEmpty(_institutoFiltro))
 {
@@ -184,6 +189,7 @@ else
     private List<InstitutoDto> _institutos = new();
     private bool            _cargando   = true;
     private int?            _procesandoId;              // pedido cuya acción está en curso (deshabilita botones)
+    private string          _errorAccion  = string.Empty; // mensaje de error tras acción fallida
     private string          _estadoFiltro = string.Empty;
     private string          _institutoFiltro = string.Empty;
     private DateTime?       _desde = DateTime.Now.Date;   // por defecto: hoy
@@ -250,9 +256,16 @@ else
     private async Task CambiarEstado(int id, EstadoPedido nuevoEstado)
     {
         _procesandoId = id;
+        _errorAccion  = string.Empty;
         StateHasChanged();
-        await Api.CambiarEstadoPedidoAsync(id, nuevoEstado);
+        var ok = await Api.CambiarEstadoPedidoAsync(id, nuevoEstado);
         _procesandoId = null;
+        if (!ok)
+        {
+            _errorAccion = "No se pudo cambiar el estado del pedido. Comprueba la conexión y vuelve a intentarlo.";
+            StateHasChanged();
+            return;
+        }
         await Recargar();
     }
 

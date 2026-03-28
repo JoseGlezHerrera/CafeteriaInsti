@@ -86,7 +86,7 @@ public class AdminController : ControllerBase
             enCursoQuery = enCursoQuery.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
 
         var pedidosEnCurso = await enCursoQuery
-            .OrderBy(p => p.FechaCreacion)
+            .OrderBy(p => p.FechaCreacion).ThenBy(p => p.Id)
             .Take(10)
             .ToListAsync();
 
@@ -566,6 +566,27 @@ public class AdminController : ControllerBase
             .OrderBy(a => a.Id)
             .ToListAsync();
         return Ok(alergenos.Select(a => a.ToDto()).ToList());
+    }
+
+    // ── DELETE /api/admin/tokens/purge ────────────────────────────────────────
+    /// <summary>
+    /// Elimina tokens FCM inactivos (no actualizados en más de 30 días).
+    /// Útil para limpiar dispositivos desinstalados que nunca hicieron logout.
+    /// </summary>
+    [HttpDelete("tokens/purge")]
+    public async Task<IActionResult> PurgarTokensAntiguos([FromQuery] int diasInactivos = 30)
+    {
+        diasInactivos = Math.Clamp(diasInactivos, 7, 365);
+        var corte = DateTime.UtcNow.AddDays(-diasInactivos);
+        var eliminados = await _db.DispositivoTokens
+            .Where(t => t.FechaActualizacion < corte)
+            .ExecuteDeleteAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} purgó {N} tokens FCM inactivos desde hace más de {Dias} días.",
+            adminEmail, eliminados, diasInactivos);
+
+        return Ok(new { eliminados, diasInactivos });
     }
 
     // ── GET /api/admin/diagnostics ────────────────────────────────────────────

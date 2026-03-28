@@ -299,7 +299,7 @@ public class PedidosController : ControllerBase
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
-            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
+            .Include(p => p.Usuario) // Instituto omitido: no se muestra en historial propio
             .ToListAsync();
 
         return Ok(pedidos.Select(p => p.ToDto()).ToList());
@@ -339,11 +339,12 @@ public class PedidosController : ControllerBase
         if (pedido.UsuarioId != userId && !esStaff)
             return Forbid();
 
-        // Empleado/Personal solo pueden ver pedidos de su propio instituto
+        // Empleado/Personal solo pueden ver pedidos de su propio instituto.
+        // SEC-013: si no tienen instituto asignado en el JWT se deniega por defecto.
         if (esStaff && !esAdmin)
         {
             var miInstitutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
-            if (miInstitutoId.HasValue && pedido.Usuario?.InstitutoId != miInstitutoId)
+            if (!miInstitutoId.HasValue || pedido.Usuario?.InstitutoId != miInstitutoId)
                 return Forbid();
         }
 
@@ -371,11 +372,12 @@ public class PedidosController : ControllerBase
             .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
 
-        // Empleado/Personal solo pueden gestionar pedidos de su propio instituto
+        // Empleado/Personal solo pueden gestionar pedidos de su propio instituto.
+        // SEC-013: si no tienen instituto asignado en el JWT se deniega por defecto.
         if (!User.IsInRole("Admin"))
         {
             var miInstitutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
-            if (miInstitutoId.HasValue && pedido.Usuario?.InstitutoId != miInstitutoId)
+            if (!miInstitutoId.HasValue || pedido.Usuario?.InstitutoId != miInstitutoId)
                 return Forbid();
         }
 
