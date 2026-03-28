@@ -203,8 +203,32 @@
                         </VerticalStackLayout>
                     </Border>
 
+                    <!-- Indicador de carga del estado de desayuno -->
+                    <ActivityIndicator IsRunning="{Binding IsLoadingDesayuno}"
+                                       IsVisible="{Binding IsLoadingDesayuno}"
+                                       Color="{StaticResource GreenColor}"
+                                       HeightRequest="24" Margin="0,0,0,10"/>
+
+                    <!-- Pedido gratuito: sin coste (solo visible cuando TotalEfectivo == 0) -->
+                    <Border IsVisible="{Binding EsPedidoGratuito}"
+                            BackgroundColor="#1a4caf82" StrokeThickness="1" Stroke="#4caf82"
+                            Padding="18,16" Margin="0,0,0,14">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="🍊" FontSize="28" VerticalOptions="Center"/>
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                <Label Text="Desayuno gratuito" FontFamily="SyneBold" FontSize="14"
+                                       TextColor="{StaticResource GreenColor}"/>
+                                <Label Text="Tu pedido no tiene coste adicional"
+                                       FontFamily="DMSans" FontSize="12"
+                                       TextColor="{StaticResource GreenColor}"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
                     <!-- Pago con tarjeta: el formulario se muestra en el paso siguiente -->
-                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                    <Border IsVisible="{Binding EsPedidoGratuito, Converter={StaticResource InvertBoolConverter}}"
+                            BackgroundColor="{StaticResource Surface2Color}"
                             StrokeThickness="1" Stroke="{StaticResource BorderColor}"
                             Padding="18,16" Margin="0,0,0,14">
                         <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
@@ -237,7 +261,7 @@
                     <Button Text="{Binding TotalEfectivo, StringFormat='Pagar {0:F2} €'}"
                             Style="{StaticResource PrimaryButton}"
                             Command="{Binding ConfirmarPedidoCommand}"
-                            IsEnabled="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}"/>
+                            IsEnabled="{Binding PuedePulsarPagar}"/>
 
                     <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
                                        Margin="0,8" IsVisible="{Binding IsLoading}"/>

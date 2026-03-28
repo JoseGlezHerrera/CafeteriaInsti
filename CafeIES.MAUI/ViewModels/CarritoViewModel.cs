@@ -69,6 +69,7 @@ public partial class CarritoViewModel : ObservableObject
             OnPropertyChanged(nameof(Total));
             OnPropertyChanged(nameof(TotalEfectivo));
             OnPropertyChanged(nameof(Descuento));
+            OnPropertyChanged(nameof(EsPedidoGratuito));
         }
         catch { Preferences.Default.Remove(CarritoKey); }
     }
@@ -76,7 +77,13 @@ public partial class CarritoViewModel : ObservableObject
     // ── Estado ────────────────────────────────────────────────────────────────
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConfirmarPedidoCommand))]
+    [NotifyPropertyChangedFor(nameof(PuedePulsarPagar))]
     private bool   _isLoading;
+    /// <summary>true mientras se consulta el estado del desayuno — bloquea el botón de pago.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConfirmarPedidoCommand))]
+    [NotifyPropertyChangedFor(nameof(PuedePulsarPagar))]
+    private bool   _isLoadingDesayuno;
     [ObservableProperty] private string _notas      = string.Empty;
     [ObservableProperty] private string _errorPago  = string.Empty;
     [ObservableProperty] private bool   _hayErrorPago;
@@ -88,15 +95,17 @@ public partial class CarritoViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
     [NotifyPropertyChangedFor(nameof(Descuento))]
+    [NotifyPropertyChangedFor(nameof(EsPedidoGratuito))]
     private bool _zumoDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
     [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
     [NotifyPropertyChangedFor(nameof(Descuento))]
+    [NotifyPropertyChangedFor(nameof(EsPedidoGratuito))]
     private bool _bocataDisponible;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo))]
+    [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo), nameof(EsPedidoGratuito))]
     private bool _tieneDesayunoGratuito;
 
     /// <summary>Texto del banner de desayuno gratuito en la UI.</summary>
@@ -113,6 +122,12 @@ public partial class CarritoViewModel : ObservableObject
     }
 
     public bool HayDesayunoDisponible => TieneDesayunoGratuito && (ZumoDisponible || BocataDisponible);
+
+    /// <summary>true cuando el carrito no está vacío y el total efectivo es 0 (pedido 100% gratuito).</summary>
+    public bool EsPedidoGratuito => !CarritoVacio && TieneDesayunoGratuito && TotalEfectivo == 0;
+
+    /// <summary>false mientras IsLoading o IsLoadingDesayuno — controla IsEnabled del botón Pagar.</summary>
+    public bool PuedePulsarPagar => !IsLoading && !IsLoadingDesayuno;
 
     // ── Datos pendientes de pago (establecidos antes de navegar al WebView) ───
     public string PendingClientSecret    { get; private set; } = string.Empty;
@@ -197,6 +212,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
         return true;
     }
@@ -210,6 +226,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
 
@@ -222,6 +239,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
 
@@ -233,6 +251,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
 
@@ -263,13 +282,13 @@ public partial class CarritoViewModel : ObservableObject
                 return;
             }
 
-            var totalStr = Total.ToString("F2", CultureInfo.InvariantCulture);
+            // Usar TotalEfectivo (0.00 para pedidos completamente gratuitos)
+            var totalStr = TotalEfectivo.ToString("F2", CultureInfo.InvariantCulture);
             // Usamos "gratuito-{NumeroPedido}" para que ConfirmacionPedidoPage muestre
             // el número directamente sin necesidad de polling a la API.
             LimpiarCarrito();
             await Shell.Current.GoToAsync(
                 $"ConfirmacionPedido?paymentIntentId=gratuito-{pedido.NumeroPedido}&total={totalStr}");
-            await CargarDesayunoStatusAsync();
             return;
         }
 
@@ -305,16 +324,27 @@ public partial class CarritoViewModel : ObservableObject
         await Shell.Current.GoToAsync("PagamentoWeb");
     }
 
-    /// <summary>Carga el estado del desayuno gratuito del usuario desde la API.</summary>
+    /// <summary>Carga el estado del desayuno gratuito del usuario desde la API.
+    /// Mientras carga, bloquea el botón de pago (IsLoadingDesayuno) para evitar
+    /// race conditions donde el usuario pulsa Pagar antes de conocer su elegibilidad.</summary>
     public async Task CargarDesayunoStatusAsync()
     {
-        var status = await _api.GetDesayunoStatusAsync();
-        if (status is null) return;
-        TieneDesayunoGratuito = status.TieneDesayunoGratuito;
-        ZumoDisponible        = status.ZumoDisponible;
-        BocataDisponible      = status.BocataDisponible;
-        OnPropertyChanged(nameof(TotalEfectivo));
-        OnPropertyChanged(nameof(Descuento));
+        IsLoadingDesayuno = true;
+        try
+        {
+            var status = await _api.GetDesayunoStatusAsync();
+            if (status is null) return;
+            TieneDesayunoGratuito = status.TieneDesayunoGratuito;
+            ZumoDisponible        = status.ZumoDisponible;
+            BocataDisponible      = status.BocataDisponible;
+            OnPropertyChanged(nameof(TotalEfectivo));
+            OnPropertyChanged(nameof(Descuento));
+            OnPropertyChanged(nameof(EsPedidoGratuito));
+        }
+        finally
+        {
+            IsLoadingDesayuno = false;
+        }
     }
 
     // ── Paso 2: llamado por PagamentoWebPage tras el pago exitoso ────────────
@@ -402,11 +432,13 @@ public partial class CarritoViewModel : ObservableObject
         Notas = string.Empty;
         CancelarPendingPago();
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(CarritoVacio));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
         Preferences.Default.Remove(CarritoKey);
     }
 
-    private bool PuedeConfirmar() => !CarritoVacio && !IsLoading;
+    private bool PuedeConfirmar() => !CarritoVacio && !IsLoading && !IsLoadingDesayuno;
 }
 
 // ── DTO de serialización para Preferences ────────────────────────────────────
