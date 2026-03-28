@@ -123,18 +123,27 @@ public class FranjaHoraria
         get
         {
             if (!Activa) return false;
-            // Convertir UTC a hora local española (CET/CEST)
             var spainTz = TimeZoneInfo.FindSystemTimeZoneById(
                 OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
             var ahora = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
-            if (!TimeOnly.TryParse(HoraInicio, out var inicio) ||
-                !TimeOnly.TryParse(HoraFin,    out var fin))
-                return false; // Formato de hora inválido — franja inactiva por seguridad
-            // Soporte franjas que cruzan medianoche (ej: 21:00-03:00)
-            if (inicio > fin)
-                return ahora >= inicio || ahora <= fin;
-            return ahora >= inicio && ahora <= fin;
+            return EstaActivaEn(ahora);
         }
+    }
+
+    /// <summary>
+    /// Comprueba si la franja está activa en el momento indicado.
+    /// Permite inyectar la hora en tests unitarios sin depender del reloj del sistema.
+    /// </summary>
+    public bool EstaActivaEn(TimeOnly ahora)
+    {
+        if (!Activa) return false;
+        if (!TimeOnly.TryParse(HoraInicio, out var inicio) ||
+            !TimeOnly.TryParse(HoraFin,    out var fin))
+            return false; // Formato de hora inválido — franja inactiva por seguridad
+        // Soporte franjas que cruzan medianoche (ej: 21:00-03:00)
+        if (inicio > fin)
+            return ahora >= inicio || ahora <= fin;
+        return ahora >= inicio && ahora <= fin;
     }
 }
 

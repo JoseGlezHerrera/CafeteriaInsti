@@ -456,7 +456,7 @@ public class AdminController : ControllerBase
 
         var totalCount = await query.CountAsync();
         var pedidos = await query
-            .OrderByDescending(p => p.FechaCreacion)
+            .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

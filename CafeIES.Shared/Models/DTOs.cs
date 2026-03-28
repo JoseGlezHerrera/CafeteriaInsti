@@ -17,7 +17,7 @@ public record LoginResponse(
 );
 
 public record RefreshRequest(
-    [Required] string RefreshToken
+    [Required, MinLength(32), MaxLength(256)] string RefreshToken
 );
 
 // Registro de alumno (autoregistro)

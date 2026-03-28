@@ -295,7 +295,7 @@ public class PedidosController : ControllerBase
 
         var pedidos = await _db.Pedidos
             .Where(p => p.UsuarioId == userId)
-            .OrderByDescending(p => p.FechaCreacion)
+            .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)

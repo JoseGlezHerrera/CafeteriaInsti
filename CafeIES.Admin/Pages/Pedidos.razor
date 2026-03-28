@@ -210,17 +210,17 @@ else
                 .Build();
 
             // Nuevo pedido: recargar lista
+            // InvokeAsync garantiza que las modificaciones al estado del componente
+            // ocurren en el hilo de renderizado de Blazor (el callback de SignalR es un hilo secundario).
             _hubConnection.On<object>("NuevoPedido", async _ =>
             {
-                await Recargar();
-                await InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () => { await Recargar(); StateHasChanged(); });
             });
 
             // Estado cambiado (desde MAUI u otro empleado): actualizar en tiempo real
             _hubConnection.On<object>("EstadoPedidoActualizado", async _ =>
             {
-                await Recargar();
-                await InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () => { await Recargar(); StateHasChanged(); });
             });
 
             await _hubConnection.StartAsync();
