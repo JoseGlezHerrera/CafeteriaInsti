@@ -12,7 +12,9 @@
 <div class="filters-bar">
     <input class="search-input" type="date" @bind="_desde" title="Desde"/>
     <input class="search-input" type="date" @bind="_hasta" title="Hasta"/>
-    <button class="btn-primary" @onclick="Cargar">Generar</button>
+    <button class="btn-primary" @onclick="Cargar" disabled="@_cargando">
+        @(_cargando ? "⏳ Calculando…" : "Generar")
+    </button>
     @if (_generado && _pedidos.Any())
     {
         <button class="btn-secondary" @onclick="DescargarExcel" disabled="@_exportando">

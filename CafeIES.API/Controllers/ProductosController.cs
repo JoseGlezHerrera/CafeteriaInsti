@@ -209,10 +209,13 @@ public class ProductosController : ControllerBase
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
             return BadRequest(new { mensaje = "Formato no soportado. Usa JPG, PNG o WebP." });
 
-        // Validar magic bytes (evita extensiones engañosas)
-        using var streamValidacion = imagen.OpenReadStream();
+        // SEC-018: un único stream para validar magic bytes y subir el archivo.
+        // Leer los 12 bytes de cabecera y luego hacer Seek(0) para reutilizar el stream
+        // desde el principio en la subida — evita abrir un segundo stream que podría estar
+        // ya al final del fichero según el host/buffer subyacente.
+        using var stream = imagen.OpenReadStream();
         var header = new byte[12];
-        var bytesLeidos = await streamValidacion.ReadAsync(header.AsMemory(0, 12));
+        var bytesLeidos = await stream.ReadAsync(header.AsMemory(0, 12));
         bool magicOk = ext is ".jpg" or ".jpeg"
             ? bytesLeidos >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF
             : ext == ".png"
@@ -224,11 +227,12 @@ public class ProductosController : ControllerBase
         if (!magicOk)
             return BadRequest(new { mensaje = "El contenido del archivo no coincide con el formato declarado." });
 
+        stream.Seek(0, SeekOrigin.Begin); // reposicionar al inicio para la subida
+
         // Eliminar imagen anterior (local o Blob)
         await _blobs.EliminarAsync(producto.ImagenUrl);
 
         var fileName = $"{id}_{Guid.NewGuid():N}{ext}";
-        using var stream = imagen.OpenReadStream();
         var url = await _blobs.SubirAsync(stream, fileName, imagen.ContentType);
 
         producto.ImagenUrl = url;

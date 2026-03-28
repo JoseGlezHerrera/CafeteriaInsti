@@ -111,20 +111,23 @@ public class AdminController : ControllerBase
     {
         var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
 
-        var query = _db.Usuarios.Include(u => u.Instituto).AsQueryable();
-        if (estado.HasValue)             query = query.Where(u => u.Estado == estado);
-        if (rol.HasValue)                query = query.Where(u => u.Rol    == rol);
-        if (institutoEfectivo.HasValue)  query = query.Where(u => u.InstitutoId == institutoEfectivo);
+        // PERF-014: filtros SIN Include para que el COUNT paginado no genere JOIN innecesario
+        var baseQuery = _db.Usuarios.AsQueryable();
+        if (estado.HasValue)             baseQuery = baseQuery.Where(u => u.Estado == estado);
+        if (rol.HasValue)                baseQuery = baseQuery.Where(u => u.Rol    == rol);
+        if (institutoEfectivo.HasValue)  baseQuery = baseQuery.Where(u => u.InstitutoId == institutoEfectivo);
         if (!string.IsNullOrWhiteSpace(busqueda))
-            query = query.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
+            baseQuery = baseQuery.Where(u => u.NombreCompleto.Contains(busqueda) || u.Email.Contains(busqueda));
 
         // Si page está presente, devolver respuesta paginada; si no, devolver lista completa (retrocompatible)
         if (page.HasValue)
         {
             pageSize = Math.Clamp(pageSize, 1, 200);
             var p = Math.Max(1, page.Value);
-            var totalCount = await query.CountAsync();
-            var users = await query.OrderBy(u => u.NombreCompleto)
+            var totalCount = await baseQuery.CountAsync(); // COUNT sin JOIN de Instituto
+            var users = await baseQuery
+                .Include(u => u.Instituto)
+                .OrderBy(u => u.NombreCompleto)
                 .Skip((p - 1) * pageSize).Take(pageSize).ToListAsync();
             return Ok(new PaginatedResponse<UsuarioDto>(
                 users.Select(u => u.ToDto()).ToList(), totalCount, p, pageSize));
@@ -132,7 +135,9 @@ public class AdminController : ControllerBase
 
         // Sin paginación: limitar a 500 para evitar cargar toda la tabla en memoria.
         // Usar ?page= para obtener más resultados.
-        var allUsers = await query.OrderBy(u => u.NombreCompleto).Take(500).ToListAsync();
+        var allUsers = await baseQuery
+            .Include(u => u.Instituto)
+            .OrderBy(u => u.NombreCompleto).Take(500).ToListAsync();
         return Ok(allUsers.Select(u => u.ToDto()).ToList());
     }
 

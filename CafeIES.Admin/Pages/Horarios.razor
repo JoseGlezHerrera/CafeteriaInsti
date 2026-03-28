@@ -192,12 +192,6 @@
         _eliminarDesc = string.Empty;
     }
 
-    private async Task EliminarFranja(int id)
-    {
-        await Api.EliminarFranjaAsync(id);
-        _franjas = await Api.GetHorariosAsync();
-    }
-
     private void CerrarModal() => _mostrarModal = false;
 
     // FIX-21: Lógica alineada con FranjaHoraria.EstaActiva (Entities.cs).

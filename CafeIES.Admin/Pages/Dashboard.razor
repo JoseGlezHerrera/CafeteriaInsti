@@ -62,6 +62,11 @@ else
         </div>
     </div>
 
+    @if (!string.IsNullOrEmpty(_errorEstado))
+    {
+        <div class="alert alert-error" style="margin-bottom:12px">⚠️ @_errorEstado</div>
+    }
+
     <!-- ── Pedidos en curso (tiempo real) ────────────────────────────────── -->
     <div class="section">
         <div class="section-header">
@@ -98,15 +103,17 @@ else
                             @if (pedido.Estado == EstadoPedido.Pendiente)
                             {
                                 <button class="btn-status btn-prep"
+                                        disabled="@(_procesandoPedidoId.HasValue)"
                                         @onclick="() => CambiarEstado(pedido.Id, EstadoPedido.EnPreparacion)">
-                                    En preparación
+                                    @(_procesandoPedidoId == pedido.Id ? "…" : "En preparación")
                                 </button>
                             }
                             else if (pedido.Estado == EstadoPedido.EnPreparacion)
                             {
                                 <button class="btn-status btn-ready"
+                                        disabled="@(_procesandoPedidoId.HasValue)"
                                         @onclick="() => CambiarEstado(pedido.Id, EstadoPedido.Listo)">
-                                    ✓ Listo
+                                    @(_procesandoPedidoId == pedido.Id ? "…" : "✓ Listo")
                                 </button>
                             }
                         </div>
@@ -190,9 +197,22 @@ else
         _cargado = true;
     }
 
+    private int? _procesandoPedidoId;  // INC-024: evita doble clic durante cambio de estado
+    private string _errorEstado = string.Empty;
+
     private async Task CambiarEstado(int pedidoId, EstadoPedido nuevoEstado)
     {
-        await Api.CambiarEstadoPedidoAsync(pedidoId, nuevoEstado);
+        _procesandoPedidoId = pedidoId;
+        _errorEstado        = string.Empty;
+        StateHasChanged();
+        var ok = await Api.CambiarEstadoPedidoAsync(pedidoId, nuevoEstado);
+        _procesandoPedidoId = null;
+        if (!ok)
+        {
+            _errorEstado = "No se pudo cambiar el estado. Comprueba la conexión.";
+            StateHasChanged();
+            return;
+        }
         _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
     }
 
