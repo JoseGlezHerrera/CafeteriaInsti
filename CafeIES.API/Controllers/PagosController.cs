@@ -112,12 +112,22 @@ public class PagosController : ControllerBase
                 }
             }
 
-            // Solo 1 unidad gratuita; el resto al precio normal
-            total += primeraGratisPago
-                ? producto.Precio * (l.Cantidad - 1)   // 1 gratis + (cantidad-1) de pago
-                : precio * l.Cantidad;
+            // Solo 1 unidad gratuita; el resto al precio normal.
+            // Almacenamos líneas separadas en la metadata para que el webhook
+            // pueda reconstruir el pedido con los precios correctos.
+            if (primeraGratisPago)
+            {
+                total += producto.Precio * (l.Cantidad - 1);
+                lineasConPrecio.Add((l.ProductoId, 1, 0m));                              // unidad gratuita
+                if (l.Cantidad > 1)
+                    lineasConPrecio.Add((l.ProductoId, l.Cantidad - 1, producto.Precio)); // resto al precio normal
+            }
+            else
+            {
+                total += precio * l.Cantidad;
+                lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio));
+            }
             descripcionItems.Add($"{producto.Nombre} ×{l.Cantidad}");
-            lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio));
         }
 
         if (total < 0.50m)
@@ -394,6 +404,22 @@ public class PagosController : ControllerBase
             var notasAjuste  = new List<string>();
             decimal total = 0;
 
+            // Cargar consumo de desayuno para marcarlo si alguna línea es gratuita
+            var usuarioWh = await _db.Usuarios.FindAsync(userId);
+            var spainTzWh = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+            var hoyWh     = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzWh));
+            ConsumoDesayuno? consumoWh = null;
+            if (usuarioWh?.DesayunoGratuito == true)
+            {
+                consumoWh = await _db.ConsumoDesayunos
+                    .FirstOrDefaultAsync(c => c.UsuarioId == userId && c.Fecha == hoyWh);
+                if (consumoWh is null)
+                {
+                    consumoWh = new ConsumoDesayuno { UsuarioId = userId, Fecha = hoyWh };
+                    _db.ConsumoDesayunos.Add(consumoWh);
+                }
+            }
+
             foreach (var (productoId, cantidad, precioMetadata) in lineas)
             {
                 var producto = await _db.Productos.FindAsync(productoId);
@@ -405,9 +431,20 @@ public class PagosController : ControllerBase
                     continue;
                 }
 
-                // Usar el precio de la metadata (ya refleja descuento de desayuno gratuito si aplica)
-                // Fallback al precio actual del producto si la metadata es antigua y no lo incluye
+                // Usar el precio de la metadata: desde la versión actual ya incluye 0€ para la unidad
+                // gratuita y precio normal para el resto (split de líneas). Fallback al precio actual
+                // del producto si la metadata es de una versión anterior y no lo incluye.
                 var precioUnitario = precioMetadata ?? producto.Precio;
+
+                // Si esta línea es gratuita (precio 0), marcar ConsumoDesayuno para que el usuario
+                // no pueda volver a usar el beneficio en el mismo día
+                if (consumoWh is not null && precioUnitario == 0m)
+                {
+                    if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo)
+                        consumoWh.ZumoConsumido = true;
+                    else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata)
+                        consumoWh.BocataConsumido = true;
+                }
 
                 if (producto.Stock != -1)
                 {

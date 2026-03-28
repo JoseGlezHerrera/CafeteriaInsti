@@ -369,8 +369,8 @@ public partial class CarritoViewModel : ObservableObject
         bool consumioBocata = TieneDesayunoGratuito && BocataDisponible &&
                               Items.Any(i => i.ComponenteDesayuno == ComponenteDesayuno.Bocata);
 
-        // Capturar estado antes de limpiar
-        var totalCarrito = Total;
+        // Capturar total efectivo (con descuento aplicado) antes de limpiar el carrito
+        var totalCarrito = TotalEfectivo;
         var lineas       = _pendingLineas.ToList();
         var notas        = _pendingNotas;
 
