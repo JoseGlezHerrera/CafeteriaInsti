@@ -69,6 +69,7 @@ public partial class CarritoViewModel : ObservableObject
             OnPropertyChanged(nameof(Total));
             OnPropertyChanged(nameof(TotalEfectivo));
             OnPropertyChanged(nameof(Descuento));
+            OnPropertyChanged(nameof(HayDesayunoDisponible));
             OnPropertyChanged(nameof(EsPedidoGratuito));
         }
         catch { Preferences.Default.Remove(CarritoKey); }
@@ -92,20 +93,20 @@ public partial class CarritoViewModel : ObservableObject
     // ── Desayuno gratuito ─────────────────────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
-    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
     [NotifyPropertyChangedFor(nameof(Descuento))]
+    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(EsPedidoGratuito))]
     private bool _zumoDisponible;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MensajeDesayuno))]
-    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(TotalEfectivo))]
     [NotifyPropertyChangedFor(nameof(Descuento))]
+    [NotifyPropertyChangedFor(nameof(HayDesayunoDisponible))]
     [NotifyPropertyChangedFor(nameof(EsPedidoGratuito))]
     private bool _bocataDisponible;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo), nameof(EsPedidoGratuito))]
+    [NotifyPropertyChangedFor(nameof(MensajeDesayuno), nameof(TotalEfectivo), nameof(EsPedidoGratuito), nameof(HayDesayunoDisponible))]
     private bool _tieneDesayunoGratuito;
 
     /// <summary>Texto del banner de desayuno gratuito en la UI.</summary>
@@ -121,7 +122,11 @@ public partial class CarritoViewModel : ObservableObject
         }
     }
 
-    public bool HayDesayunoDisponible => TieneDesayunoGratuito && (ZumoDisponible || BocataDisponible);
+    /// <summary>
+    /// true solo cuando hay beneficio real aplicado en el carrito actual
+    /// (evita mostrar "Descuento -0.00 €" si los productos no tienen ComponenteDesayuno configurado).
+    /// </summary>
+    public bool HayDesayunoDisponible => TieneDesayunoGratuito && (ZumoDisponible || BocataDisponible) && Descuento > 0;
 
     /// <summary>true cuando el carrito no está vacío y el total efectivo es 0 (pedido 100% gratuito).</summary>
     public bool EsPedidoGratuito => !CarritoVacio && TieneDesayunoGratuito && TotalEfectivo == 0;
@@ -212,6 +217,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
         OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
         return true;
@@ -226,6 +232,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
         OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
@@ -239,6 +246,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
         OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
@@ -251,6 +259,7 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
         OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
         OnPropertyChanged(nameof(EsPedidoGratuito));
         GuardarCarrito();
     }
@@ -433,6 +442,8 @@ public partial class CarritoViewModel : ObservableObject
         CancelarPendingPago();
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
         OnPropertyChanged(nameof(CarritoVacio));
         OnPropertyChanged(nameof(EsPedidoGratuito));
         Preferences.Default.Remove(CarritoKey);
