@@ -27,7 +27,6 @@
 - [Seguridad](#seguridad)
 - [Distribución Android](#distribución-android)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
-- [Pendiente de implementar](#pendiente-de-implementar)
 - [Roadmap](#roadmap)
 - [Changelog](#changelog)
 
@@ -105,7 +104,7 @@ CafeIES/
 │   │   ├── ProductosController.cs      CRUD productos + imagen; filtro por categoría/búsqueda
 │   │   ├── CategoriasController.cs     CRUD categorías
 │   │   ├── PedidosController.cs        Crear/listar/detalle; máquina de estados; desayuno-status
-│   │   ├── PagosController.cs          Crear PaymentIntent, cancelar, webhook Stripe
+│   │   ├── PagosController.cs          Crear PaymentIntent (con split gratuito), cancelar, webhook
 │   │   ├── AdminController.cs          Usuarios, institutos, invitaciones, horarios, reportes,
 │   │   │                               desayunos (consumos + gestión beneficiarios)
 │   │   ├── NotificacionesController.cs Registro/eliminación tokens FCM (infraestructura)
@@ -138,7 +137,7 @@ CafeIES/
 │   │   ├── RegistroInvitacionPage      Registro por enlace/QR de invitación
 │   │   ├── HomePage                    Catálogo con categorías, búsqueda y filtros; guard IsLoading
 │   │   ├── ProductoDetallePage         Detalle de producto; bloqueado si sin stock
-│   │   ├── CarritoPage                 Resumen, banner desayuno gratuito, descuento, TotalEfectivo
+│   │   ├── CarritoPage                 Resumen, spinner desayuno, banner 🍊, descuento, TotalEfectivo
 │   │   ├── PagamentoWebPage            WebView con Stripe.js
 │   │   ├── ConfirmacionPedidoPage      Polling cada 2s; token "gratuito-{num}" sin polling
 │   │   ├── PedidosPage                 Historial con chips Hoy/Todo y paginación
@@ -146,7 +145,7 @@ CafeIES/
 │   │   ├── PerfilPage                  Datos personales, cambio de contraseña
 │   │   ├── AdminPedidosPage            Todos los pedidos: filtro por instituto, fecha y estado
 │   │   ├── AdminProductosPage          Gestión de productos con imagen
-│   │   ├── AdminEditProductoPage       Crear/editar producto (nombre, precio, stock, imagen…)
+│   │   ├── AdminEditProductoPage       Crear/editar producto con selector ComponenteDesayuno
 │   │   ├── AdminUsuariosPage           Panel contextual animado con acciones contextuales
 │   │   ├── AdminInvitacionesPage       Crear/listar invitaciones con QR descargable
 │   │   ├── AdminHorariosPage           Gestión de franjas horarias por instituto
@@ -164,7 +163,7 @@ CafeIES/
 │   ├── Pages/
 │   │   ├── Dashboard.razor             Métricas del día, pedidos recientes, SignalR live
 │   │   ├── Pedidos.razor               Lista paginada + cambio de estado
-│   │   ├── Productos.razor             CRUD con subida de imagen y campo ComponenteDesayuno
+│   │   ├── Productos.razor             CRUD con subida de imagen, badges ComponenteDesayuno 🥤🥪
 │   │   ├── Categorias.razor            CRUD categorías
 │   │   ├── Usuarios.razor              Lista usuarios + toggle desayuno gratuito 🍊
 │   │   ├── Desayunos.razor             Beneficiarios (buscar/filtrar/toggle) + consumos del día
@@ -175,7 +174,8 @@ CafeIES/
 │   ├── Services/
 │   │   └── AdminApiService.cs          HTTP client (timeout 20s); imagen a bytes antes de retry
 │   └── wwwroot/
-│       └── appsettings.json            URL base de la API (configurable sin recompilar)
+│       ├── appsettings.json            URL base de la API (configurable sin recompilar)
+│       └── css/app.css                 Estilos custom (ahora correctamente en git)
 │
 ├── CafeIES.Tests/                      ← Tests unitarios (xUnit + EF InMemory)
 │   └── ...                             95 tests: HorarioService, AuthService, dominio, validaciones
@@ -348,7 +348,8 @@ Alumno turno Tarde  → puede pedir entre 14:00 y 16:00
 Alumno turno Noche  → puede pedir entre 18:00 y 20:00
 ```
 
-- `HorarioService.EsHorarioValidoAsync` consulta la BD y usa `TimeOnly.TryParse` seguro.
+- `HorarioService.PuedePedirAhoraAsync` consulta la BD y usa `TimeOnly.TryParse` seguro.
+- Si no hay franja configurada para el turno, el pedido se permite (permisivo por defecto).
 - Si la franja no está activa, devuelve 400 con mensaje claro.
 - Personal e Invitados no tienen restricción horaria.
 
@@ -368,7 +369,11 @@ Cada producto puede marcarse con `ComponenteDesayuno`:
 | `Zumo` | Puede ser el zumo gratuito del día |
 | `Bocata` | Puede ser el bocadillo gratuito del día |
 
-Se configura desde el panel admin (Productos → campo "Desayuno gratuito") o desde MAUI.
+Se configura desde:
+- **MAUI Admin** → Productos → Editar → selector con tres opciones ❌ / 🥤 / 🥪
+- **Blazor Admin** → Productos (visible en tabla con badges de color)
+
+> **Importante**: al añadir un producto nuevo o editar uno existente desde MAUI, hay que configurar `ComponenteDesayuno` para que el descuento se aplique. Si se deja en `Ninguno`, el producto no entra en el programa aunque el alumno sea beneficiario.
 
 ### Activación por alumno
 
@@ -378,18 +383,18 @@ El admin activa el flag `DesayunoGratuito` en el perfil del alumno desde:
 
 ### Flujo en la app
 
-1. Al abrir el carrito, se consulta `GET /api/pedidos/desayuno-status`.
-2. Si hay desayuno disponible, aparece el banner 🍊 con los componentes restantes del día.
+1. Al abrir el carrito, se bloquea el botón de pago (`IsLoadingDesayuno = true`) y se consulta `GET /api/pedidos/desayuno-status`.
+2. Una vez cargado el estado, el botón se desbloquea. Si hay desayuno disponible, aparece el banner 🍊 con los componentes restantes del día.
 3. El `TotalEfectivo` se calcula client-side descontando la primera unidad elegible de cada componente.
 4. Si el total efectivo es **0 €** → flujo gratuito: `POST /api/pedidos` directo, sin Stripe.
-5. Si hay parte de pago → `POST /api/pagos/crear-intent` con el descuento ya aplicado en el PaymentIntent.
+5. Si hay parte de pago → `POST /api/pagos/crear-intent` con el descuento ya aplicado en el PaymentIntent. El metadata incluye líneas con precios divididos (0 € para la unidad gratuita, precio normal para el resto).
 
 ### Restricciones de seguridad
 
 - Solo **1 unidad** por componente es gratis al día — las adicionales se cobran a precio normal.
 - El precio 0 se valida en servidor en una transacción `Serializable`.
 - La tabla `ConsumoDesayuno` tiene índice único `(UsuarioId, Fecha)` — previene dobles consumos concurrentes.
-- El webhook de Stripe incluye `PrecioUnitario` en metadata para calcular correctamente el total en pedidos mixtos.
+- El webhook de Stripe detecta líneas a 0 € y marca `ConsumoDesayuno` correctamente aunque la app se haya cerrado antes de crear el pedido.
 
 ### Reporte diario
 
@@ -403,13 +408,14 @@ El admin activa el flag `DesayunoGratuito` en el perfil del alumno desde:
 
 ```
 1. Cliente: POST /api/pagos/crear-intent  →  API crea PaymentIntent con total calculado en servidor
-                                              (descuento desayuno aplicado si aplica)
+                                              (descuento desayuno aplicado; metadata con precios split)
 2. Cliente: abre WebView con Stripe.js    →  Usuario introduce tarjeta
 3. Stripe confirma el pago
-4. Cliente: navega INMEDIATAMENTE a ConfirmacionPedidoPage (sin esperar al servidor)
+4. Cliente: navega INMEDIATAMENTE a ConfirmacionPedidoPage (muestra TotalEfectivo)
 5. Background: POST /api/pedidos         →  crea el pedido en BD
 6. ConfirmacionPedidoPage: sondea GET /api/pedidos/by-intent/{id} cada 2s → muestra número
-7. Webhook Stripe:                       →  respaldo: crea el pedido si el cliente falló en paso 5
+7. Webhook Stripe:                       →  respaldo: crea el pedido y marca ConsumoDesayuno
+                                              si el cliente falló en paso 5
 ```
 
 Si el total es 0 € (desayuno completamente gratuito), se salta Stripe y se va directamente al paso 5.
@@ -494,30 +500,33 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Registro de profesores/personal mediante invitación QR o enlace
 - Login/logout con JWT + refresh automático y transparente
 - Auto-login al arrancar sin flash de login (fade-in solo si no hay sesión activa)
-- Panel contextual animado en gestión de usuarios — bottom sheet con ScaleTo + FadeTo overlay
+- Panel contextual animado en gestión de usuarios — bottom sheet con ScaleTo + FadeTo overlay + TranslateTo panel
 
 **Catálogo y carrito**
 - Catálogo de productos con categorías, filtros y búsqueda
-- Carrito de compras con control de cantidad y stock
-- Productos agotados bloqueados visualmente (sin tap, opacidad reducida)
+- Carrito persistente entre sesiones (via `Preferences`) — se recupera al volver a la app
+- Control de cantidad y stock; productos agotados bloqueados visualmente
 - Validación horaria por turno antes de crear el pedido
 
 **Desayuno gratuito**
+- Spinner de carga del estado de desayuno — bloquea el botón de pago hasta tener el estado real
 - Banner 🍊 en el carrito cuando hay desayuno disponible hoy
 - Descuento automático: 1 zumo + 1 bocadillo al día para beneficiarios
 - Flujo completamente gratuito si el pedido no tiene coste (sin Stripe)
 - Consumo único diario validado en servidor con transacción Serializable
+- Webhook de Stripe actualiza `ConsumoDesayuno` si la app falla tras el pago
+- Configuración de `ComponenteDesayuno` directamente desde el formulario MAUI (❌ / 🥤 / 🥪)
 - Gestión de beneficiarios desde MAUI (panel contextual) y Blazor Admin
 
 **Pagos**
-- **Pago real con Stripe** — flujo instantáneo: confirmación inmediata tras pago, pedido en background
+- Pago real con Stripe — confirmación inmediata tras pago, pedido en background
+- Pantalla de confirmación muestra el `TotalEfectivo` (con descuento) — no el precio bruto
 - Pedidos de coste 0 sin pasar por Stripe
-- Webhook como respaldo si el cliente falla tras el pago
+- Webhook como respaldo si el cliente falla tras el pago; metadata con precios split correctos
 
 **Pedidos**
-- Historial de pedidos del usuario con chips Hoy/Todo y paginación
-- Chips de filtro por fecha y estado en vista de empleado (Hoy/Todo + En curso/Pendiente/En prep.)
-- Chips de filtro por instituto, fecha (Hoy/Semana/Todo) y estado en vista admin
+- Historial con chips Hoy/Todo en vista usuario y empleado (filtrado client-side)
+- Chips Hoy/Semana/Todo en vista admin (filtrado server-side con parámetro `desde`)
 - Estado activo visual en todos los chips de fecha y estado (resalte ámbar)
 - Botones de acción (Preparar/Listo/Entregar/Cancelar) en forma de píldora con borde semántico
 - Detalle de pedido en tiempo real (SignalR)
@@ -525,10 +534,10 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 **Panel admin web (Blazor WASM) — 10 páginas**
 - Dashboard con métricas en tiempo real
-- Gestión de Productos (imagen, ComponenteDesayuno)
+- Gestión de Productos con imagen y badges ComponenteDesayuno (🥤 Zumo / 🥪 Bocata / —)
 - Gestión de Categorías
 - Gestión de Usuarios con toggle desayuno gratuito 🍊
-- **Desayunos**: beneficiarios (buscar/filtrar/toggle) + consumos del día
+- Desayunos: beneficiarios (buscar/filtrar/toggle) + consumos del día
 - Gestión de Pedidos con cambio de estado
 - Gestión de Institutos con dirección
 - Gestión de Horarios por turno
@@ -536,62 +545,14 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Reportes: Excel (3 hojas) y PDF (límite 1.000 registros)
 
 **Infraestructura**
-- **Multi-instituto** — selector en registro, filtros por instituto en admin, claim en JWT
-- **Subida de imágenes** — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
-- **Infraestructura Azure operativa** — App Service + SQL + Blob Storage + Static Web Apps
-- **CI/CD completo** — GitHub Actions para API, Admin y APK Android (~3 min)
-- **95 tests unitarios** — HorarioService, AuthService, dominio, validaciones
+- Multi-instituto — selector en registro, filtros por instituto en admin, claim en JWT
+- Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
+- Infraestructura Azure operativa — App Service + SQL + Blob Storage + Static Web Apps
+- CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min)
+- 95 tests unitarios — HorarioService, AuthService, dominio, validaciones
 - Health check en `/health` para Azure App Service
 - Warmup automático al arrancar (ping a `/health` en frío para reducir lag)
 - Hard delete de productos con historial conservado (FK nullable `SET NULL`)
-
----
-
-## Pendiente de implementar
-
-### 🔴 Alta prioridad
-
-#### Push Notifications (FCM)
-La infraestructura está preparada pero **no está activa**:
-- `FcmService.cs` en la API con FCM HTTP v1 y `GoogleCredential` cacheado en constructor
-- `PushNotificationService.cs` en MAUI es un stub vacío (pendiente de activar)
-- `DispositivoToken` y `NotificacionesController` implementados
-
-Para activarlo:
-1. Crear proyecto en [Firebase Console](https://console.firebase.google.com)
-2. Descargar `google-services.json` → `CafeIES.MAUI/Platforms/Android/`
-3. Descargar `GoogleService-Info.plist` → `CafeIES.MAUI/Platforms/iOS/`
-4. Generar Service Account JSON → Firebase Console → Configuración → Cuentas de servicio
-5. Añadir en Azure App Settings: `Fcm__ProjectId` y `Fcm__ServiceAccountJson`
-6. Implementar el cuerpo de `PushNotificationService.cs` para registrar el token
-
-Sin push notifications, los usuarios deben abrir la app para saber si su pedido está listo.
-
-### 🟡 Media prioridad
-
-#### Google Play Store
-Actualmente la distribución es por GitHub Releases (sideloading). Para Play Store:
-- Registrar cuenta Google Play Developer (pago único 25 USD)
-- Activar el pipeline de AAB firmado con keystore release (scripts en `infra/`)
-- Diseñar icono definitivo y capturas de pantalla
-- Publicar en canal de prueba interna
-
-#### Paginación completa en admin
-Los endpoints de usuarios admin devuelven todos los registros. Los pedidos admin ya tienen paginación (`page` + `pageSize`); falta extenderla a usuarios.
-
-#### Versionado de API
-No hay prefijo de versión (`/api/v1/...`). Cualquier cambio breaking rompe todos los clientes sin posibilidad de migración gradual.
-
-### 🟢 Baja prioridad
-
-#### XAML Compiled Bindings
-Warnings de MAUI sobre bindings no compilados en algunas vistas. Añadir `x:DataType` y activar `MauiEnableXamlCBindingWithSourceCompilation` mejoraría el rendimiento de la UI.
-
-#### Tests de integración
-Los 95 tests actuales son unitarios. No hay tests de integración que validen los endpoints contra BD real.
-
-#### Icono definitivo de la app
-El icono actual es el placeholder por defecto de MAUI.
 
 ---
 
@@ -600,216 +561,148 @@ El icono actual es el placeholder por defecto de MAUI.
 | Fase | Estado | Descripción |
 |---|---|---|
 | MVP — Pedidos y catálogo | ✅ Completada | API REST, JWT, MAUI, catálogo, carrito, horarios |
-| Panel admin y SignalR | ✅ Completada | Blazor WASM, 8 páginas, tiempo real, invitaciones QR |
+| Panel admin y SignalR | ✅ Completada | Blazor WASM, 10 páginas, tiempo real, invitaciones QR |
 | Seguridad y calidad | ✅ Completada | Rate limiting, audit trail, complejidad de contraseña, timeouts |
 | Multi-instituto | ✅ Completada | Entidad Instituto, filtros, claim en JWT |
 | Stripe + pagos reales | ✅ Completada | PaymentIntent, WebView con Stripe.js, webhook, flujo instantáneo |
 | Reportes e imágenes | ✅ Completada | Excel, PDF, subida de imágenes, tests unitarios |
 | Azure + CI/CD | ✅ Completada | App Service, SQL, Blob, Static Web Apps, GitHub Actions |
 | Distribución Android | ✅ Completada | APK via GitHub Releases, pipeline automatizado |
-| Revisión quirúrgica v0.12 | ✅ Completada | 37 tests E2E en prod, 12 bugs corregidos, flujo pago rediseñado |
 | Desayuno gratuito | ✅ Completada | Programa escolar: zumo + bocata/día; flujo gratuito sin Stripe |
 | Auto-login + UX pulida | ✅ Completada | Sin flash de login, panel contextual animado, filtros por fecha |
+| Desayuno — robustez completa | ✅ Completada | Race condition, webhook, metadata split, ComponenteDesayuno en MAUI |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
-| Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) |
+| Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
+| Versionado de API | ⏳ Pendiente | Prefijo `/api/v1/...` para migraciones graduales |
+| Tests de integración | ⏳ Pendiente | Endpoints contra BD real (actualmente solo unitarios) |
 
 ---
 
 ## Changelog
 
-### v0.13.0 — Desayuno gratuito, UX pulida y auditoría de seguridad (actual)
+### v0.14.0 — Desayuno gratuito: robustez completa + ComponenteDesayuno en MAUI
 
-#### Sistema de desayuno gratuito
-- **Nuevo enum `ComponenteDesayuno`** (`Ninguno`/`Zumo`/`Bocata`) en entidad `Producto`
-- **Flag `DesayunoGratuito`** en entidad `Usuario`; activable por admin
-- **Tabla `ConsumoDesayuno`** con índice único `(UsuarioId, Fecha)` — previene doble consumo concurrente
-- **`MetodoPago.Gratuito`** para pedidos de coste 0 (sin Stripe)
-- **`GET /api/pedidos/desayuno-status`** — devuelve los componentes disponibles del día
-- **`PATCH /api/admin/usuarios/{id}/desayuno-gratuito`** — activa/desactiva beneficiario
-- **`GET /api/admin/desayunos/consumos`** — reporte diario de consumos
-- Precio 0 validado en servidor en transacción `Serializable`; solo 1 unidad/componente/día
-- Metadata en PaymentIntent incluye `PrecioUnitario` para webhook correcto en pedidos mixtos
-- **Banner 🍊 en el carrito** cuando hay desayuno disponible
-- **Línea de descuento** en el resumen del carrito con `TotalEfectivo` client-side
-- `ConfirmacionPedidoPage` maneja token `"gratuito-{numero}"` sin polling a Stripe
-- **Admin Blazor — nueva página `/desayunos`**: beneficiarios (buscar/filtrar/toggle) + consumos del día
-- **Campo `ComponenteDesayuno`** en modal de producto (Admin Blazor y MAUI)
-- **Botón 🍊 en usuarios** en Blazor (página Usuarios) y en MAUI (panel contextual)
-- Migración `DesayunoGratuito` aplicada en producción
+#### ComponenteDesayuno en el formulario de producto MAUI
+- **Nueva UI** en `AdminEditProductoPage`: selector de tres opciones (❌ Ninguno / 🥤 Zumo / 🥪 Bocata) con resalte por color al seleccionar
+- El ViewModel carga `prod.ComponenteDesayuno` al editar y lo envía en `CrearProductoRequest` al guardar
+- Hasta ahora, guardar un producto desde MAUI reseteaba siempre `ComponenteDesayuno` a `Ninguno` — bug crítico que impedía configurar el zumo como gratuito desde el móvil
 
-#### Panel contextual animado en gestión de usuarios (MAUI)
-- Tap en tarjeta abre un **bottom sheet** con animación `ScaleTo(1.04)` + `FadeTo` overlay + `TranslateTo` panel
-- El panel muestra avatar, nombre, email, rol y estado en badges
-- Botones de acción contextuales según el estado del usuario:
-  - `Aprobar` / `Rechazar` (usuarios pendientes)
-  - `🍊 Desayuno` (alumnos activos — toggle)
-  - `Suspender` (usuarios activos)
-  - `Reactivar` (usuarios suspendidos)
-  - `Eliminar` (cualquier no-admin)
-- Cerrar tocando el overlay o el botón Cancelar; tarjeta vuelve a escala 1.0
-- Guard `_panelAnimando` con `try-finally` evita doble apertura y garantiza liberación aunque falle una animación
+#### Corrección del flujo de desayuno gratuito
 
-#### Filtro por fecha en vistas de pedidos
-- **Chips Hoy / Todo** en `PedidosPage` (usuario) y `EmpleadoPedidosPage` (empleado) — filtrado client-side
-- **Chips Hoy / Semana / Todo** en `AdminPedidosPage` — filtrado server-side con parámetro `desde`
-- Por defecto todas las vistas muestran solo pedidos del día
-- Los **chips de estado** también muestran ahora cuál está seleccionado (resalte ámbar)
+**Race condition en el carrito**:
+- `OnAppearing` lanzaba `CargarDesayunoStatusAsync` de forma fire-and-forget — el usuario podía pulsar "Pagar" antes de saber si tenía desayuno disponible
+- Solución: propiedad `IsLoadingDesayuno` que bloquea inmediatamente el botón de pago hasta tener el estado real. `PuedePulsarPagar = !IsLoading && !IsLoadingDesayuno`
 
-#### Auto-login y eliminación del flash de login
-- `LoginViewModel.TryAutoLoginAsync` devuelve `bool` — `true` si navegó, `false` si no hay sesión
-- El formulario arranca con `Opacity=0` y solo hace `FadeTo(1)` si no hay sesión activa
-- Sin sesión: fondo oscuro → formulario aparece con fade suave
-- Con sesión: fondo oscuro → pantalla principal directamente, sin ver el formulario
+**Metadata Stripe con precios incorrectos**:
+- `PagosController.CrearIntent` siempre almacenaba `producto.Precio` (precio completo) en la metadata, incluso para la unidad gratuita
+- Si la app se cerraba tras pagar, el webhook reconstruía el pedido con precios completos (sin descuento) y no marcaba `ConsumoDesayuno`
+- Solución: la metadata ahora almacena líneas divididas — `(ProductoId, 1, 0€)` para la unidad gratuita y `(ProductoId, resto, precio)` para las demás
 
-#### Mejoras visuales en pedidos
-- Botones de acción (Preparar / Listo / Entregar / Cancelar) en **forma de píldora** (`CornerRadius=50`) con borde semántico — coherentes con el sistema de chips de la app
+**Webhook no actualizaba ConsumoDesayuno**:
+- `ReconstruirPedidoAsync` no leía ni actualizaba `ConsumoDesayuno` — un usuario podía volver a usar el beneficio gratuito si la app fallaba tras el pago
+- Solución: el webhook ahora carga/crea `ConsumoDesayuno` y marca `ZumoConsumido`/`BocataConsumido` cuando detecta una línea con `PrecioUnitario == 0`
 
-#### Vulnerabilidades de seguridad corregidas
-- **CRÍTICO**: precio 0 se aplicaba a *todas* las unidades; ahora solo la primera unidad/componente/día
-- **ALTO**: Personal filtrado por instituto en `/api/pedidos/en-curso` (antes veía todos los institutos)
-- **ALTO**: Rate limiting `"pagos"` (20 req/min/IP) en `POST /api/pagos/crear-intent`
-- **ALTO**: Guard de instituto en mutaciones de usuario (cross-institute privilege escalation bloqueado)
-- **ALTO**: Webhook rechaza con 503 si `WebhookSecret` no configurado
-- **MEDIO**: `MaxLength(30)` en `CrearPedidoRequest.Lineas` — previene pedidos abusivos
+**Total incorrecto en pantalla de confirmación (Stripe)**:
+- `FinalizarPagoAsync` capturaba `Total` (precio bruto sin descuento) en lugar de `TotalEfectivo` (precio real cobrado)
+- La pantalla de confirmación mostraba el precio sin descuento aunque Stripe solo hubiera cobrado el precio con descuento
+- Solución: cambiado a `TotalEfectivo` para mostrar el importe real
 
-#### Bugs corregidos
-- Race condition en desplegable de institutos: `_institutosCargados = true` fijado antes del `await`
-- Guard `if (IsLoading) return` en `CargarAsync` de `PedidosViewModel`, `EmpleadoPedidosViewModel` y `HomeViewModel` — evita duplicados
-- Precio gratuito solo aplicado a 1 unidad: `TotalEfectivo` corregido en `CarritoViewModel`
-- Actualización optimista de `ZumoDisponible`/`BocataDisponible` + refresh real tras confirmar en background
-- `NotifyPropertyChangedFor` en estado de desayuno — precios, descuentos y banner se actualizan reactivamente
-- `TryAutoLoginAsync` limpia `HayError`/`ErrorMessage` al inicio — no muestra errores de sesiones anteriores
-- N+1 fix en `PedidosController.GetById` — una sola query con includes
-- `AdminApiService` lee imagen a bytes antes del retry (stream no consumido)
-- Chip `⏳ Pendientes` eliminado del filtro de estado de usuarios (devolvía lista vacía)
+**`HayDesayunoDisponible` visible con descuento 0**:
+- Si los productos del carrito tenían `ComponenteDesayuno.Ninguno`, la fila de descuento mostraba "-0.00 €"
+- Solución: `HayDesayunoDisponible` ahora requiere `Descuento > 0`
+
+#### Admin panel Blazor
+- Tabla de Productos: columna "Desayuno 🍊" con badges de color: `🥤 Zumo` (azul) / `🥪 Bocata` (verde) / `—`
+- Filtro "Solo desayuno" para ver solo productos del programa
+- **Fix `.gitignore`**: patrón `wwwroot/` global excluía los CSS del admin — el panel desplegaba sin estilos en producción
+
+#### Carrito persistente
+- El carrito se serializa a `Preferences` al modificarse y se restaura al volver a la app
+- Incluye `ComponenteDesayuno` de cada item para que el cálculo del descuento sea correcto tras restaurar
 
 ---
 
-### v0.12.0 — Flujo de pago instantáneo + revisión quirúrgica completa
+### v0.13.0 — Desayuno gratuito, UX pulida y auditoría de seguridad
 
-#### Flujo de pago rediseñado
-- **Confirmación inmediata**: tras el pago, la app navega al instante — sin bloquear al usuario
-- El carrito se limpia en el acto; la creación del pedido ocurre en `Task.Run` background
-- `ConfirmacionPedidoPage` sondea `GET /api/pedidos/by-intent/{id}` cada 2s hasta mostrar el número
-- Webhook de Stripe actúa como respaldo si el cliente no puede completar la llamada background
-- Eliminado el estado "Creando pedido…" que bloqueaba la UI 10-45 segundos
+#### Sistema de desayuno gratuito (base)
+- Enum `ComponenteDesayuno` (`Ninguno`/`Zumo`/`Bocata`) en entidad `Producto`
+- Flag `DesayunoGratuito` en `Usuario`; activable por admin
+- Tabla `ConsumoDesayuno` con índice único `(UsuarioId, Fecha)`
+- `MetodoPago.Gratuito` para pedidos de coste 0 (sin Stripe)
+- `GET /api/pedidos/desayuno-status` — componentes disponibles del día
+- `PATCH /api/admin/usuarios/{id}/desayuno-gratuito` — activar/desactivar beneficiario
+- Banner 🍊, línea de descuento y `TotalEfectivo` en el carrito
+- Nueva página `/desayunos` en Blazor Admin: beneficiarios + consumos del día
 
-#### Hard delete de productos
-- `LineaPedido.ProductoId` es ahora `int?` con `DeleteBehavior.SetNull`
-- Borrar un producto siempre hace hard delete; el historial conserva nombre y precio del momento
-- Migración `NullableProductoIdEnLineas` aplicada en producción
+#### Panel contextual animado (MAUI)
+- Bottom sheet con animación `ScaleTo(1.04)` + `FadeTo` overlay + `TranslateTo` panel
+- Botones contextuales según estado: Aprobar/Rechazar/🍊 Desayuno/Suspender/Reactivar/Eliminar
+- Guard `_panelAnimando` con `try-finally` evita doble apertura
 
-#### Bugs críticos/altos corregidos (revisión línea a línea)
-- **A1**: `NullReferenceException` al cancelar pedido con producto eliminado
-- **A2**: Redondeo de céntimos Stripe: `(long)(total*100)` → `Math.Round(..., AwayFromZero)`
-- **C1**: Log crítico al arrancar si `Stripe:WebhookSecret` no configurado
-- **M1**: Double-submit: predicado no traducible a SQL → movido a memoria tras `ToListAsync()`
-- **M2**: `PUT /api/productos` restringido a solo `Admin`
-- **M6**: `AbrirEditar` en panel Institutos pre-rellena el campo Dirección
-- **M8**: `[Range(-1, int.MaxValue)]` en `CrearProductoRequest.Stock`
-- **B4**: `GoogleCredential` cacheado en constructor de `FcmService`
-- **B9**: Índices añadidos en `Pedidos.Estado` y `DispositivoTokens.UsuarioId`
+#### Filtro por fecha en vistas de pedidos
+- Chips Hoy/Todo en `PedidosPage` y `EmpleadoPedidosPage` (filtrado client-side)
+- Chips Hoy/Semana/Todo en `AdminPedidosPage` (filtrado server-side con `desde`)
+- Chips de estado con resalte ámbar para el seleccionado
 
-#### Fixes de datos y rendimiento
-- Categoría "Café" con nombre y emoji corruptos corregida via migración SQL directa
-- `SignalR.SendAsync` en creación de pedido es fire-and-forget
-- Nuevo endpoint `GET /api/pedidos/by-intent/{paymentIntentId}`
-- Warmup automático al arrancar — ping a `/health` para reducir lag de cold start
-- Timeout `HttpClient` MAUI: 15s → 45s
+#### Seguridad corregida
+- **CRÍTICO**: precio 0 se aplicaba a todas las unidades — ahora solo a la primera unidad/componente/día
+- **ALTO**: Personal filtrado por instituto en `/api/pedidos/en-curso`
+- **ALTO**: Rate limiting "pagos" en `POST /api/pagos/crear-intent`
+- **ALTO**: Guard de instituto en mutaciones de usuario (cross-institute bloqueado)
+- **ALTO**: Webhook rechaza con 503 si `WebhookSecret` no configurado
+- **MEDIO**: `MaxLength(30)` en `CrearPedidoRequest.Lineas`
+
+---
+
+### v0.12.0 — Flujo de pago instantáneo + revisión quirúrgica
+
+- Confirmación inmediata tras pago — sin bloquear la UI; pedido creado en background
+- Webhook Stripe como respaldo si el cliente no puede crear el pedido
+- `GET /api/pedidos/by-intent/{paymentIntentId}` para polling en confirmación
+- Hard delete de productos con FK nullable `SET NULL` en historial
+- Bugs corregidos: redondeo Stripe, double-submit SQL, `NullReferenceException` con producto eliminado, 9 más
 
 ---
 
 ### v0.11.0 — Auditoría de seguridad y calidad completa
 
-Revisión exhaustiva línea por línea. 40 problemas identificados y corregidos:
-
-- **Crítico**: `Task.Result` en `HomeViewModel` → `await Task.WhenAll()` — elimina deadlock potencial
-- **Seguridad**: claves JWT/Stripe en placeholders; rate limiting extendido; `DiasValidez` 1–365; `Enum.IsDefined` en MetodoPago; notas XSS sanitizadas; path-traversal con `Path.GetRelativePath`
-- **Robustez**: `ReadCommitted` + `[ConcurrencyCheck]`; `TryParse` en horarios; transacción atómica en refresh token; código muerto `ConfirmarPagoAsync` eliminado
-- **Calidad**: `DateTime.UtcNow`; compresión HTTP; SignalR keepalive; auto-reconexión tras refresh; cache catálogo 60s; logging en todos los controllers
+- 40 problemas corregidos: deadlock `Task.Result`, rate limiting extendido, `ReadCommitted` + `ConcurrencyCheck`, `TryParse` horarios, notas XSS sanitizadas, path-traversal, SignalR keepalive, cache catálogo 60s
 
 ---
 
-### v0.10.0 — Pipeline CI/CD Android + distribución via GitHub Releases
+### v0.10.0 — Pipeline CI/CD Android
 
-- `AndroidManifest.xml`: permisos explícitos, `allowBackup="false"`, `network_security_config`
-- `network_security_config.xml`: cleartext HTTP bloqueado; solo CAs del sistema
-- `proguard.cfg`: reglas R8 para Mono runtime, OkHttp y SignalR
-- `infra/generar-keystore.ps1`: genera keystore RSA-2048 de 10.000 días
-- `.github/workflows/deploy-android.yml`: pipeline operativo con `global.json` para fijar .NET 9
-- `docs/politica-privacidad.html`: página RGPD en GitHub Pages
-- Primera distribución: `cafeies-2026.03.23.apk` (14.4 MB)
+- `AndroidManifest.xml`, `network_security_config.xml`, `proguard.cfg`
+- `deploy-android.yml`: APK debug versionado `YYYY.MM.<run>` en GitHub Releases
+- `infra/generar-keystore.ps1` para keystore release futuro
+- `docs/politica-privacidad.html` en GitHub Pages (RGPD)
 
 ---
 
-### v0.9.0 — Despliegue Azure completo y pagos verificados en producción
+### v0.9.0 — Despliegue Azure + pagos verificados en producción
 
-- Recursos Azure: App Service B1 (Linux, northeurope), Azure SQL, Blob Storage, Static Web App
-- EF Core migrations aplicadas; seed inicial ejecutado
-- Stripe webhook registrado en producción
-- CI/CD corregido: `azure/login@v2` + `az webapp deploy --type zip`
-- Test end-to-end verificado: PaymentIntent → Stripe `pm_card_visa` → Pedido creado (1.50 EUR)
-- `confirmation_method` cambiado a `automatic` (fix crítico para WebView + Stripe.js)
+- Recursos Azure: App Service B1, Azure SQL, Blob Storage, Static Web App
+- Stripe webhook registrado en producción; test E2E 1.50 EUR verificado
+- CI/CD corregido con `azure/login@v2` + `az webapp deploy --type zip`
 
 ---
 
-### v0.8.0 — Infraestructura Azure y CI/CD
+### v0.4.0 — v0.8.0
 
-- `IBlobStorageService`: local (dev) y Azure Blob Storage (prod) con selección automática
-- Health check `GET /health`; CORS desde `appsettings.Production.json`
-- GitHub Actions: `deploy-api.yml` y `deploy-admin.yml`
-- `staticwebapp.config.json` para SPA routing de Blazor WASM
-
----
-
-### v0.7.0 — Notificaciones push FCM (infraestructura)
-
-- `DispositivoToken` para almacenar tokens FCM
-- `FcmService` con FCM HTTP v1 y autenticación OAuth2 via Service Account
-- `NotificacionesController` para registro/eliminación de tokens
+- **v0.8.0**: `IBlobStorageService` local/Azure; health check; GitHub Actions API + Admin
+- **v0.7.0**: Infraestructura FCM (tokens, FcmService, NotificacionesController)
+- **v0.6.0**: 95 tests unitarios; reportes Excel/PDF; subida de imágenes
+- **v0.5.0**: Rate limiting auth; audit trail; complejidad contraseña; null-safe claims
+- **v0.4.0**: Stripe PaymentIntent + webhook; multi-instituto
 
 ---
 
-### v0.6.0 — Reportes, imágenes y tests
+### v0.1.0 — v0.3.0
 
-- 95 tests unitarios con xUnit + EF InMemory
-- Exportación Excel (ClosedXML) y PDF (QuestPDF)
-- Subida de imágenes de productos con protección path-traversal
-- Funciones admin desde MAUI: pedidos, productos, usuarios
-
----
-
-### v0.5.0 — Seguridad y calidad
-
-- Rate limiting en auth, audit trail, complejidad de contraseña, timeouts
-- Null-safe claims, timeout HTTP, SSL solo en `#if DEBUG`
-- RefreshToken solo en memoria en Blazor; DtoMapperExtensions; ILogger en ApiService
-
----
-
-### v0.4.0 — Stripe + Multi-instituto
-
-- Pagos reales con Stripe: PaymentIntent + webhook + verificación server-side
-- Multi-instituto: entidad Instituto, claim en JWT, filtros en admin
-
----
-
-### v0.3.0 — Auditoría y estabilización
-
-- 11 bugs corregidos: máquina de estados, modales de confirmación, validaciones, paginación
-
----
-
-### v0.2.0 — Panel admin y funciones avanzadas
-
-- Panel Blazor WASM completo (8 páginas); SignalR tiempo real; invitaciones QR; dashboard
-
----
-
-### v0.1.0 — MVP
-
-- API REST con JWT + BCrypt, catálogo, carrito, pedidos, restricción horaria
+- **v0.3.0**: 11 bugs corregidos: máquina de estados, modales, validaciones, paginación
+- **v0.2.0**: Panel Blazor WASM (8 páginas); SignalR; invitaciones QR; dashboard
+- **v0.1.0**: MVP — API REST, JWT + BCrypt, catálogo, carrito, pedidos, horarios
 
 ---
 
