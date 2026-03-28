@@ -224,7 +224,8 @@ public class AdminApiService
         var all = new List<PedidoDto>();
         int page = 1;
         const int pageSize = 500;
-        while (true)
+        const int maxPages  = 100;   // máx. 50 000 pedidos por exportación; usar filtro de fecha si se necesita más
+        while (page <= maxPages)
         {
             try
             {

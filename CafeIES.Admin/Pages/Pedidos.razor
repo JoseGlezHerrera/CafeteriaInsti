@@ -1,6 +1,9 @@
 @page "/pedidos"
+@implements IAsyncDisposable
 @inject AdminApiService Api
+@inject AuthAdminService Auth
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.SignalR.Client
 
 <PageTitle>Pedidos · CaféIES Admin</PageTitle>
 
@@ -172,6 +175,7 @@ else
 }
 
 @code {
+    private HubConnection?  _hubConnection;
     private List<PedidoDto> _pedidos    = new();
     private List<InstitutoDto> _institutos = new();
     private bool            _cargando   = true;
@@ -187,6 +191,47 @@ else
     {
         _institutos = await Api.GetInstitutosAsync();
         await Recargar();
+        await ConectarSignalRAsync();
+    }
+
+    private async Task ConectarSignalRAsync()
+    {
+        try
+        {
+            var apiBaseUrl = Api.GetApiBaseUrl();
+            if (string.IsNullOrEmpty(apiBaseUrl)) return;
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{apiBaseUrl}hubs/cafeteria", options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(Auth.Token);
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            // Nuevo pedido: recargar lista
+            _hubConnection.On<object>("NuevoPedido", async _ =>
+            {
+                await Recargar();
+                await InvokeAsync(StateHasChanged);
+            });
+
+            // Estado cambiado (desde MAUI u otro empleado): actualizar en tiempo real
+            _hubConnection.On<object>("EstadoPedidoActualizado", async _ =>
+            {
+                await Recargar();
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+        }
+        catch { /* SignalR no disponible — recargar manualmente con el botón */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
     }
 
     private async Task Recargar()

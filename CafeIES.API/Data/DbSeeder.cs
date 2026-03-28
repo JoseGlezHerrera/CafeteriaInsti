@@ -43,9 +43,7 @@ public static class DbSeeder
         await db.SaveChangesAsync();
 
         Console.WriteLine("──────────────────────────────────────────");
-        Console.WriteLine("  ✅ Admin creado:");
-        Console.WriteLine($"     Email: {adminEmail}");
-        Console.WriteLine("  ⚠️  Usa la contraseña configurada en Admin:Password.");
+        Console.WriteLine("  ✅ Admin creado. Usa las credenciales de Admin:Email / Admin:Password.");
         Console.WriteLine("──────────────────────────────────────────");
     }
 }

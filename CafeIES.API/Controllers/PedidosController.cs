@@ -99,8 +99,11 @@ public class PedidosController : ControllerBase
         if (usuario.Estado != EstadoCuenta.Activa)
             return StatusCode(403, new { mensaje = "Tu cuenta no está activa. No puedes realizar pedidos." });
 
-        // 1. Comprobar horario (omitir si el pago de Stripe ya fue procesado —
-        //    la ventana se validó al crear el PaymentIntent y revocar ahora dejaría al usuario pagado sin pedido)
+        // 1. Comprobar horario:
+        //    - Tarjeta (Stripe): se omite; la ventana ya fue validada al crear el PaymentIntent —
+        //      revocar ahora dejaría al usuario cobrado sin pedido.
+        //    - Gratuito (desayuno) y Efectivo: sí se valida. El desayuno se recoge en el recreo,
+        //      fuera del horario de clase, igual que cualquier otro pedido. Decisión de negocio intencional.
         if (string.IsNullOrEmpty(req.StripePaymentIntentId))
         {
             var horario = await _horario.PuedePedirAhoraAsync(userId.Value);

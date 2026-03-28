@@ -14,7 +14,8 @@ public class HorarioService
 {
     private readonly AppDbContext _db;
     private readonly IMemoryCache _cache;
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan FranjasCacheTtl = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan UsuarioCacheTtl = TimeSpan.FromMinutes(5);
 
     public HorarioService(AppDbContext db, IMemoryCache cache)
     {
@@ -28,7 +29,14 @@ public class HorarioService
     /// </summary>
     public async Task<HorarioResult> PuedePedirAhoraAsync(int usuarioId)
     {
-        var usuario = await _db.Usuarios.FindAsync(usuarioId);
+        // Cachear rol/turno del usuario (cambian raramente — al cambiar perfil el caché expira en 5 min)
+        var userKey = $"usuario-horario:{usuarioId}";
+        var usuario = await _cache.GetOrCreateAsync<Usuario?>(userKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = UsuarioCacheTtl;
+            return await _db.Usuarios.FindAsync(usuarioId);
+        });
+
         if (usuario is null)
             return HorarioResult.Error("Usuario no encontrado.");
 
@@ -44,7 +52,7 @@ public class HorarioService
         var cacheKey = $"franjas:{(int)usuario.Turno}";
         var franjas = await _cache.GetOrCreateAsync(cacheKey, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            entry.AbsoluteExpirationRelativeToNow = FranjasCacheTtl;
             return await _db.FranjasHorarias
                 .Where(f => f.Turno == usuario.Turno && f.Activa)
                 .ToListAsync();
