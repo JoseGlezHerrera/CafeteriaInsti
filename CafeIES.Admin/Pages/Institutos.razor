@@ -71,8 +71,10 @@
                 }
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button class="btn-primary" @onclick="Guardar">Guardar</button>
+                <button class="btn-secondary" @onclick="CerrarModal" disabled="@_guardando">Cancelar</button>
+                <button class="btn-primary" @onclick="Guardar" disabled="@_guardando">
+                    @(_guardando ? "Guardando…" : "Guardar")
+                </button>
             </div>
         </div>
     </div>
@@ -81,6 +83,8 @@
 @code {
     private List<InstitutoDto> _institutos = new();
     private bool _mostrarModal;
+    private bool _guardando;   // BUG-023: evita doble-clic en Guardar
+    private bool _toggling;    // BUG-033: evita doble-clic en ToggleActivo
     private int? _editandoId;
     private string _nombre = string.Empty;
     private string _codigo = string.Empty;
@@ -120,6 +124,8 @@
             _error = "El nombre y el codigo son obligatorios.";
             return;
         }
+        if (_guardando) return;  // BUG-023
+        _guardando = true;
 
         var req = new CrearInstitutoRequest(_nombre.Trim(), _codigo.Trim(), _direccion.Trim());
         bool ok;
@@ -128,6 +134,7 @@
         else
             ok = await Api.CrearInstitutoAsync(req);
 
+        _guardando = false;
         if (!ok)
         {
             _error = "Error al guardar. Verifica que el codigo corto no este duplicado.";
@@ -140,8 +147,11 @@
 
     private async Task ToggleActivo(int id)
     {
+        if (_toggling) return;  // BUG-033
+        _toggling = true;
         await Api.ToggleInstitutoAsync(id);
         await Recargar();
+        _toggling = false;
     }
 
     private void CerrarModal() => _mostrarModal = false;

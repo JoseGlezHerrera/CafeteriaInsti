@@ -26,12 +26,21 @@ public partial class AdminInvitacionesViewModel : ObservableObject
     {
         IsLoading = true;
         HasError  = false;
-
-        var lista = await _api.GetInvitacionesAsync();
-        Invitaciones.Clear();
-        foreach (var inv in lista) Invitaciones.Add(inv);
-
-        IsLoading = false;
+        try
+        {
+            var lista = await _api.GetInvitacionesAsync();
+            Invitaciones.Clear();
+            foreach (var inv in lista) Invitaciones.Add(inv);
+        }
+        catch
+        {
+            Error    = "Error al cargar las invitaciones.";
+            HasError = true;
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-035: siempre desactiva spinner
+        }
     }
 
     [RelayCommand]

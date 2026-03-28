@@ -14,13 +14,15 @@ namespace CafeIES.API.Controllers;
 [EnableRateLimiting("general")]
 public class InvitacionesController : ControllerBase
 {
-    private readonly AppDbContext   _db;
-    private readonly IConfiguration _config;
+    private readonly AppDbContext    _db;
+    private readonly IConfiguration  _config;
+    private readonly ILogger<InvitacionesController> _logger;  // SEC-021
 
-    public InvitacionesController(AppDbContext db, IConfiguration config)
+    public InvitacionesController(AppDbContext db, IConfiguration config, ILogger<InvitacionesController> logger)
     {
         _db     = db;
         _config = config;
+        _logger = logger;
     }
 
     // ── GET /api/invitaciones ─────────────────────────────────────────────────
@@ -58,6 +60,10 @@ public class InvitacionesController : ControllerBase
         _db.Invitaciones.Add(invitacion);
         await _db.SaveChangesAsync();
 
+        _logger.LogInformation("[AUDIT] Invitación creada: tipo={Tipo} token={Token} expira={Expira} usosMax={UsosMax} por admin={Admin}",
+            invitacion.Tipo, invitacion.Token, invitacion.FechaExpiracion, invitacion.UsosMaximos,
+            User.Identity?.Name ?? "desconocido");
+
         return Ok(MapDto(invitacion));
     }
 
@@ -87,6 +93,9 @@ public class InvitacionesController : ControllerBase
     {
         var invitacion = await _db.Invitaciones.FindAsync(id);
         if (invitacion is null) return NotFound();
+
+        _logger.LogInformation("[AUDIT] Invitación revocada: id={Id} tipo={Tipo} token={Token} por admin={Admin}",
+            invitacion.Id, invitacion.Tipo, invitacion.Token, User.Identity?.Name ?? "desconocido");
 
         _db.Invitaciones.Remove(invitacion);
         await _db.SaveChangesAsync();
