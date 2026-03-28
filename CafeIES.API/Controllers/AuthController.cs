@@ -149,17 +149,23 @@ public class AuthController : ControllerBase
             _                       => RolUsuario.Personal
         };
 
+        // SEC-017: generar refresh token antes del primer (y único) SaveChangesAsync
+        // para que usuario + invitación + token queden en una sola transacción atómica.
+        // Antes había dos saves: si el segundo fallaba el usuario existía sin refresh token.
+        var refreshToken = _auth.GenerarRefreshToken();
         var usuario = new Usuario
         {
-            NombreCompleto  = req.NombreCompleto,
-            Email           = req.Email.ToLower(),
-            PasswordHash    = _auth.HashPassword(req.Password),
-            Rol             = rol,
-            Turno           = null,  // Sin restricción horaria
-            Estado          = EstadoCuenta.Activa,
-            FechaValidacion = DateTime.UtcNow,
-            InstitutoId     = req.InstitutoId,
-            Instituto       = instituto
+            NombreCompleto     = req.NombreCompleto,
+            Email              = req.Email.ToLower(),
+            PasswordHash       = _auth.HashPassword(req.Password),
+            Rol                = rol,
+            Turno              = null,  // Sin restricción horaria
+            Estado             = EstadoCuenta.Activa,
+            FechaValidacion    = DateTime.UtcNow,
+            InstitutoId        = req.InstitutoId,
+            Instituto          = instituto,
+            RefreshToken       = refreshToken,
+            RefreshTokenExpiry = DateTime.UtcNow.AddDays(30)
         };
 
         _db.Usuarios.Add(usuario);
@@ -173,20 +179,14 @@ public class AuthController : ControllerBase
 
         try
         {
-            await _db.SaveChangesAsync();
+            await _db.SaveChangesAsync(); // usuario + invitación + refresh token en una sola TX
         }
         catch (DbUpdateConcurrencyException)
         {
             return Conflict(new { mensaje = "Esta invitación acaba de alcanzar su límite de usos. Solicita un nuevo enlace." });
         }
 
-        // Login automático
-        var accessToken  = _auth.GenerarAccessToken(usuario);
-        var refreshToken = _auth.GenerarRefreshToken();
-        usuario.RefreshToken       = refreshToken;
-        usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
-        await _db.SaveChangesAsync();
-
+        var accessToken = _auth.GenerarAccessToken(usuario);
         return Ok(new LoginResponse(accessToken, refreshToken, usuario.ToDto()));
     }
 

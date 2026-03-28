@@ -477,18 +477,18 @@ public class AdminController : ControllerBase
 
         var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
 
-        var query = _db.Pedidos
+        // PERF-013: aplicar filtros primero SIN includes para que el COUNT no genere JOINs innecesarios
+        var baseQuery = _db.Pedidos.AsQueryable();
+        if (desde.HasValue)             baseQuery = baseQuery.Where(p => p.FechaCreacion >= desde.Value.Date);
+        if (hasta.HasValue)             baseQuery = baseQuery.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
+        if (estado.HasValue)            baseQuery = baseQuery.Where(p => p.Estado == estado);
+        if (institutoEfectivo.HasValue) baseQuery = baseQuery.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
+
+        var totalCount = await baseQuery.CountAsync(); // COUNT sin JOINs de includes
+
+        var pedidos = await baseQuery
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
-            .AsQueryable();
-
-        if (desde.HasValue)            query = query.Where(p => p.FechaCreacion >= desde.Value.Date);
-        if (hasta.HasValue)            query = query.Where(p => p.FechaCreacion < hasta.Value.Date.AddDays(1));
-        if (estado.HasValue)           query = query.Where(p => p.Estado == estado);
-        if (institutoEfectivo.HasValue) query = query.Where(p => p.Usuario.InstitutoId == institutoEfectivo);
-
-        var totalCount = await query.CountAsync();
-        var pedidos = await query
             .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

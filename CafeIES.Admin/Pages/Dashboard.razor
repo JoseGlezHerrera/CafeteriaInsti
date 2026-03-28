@@ -164,10 +164,15 @@ else
                 .WithAutomaticReconnect()
                 .Build();
 
+            // INC-023: toda la mutación de estado dentro de InvokeAsync para thread-safety
+            // (el callback de SignalR se ejecuta en un hilo secundario, no en el de renderizado Blazor)
             _hubConnection.On<object>("NuevoPedido", async _ =>
             {
-                _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
-                await InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () =>
+                {
+                    _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+                    StateHasChanged();
+                });
             });
 
             await _hubConnection.StartAsync();

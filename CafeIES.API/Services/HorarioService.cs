@@ -59,8 +59,10 @@ public class HorarioService
                 .ToListAsync();
         });
 
+        // BUG-013: sin franjas de bloqueo configuradas → permitido, pero con mensaje explicativo
+        // (distinto de "Pedidos disponibles." que indica franjas activas pero ninguna bloqueando ahora)
         if (franjas is null || !franjas.Any())
-            return HorarioResult.Permitido("Pedidos disponibles.");
+            return HorarioResult.Permitido("Sin franjas de bloqueo configuradas para este turno.");
 
         // ¿Hay alguna franja bloqueada activa ahora mismo?
         var franjaBloquedaActiva = franjas.FirstOrDefault(f => f.EsBloqueada && f.EstaActiva);

@@ -89,8 +89,10 @@
                 }
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button class="btn-primary" @onclick="GuardarFranja">Guardar</button>
+                <button class="btn-secondary" @onclick="CerrarModal" disabled="@_guardando">Cancelar</button>
+                <button class="btn-primary" @onclick="GuardarFranja" disabled="@_guardando">
+                    @(_guardando ? "Guardando…" : "Guardar")
+                </button>
             </div>
         </div>
     </div>
@@ -108,8 +110,10 @@
                 <p>¿Eliminar la franja <strong>@_eliminarDesc</strong>? Los alumnos de este turno podrían perder acceso a pedidos.</p>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" @onclick="CancelarEliminarFranja">Cancelar</button>
-                <button class="btn-primary" style="background:var(--red)" @onclick="EliminarFranjaConfirmada">Eliminar</button>
+                <button class="btn-secondary" @onclick="CancelarEliminarFranja" disabled="@_guardando">Cancelar</button>
+                <button class="btn-primary" style="background:var(--red)" @onclick="EliminarFranjaConfirmada" disabled="@_guardando">
+                    @(_guardando ? "Eliminando…" : "Eliminar")
+                </button>
             </div>
         </div>
     </div>
@@ -125,6 +129,7 @@
     private string _fError = string.Empty;
     private bool   _fEsBloqueada;
 
+    private bool   _guardando;         // UX-011: bloquea botones durante operación en curso
     private bool   _confirmarEliminar;
     private int    _eliminarId;
     private string _eliminarDesc = string.Empty;
@@ -154,9 +159,11 @@
             _fError = "La hora de inicio y fin no pueden ser iguales.";
             return;
         }
-        _fError = string.Empty;
+        _fError    = string.Empty;
+        _guardando = true;
         await Api.CrearFranjaAsync(new UpsertFranjaRequest(_turnoModal, _fDesc, _fInicio, _fFin, true, _fEsBloqueada));
-        _franjas = await Api.GetHorariosAsync();
+        _franjas      = await Api.GetHorariosAsync();
+        _guardando    = false;
         _mostrarModal = false;
     }
 
@@ -177,8 +184,10 @@
     private async Task EliminarFranjaConfirmada()
     {
         _confirmarEliminar = false;
+        _guardando         = true;
         await Api.EliminarFranjaAsync(_eliminarId);
-        _franjas = await Api.GetHorariosAsync();
+        _franjas      = await Api.GetHorariosAsync();
+        _guardando    = false;
         _eliminarId   = 0;
         _eliminarDesc = string.Empty;
     }
