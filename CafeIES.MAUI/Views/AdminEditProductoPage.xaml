@@ -158,6 +158,124 @@
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Desayuno gratuito -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Desayuno gratuito 🍊"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{StaticResource MutedColor}"/>
+                    <Grid ColumnDefinitions="*,8,*,8,*" RowDefinitions="Auto">
+
+                        <!-- Ninguno -->
+                        <Border Grid.Column="0"
+                                Padding="0,10"
+                                StrokeThickness="2">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Ninguno">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource AccentColor}"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Zumo">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Bocata">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
+                                <Label Text="❌" FontSize="20" HorizontalOptions="Center"/>
+                                <Label Text="Ninguno" FontFamily="SyneBold" FontSize="11"
+                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
+                                                      CommandParameter="0"/>
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                        <!-- Zumo -->
+                        <Border Grid.Column="2"
+                                Padding="0,10"
+                                StrokeThickness="2">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Zumo">
+                                    <Setter Property="BackgroundColor" Value="#1a4fa3e8"/>
+                                    <Setter Property="Stroke" Value="#4fa3e8"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Ninguno">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Bocata">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
+                                <Label Text="🥤" FontSize="20" HorizontalOptions="Center"/>
+                                <Label Text="Zumo" FontFamily="SyneBold" FontSize="11"
+                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
+                                                      CommandParameter="1"/>
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                        <!-- Bocata -->
+                        <Border Grid.Column="4"
+                                Padding="0,10"
+                                StrokeThickness="2">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Bocata">
+                                    <Setter Property="BackgroundColor" Value="#1a4caf82"/>
+                                    <Setter Property="Stroke" Value="#4caf82"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Ninguno">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding ComponenteDesayuno}"
+                                             Value="Zumo">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
+                                <Label Text="🥪" FontSize="20" HorizontalOptions="Center"/>
+                                <Label Text="Bocata" FontFamily="SyneBold" FontSize="11"
+                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
+                                                      CommandParameter="2"/>
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                    </Grid>
+                </VerticalStackLayout>
+
                 <!-- Alérgenos -->
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Alérgenos"

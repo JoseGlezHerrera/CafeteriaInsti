@@ -96,6 +96,9 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
     [ObservableProperty]
     private CategoriaDto? _categoriaSeleccionada;
 
+    [ObservableProperty]
+    private ComponenteDesayuno _componenteDesayuno = ComponenteDesayuno.Ninguno;
+
     public ObservableCollection<CategoriaDto> Categorias { get; } = new();
     public ObservableCollection<AlergenoSeleccionable> Alergenos { get; } = new();
 
@@ -132,6 +135,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                     ? _api.BuildImageUrl(prod.ImagenUrl)
                     : null;
                 CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
+                ComponenteDesayuno   = prod.ComponenteDesayuno;
 
                 Alergenos.Clear();
                 foreach (var a in alergenos)
@@ -151,6 +155,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
             Stock        = -1;
             ImagenUrl    = null;
             CategoriaSeleccionada = Categorias.FirstOrDefault();
+            ComponenteDesayuno    = ComponenteDesayuno.Ninguno;
 
             Alergenos.Clear();
             foreach (var a in alergenos)
@@ -158,6 +163,13 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         }
 
         IsLoading = false;
+    }
+
+    [RelayCommand]
+    private void SetComponenteDesayuno(string valor)
+    {
+        if (int.TryParse(valor, out int v))
+            ComponenteDesayuno = (ComponenteDesayuno)v;
     }
 
     [RelayCommand]
@@ -183,7 +195,8 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
             .ToList();
 
         var req = new CrearProductoRequest(
-            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds);
+            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds,
+            ComponenteDesayuno);
 
         bool ok = ProductoId > 0
             ? await _api.ActualizarProductoAsync(ProductoId, req)
