@@ -20,7 +20,7 @@ public class FcmService
     private readonly IHttpClientFactory  _httpFactory;
     private readonly IConfiguration      _config;
     private readonly ILogger<FcmService> _logger;
-    private readonly ITokenAccess?       _credential; // cached per instance (singleton)
+    private readonly ITokenAccess?       _credential; // cacheado en la instancia singleton — reutiliza access token entre requests
 
     private const string FcmScope = "https://www.googleapis.com/auth/firebase.messaging";
 

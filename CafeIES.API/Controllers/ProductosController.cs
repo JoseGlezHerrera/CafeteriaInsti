@@ -141,7 +141,7 @@ public class ProductosController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
-        await _db.Entry(producto).Reference(p => p.Categoria).LoadAsync();
+        // PERF-011: Categoria ya cargada por Include() — no hace falta LoadAsync adicional
         return Ok(producto.ToDto());
     }
 

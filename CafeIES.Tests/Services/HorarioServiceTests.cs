@@ -2,6 +2,7 @@ using CafeIES.API.Data;
 using CafeIES.API.Services;
 using CafeIES.Shared.Models;
 using CafeIES.Tests.TestHelpers;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CafeIES.Tests.Services;
 
@@ -13,7 +14,7 @@ public class HorarioServiceTests
     public async Task PuedePedirAhora_UsuarioNoExiste_RetornaError()
     {
         using var db  = DbContextFactory.Create();
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
 
         var result = await sut.PuedePedirAhoraAsync(9999);
 
@@ -37,7 +38,7 @@ public class HorarioServiceTests
         });
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.True(result.Puede);
@@ -58,7 +59,7 @@ public class HorarioServiceTests
         });
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
@@ -75,7 +76,7 @@ public class HorarioServiceTests
         // No se añade ninguna franja para el turno Mañana
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
@@ -90,7 +91,7 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(FranjaActiva(id: 1, activa: false));
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         // La franja existe pero está desactivada → sin franjas activas
@@ -110,7 +111,7 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(FranjaActiva(id: 1));   // abarca ±60min desde ahora
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.True(result.Puede);
@@ -129,7 +130,7 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(franja);
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.Contains(franja.HoraFin, result.Mensaje);
@@ -149,7 +150,7 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(FranjaFutura(id: 1));   // empieza en +90min
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
@@ -166,7 +167,7 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(FranjaPasada(id: 1));   // terminó hace rato
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
@@ -185,13 +186,16 @@ public class HorarioServiceTests
         db.FranjasHorarias.Add(FranjaActiva(id: 1, turno: Turno.Tarde));
         await db.SaveChangesAsync();
 
-        var sut = new HorarioService(db);
+        var sut = CreateService(db);
         var result = await sut.PuedePedirAhoraAsync(1);
 
         Assert.False(result.Puede);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static HorarioService CreateService(AppDbContext db) =>
+        new(db, new MemoryCache(new MemoryCacheOptions()));
 
     private static Usuario AlumnoManana(int id) => new()
     {

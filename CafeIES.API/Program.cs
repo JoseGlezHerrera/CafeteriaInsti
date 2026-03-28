@@ -22,7 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<HorarioService>();
 builder.Services.AddSingleton<StripeService>();
-builder.Services.AddScoped<FcmService>();
+builder.Services.AddSingleton<FcmService>(); // PERF-010: Singleton para reutilizar credencial y caché de access token de FCM
 builder.Services.AddScoped<DesayunoService>();
 
 // ── Almacenamiento de imágenes ────────────────────────────────────────────────
@@ -47,7 +47,9 @@ builder.Services.AddHealthChecks();
 builder.Services.AddResponseCompression(opts => { opts.EnableForHttps = true; });
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]!;
+// INC-021: fallo explícito y claro si Jwt:Key no está configurado (evita NullReferenceException opaco en producción)
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("La configuración 'Jwt:Key' es obligatoria. Añádela en appsettings o en las variables de entorno de Azure.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {

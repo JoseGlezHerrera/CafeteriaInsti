@@ -67,9 +67,17 @@ public partial class LoginViewModel : ObservableObject
             return;
         }
 
-        // Conectar SignalR y registrar token push en segundo plano
-        _ = _api.ConectarSignalRAsync();
-        _ = _push.RegistrarAsync();
+        // BUG-011: conectar SignalR y registrar token push en segundo plano con manejo de errores
+        _ = Task.Run(async () =>
+        {
+            try { await _api.ConectarSignalRAsync(); }
+            catch (Exception ex) { _logger.LogWarning(ex, "No se pudo conectar SignalR tras el login."); }
+        });
+        _ = Task.Run(async () =>
+        {
+            try { await _push.RegistrarAsync(); }
+            catch (Exception ex) { _logger.LogWarning(ex, "No se pudo registrar el token push tras el login."); }
+        });
 
         // Navegar al TabBar según el rol
         var destino = resultado.Usuario.Rol switch
@@ -103,8 +111,17 @@ public partial class LoginViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            _ = _api.ConectarSignalRAsync();
-            _ = _push.RegistrarAsync();
+            // BUG-011: idem en auto-login
+            _ = Task.Run(async () =>
+            {
+                try { await _api.ConectarSignalRAsync(); }
+                catch (Exception ex) { _logger.LogWarning(ex, "No se pudo conectar SignalR en auto-login."); }
+            });
+            _ = Task.Run(async () =>
+            {
+                try { await _push.RegistrarAsync(); }
+                catch (Exception ex) { _logger.LogWarning(ex, "No se pudo registrar el token push en auto-login."); }
+            });
             var destino = usuario.Rol switch
             {
                 RolUsuario.Admin    => "//Admin",

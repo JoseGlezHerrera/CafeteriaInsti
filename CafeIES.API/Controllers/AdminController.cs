@@ -403,6 +403,9 @@ public class AdminController : ControllerBase
         _db.FranjasHorarias.Add(franja);
         await _db.SaveChangesAsync();
 
+        // INC-020: invalidar caché de HorarioService para que el cambio surta efecto inmediato
+        _cache.Remove($"franjas:{(int)req.Turno}");
+
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         _logger.LogInformation("[AUDIT] {Admin} creó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
             adminEmail, franja.Id, franja.Turno, franja.HoraInicio, franja.HoraFin);
@@ -417,6 +420,7 @@ public class AdminController : ControllerBase
         var franja = await _db.FranjasHorarias.FindAsync(id);
         if (franja is null) return NotFound();
 
+        var turnoAnterior = franja.Turno; // capturar antes de modificar (puede cambiar)
         franja.Turno       = req.Turno;
         franja.Descripcion = req.Descripcion;
         franja.HoraInicio  = req.HoraInicio;
@@ -424,6 +428,11 @@ public class AdminController : ControllerBase
         franja.Activa      = req.Activa;
         franja.EsBloqueada = req.EsBloqueada;
         await _db.SaveChangesAsync();
+
+        // INC-020: invalidar turno anterior Y nuevo (puede haber cambiado)
+        _cache.Remove($"franjas:{(int)turnoAnterior}");
+        if (req.Turno != turnoAnterior)
+            _cache.Remove($"franjas:{(int)req.Turno}");
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         _logger.LogInformation("[AUDIT] {Admin} actualizó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
@@ -439,12 +448,16 @@ public class AdminController : ControllerBase
         var franja = await _db.FranjasHorarias.FindAsync(id);
         if (franja is null) return NotFound();
 
+        var turno = franja.Turno;
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         _db.FranjasHorarias.Remove(franja);
         await _db.SaveChangesAsync();
 
+        // INC-020: invalidar caché del turno afectado
+        _cache.Remove($"franjas:{(int)turno}");
+
         _logger.LogWarning("[AUDIT] {Admin} eliminó la franja horaria {Id} ({Turno} {Inicio}-{Fin})",
-            adminEmail, id, franja.Turno, franja.HoraInicio, franja.HoraFin);
+            adminEmail, id, turno, franja.HoraInicio, franja.HoraFin);
 
         return NoContent();
     }
