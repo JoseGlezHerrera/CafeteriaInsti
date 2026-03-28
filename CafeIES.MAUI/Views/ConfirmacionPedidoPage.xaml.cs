@@ -78,7 +78,11 @@ public partial class ConfirmacionPedidoPage : ContentPage
                 return;
             }
         }
-        // Timeout: el pedido se creará igual (webhook), solo no tenemos el número ahora
+        // Timeout: el pedido se creará igual (webhook), solo no tenemos el número ahora.
+        // Informar al usuario en lugar de dejar "…" indefinidamente.
+        if (!ct.IsCancellationRequested)
+            MainThread.BeginInvokeOnMainThread(() =>
+                NumeroPedidoLabel.Text = "Revisa tu\nhistorial");
     }
 
     protected override bool OnBackButtonPressed() => true; // no volver a la pasarela

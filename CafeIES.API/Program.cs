@@ -23,6 +23,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<HorarioService>();
 builder.Services.AddSingleton<StripeService>();
 builder.Services.AddScoped<FcmService>();
+builder.Services.AddScoped<DesayunoService>();
 
 // ── Almacenamiento de imágenes ────────────────────────────────────────────────
 // Si AzureStorage:ConnectionString está configurado → Azure Blob Storage (producción)
@@ -76,13 +77,13 @@ builder.Services.AddAuthorization();
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
 // Protección contra fuerza bruta en endpoints de autenticación.
-// Máximo 10 intentos por IP por minuto. Responde con 429 si se supera.
+// Máximo 5 intentos por IP por minuto. Responde con 429 si se supera.
 builder.Services.AddRateLimiter(options =>
 {
-    // Política auth: 10 req/min/IP — para login, registro, refresh
+    // Política auth: 5 req/min/IP — para login, registro, refresh
     options.AddFixedWindowLimiter("auth", opt =>
     {
-        opt.PermitLimit          = 10;
+        opt.PermitLimit          = 5;
         opt.Window               = TimeSpan.FromMinutes(1);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit           = 0;

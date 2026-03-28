@@ -26,16 +26,19 @@ public class PagosController : ControllerBase
     private readonly IConfiguration            _config;
     private readonly IHubContext<CafeteriaHub> _hub;
     private readonly ILogger<PagosController>  _logger;
+    private readonly DesayunoService           _desayuno;
 
     public PagosController(AppDbContext db, StripeService stripe, HorarioService horario,
-        IConfiguration config, IHubContext<CafeteriaHub> hub, ILogger<PagosController> logger)
+        IConfiguration config, IHubContext<CafeteriaHub> hub, ILogger<PagosController> logger,
+        DesayunoService desayuno)
     {
-        _db      = db;
-        _stripe  = stripe;
-        _horario = horario;
-        _config  = config;
-        _hub     = hub;
-        _logger  = logger;
+        _db       = db;
+        _stripe   = stripe;
+        _horario  = horario;
+        _config   = config;
+        _hub      = hub;
+        _logger   = logger;
+        _desayuno = desayuno;
     }
 
     /// <summary>
@@ -75,8 +78,7 @@ public class PagosController : ControllerBase
         var descripcionItems = new List<string>();
 
         // Comprobar estado de desayuno gratuito del usuario
-        var spainTzPago = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
-        var hoyPago = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzPago));
+        var hoyPago = DesayunoService.HoyEspaña();
         ConsumoDesayuno? consumoPago = null;
         bool zumoAplicadoPago    = false;
         bool bocataAplicadoPago  = false;
@@ -406,19 +408,8 @@ public class PagosController : ControllerBase
 
             // Cargar consumo de desayuno para marcarlo si alguna línea es gratuita
             var usuarioWh = await _db.Usuarios.FindAsync(userId);
-            var spainTzWh = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
-            var hoyWh     = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzWh));
-            ConsumoDesayuno? consumoWh = null;
-            if (usuarioWh?.DesayunoGratuito == true)
-            {
-                consumoWh = await _db.ConsumoDesayunos
-                    .FirstOrDefaultAsync(c => c.UsuarioId == userId && c.Fecha == hoyWh);
-                if (consumoWh is null)
-                {
-                    consumoWh = new ConsumoDesayuno { UsuarioId = userId, Fecha = hoyWh };
-                    _db.ConsumoDesayunos.Add(consumoWh);
-                }
-            }
+            var consumoWh = await _desayuno.ObtenerOCrearConsumoHoyAsync(
+                userId, usuarioWh?.DesayunoGratuito == true);
 
             foreach (var (productoId, cantidad, precioMetadata) in lineas)
             {
@@ -439,12 +430,7 @@ public class PagosController : ControllerBase
                 // Si esta línea es gratuita (precio 0), marcar ConsumoDesayuno para que el usuario
                 // no pueda volver a usar el beneficio en el mismo día
                 if (consumoWh is not null && precioUnitario == 0m)
-                {
-                    if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo)
-                        consumoWh.ZumoConsumido = true;
-                    else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata)
-                        consumoWh.BocataConsumido = true;
-                }
+                    DesayunoService.MarcarConsumoForzado(producto.ComponenteDesayuno, consumoWh);
 
                 if (producto.Stock != -1)
                 {

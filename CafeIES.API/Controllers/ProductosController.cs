@@ -208,6 +208,21 @@ public class ProductosController : ControllerBase
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
             return BadRequest(new { mensaje = "Formato no soportado. Usa JPG, PNG o WebP." });
 
+        // Validar magic bytes (evita extensiones engañosas)
+        using var streamValidacion = imagen.OpenReadStream();
+        var header = new byte[12];
+        var bytesLeidos = await streamValidacion.ReadAsync(header.AsMemory(0, 12));
+        bool magicOk = ext is ".jpg" or ".jpeg"
+            ? bytesLeidos >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF
+            : ext == ".png"
+            ? bytesLeidos >= 4 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47
+            : ext == ".webp"
+            ? bytesLeidos >= 12 && header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F'
+                                && header[8] == 'W' && header[9] == 'E' && header[10] == 'B' && header[11] == 'P'
+            : false;
+        if (!magicOk)
+            return BadRequest(new { mensaje = "El contenido del archivo no coincide con el formato declarado." });
+
         // Eliminar imagen anterior (local o Blob)
         await _blobs.EliminarAsync(producto.ImagenUrl);
 

@@ -25,16 +25,19 @@ public class PedidosController : ControllerBase
     private readonly IHubContext<CafeteriaHub> _hub;
     private readonly FcmService      _fcm;
     private readonly ILogger<PedidosController> _logger;
+    private readonly DesayunoService _desayuno;
 
     public PedidosController(AppDbContext db, HorarioService horario, StripeService stripe,
-        IHubContext<CafeteriaHub> hub, FcmService fcm, ILogger<PedidosController> logger)
+        IHubContext<CafeteriaHub> hub, FcmService fcm, ILogger<PedidosController> logger,
+        DesayunoService desayuno)
     {
-        _db      = db;
-        _horario = horario;
-        _stripe  = stripe;
-        _hub     = hub;
-        _fcm     = fcm;
-        _logger  = logger;
+        _db       = db;
+        _horario  = horario;
+        _stripe   = stripe;
+        _hub      = hub;
+        _fcm      = fcm;
+        _logger   = logger;
+        _desayuno = desayuno;
     }
 
     // ── GET /api/pedidos/desayuno-status ────────────────────────────────────
@@ -54,8 +57,7 @@ public class PedidosController : ControllerBase
         if (!usuario.DesayunoGratuito)
             return Ok(new DesayunoStatusDto(false, false, false));
 
-        var spainTz = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
-        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
+        var hoy = DesayunoService.HoyEspaña();
 
         var consumo = await _db.ConsumoDesayunos
             .FirstOrDefaultAsync(c => c.UsuarioId == userId.Value && c.Fecha == hoy);
@@ -127,22 +129,8 @@ public class PedidosController : ControllerBase
             var lineas = new List<LineaPedido>();
             decimal total = 0;
 
-            // Zona horaria España para el desayuno (coincide con la fecha del día del alumno)
-            var spainTzDes = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
-            var hoyDes = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTzDes));
-
             // Cargar o crear consumo de desayuno del día (solo si es beneficiario)
-            ConsumoDesayuno? consumoDesayuno = null;
-            if (usuario.DesayunoGratuito)
-            {
-                consumoDesayuno = await _db.ConsumoDesayunos
-                    .FirstOrDefaultAsync(c => c.UsuarioId == userId.Value && c.Fecha == hoyDes);
-                if (consumoDesayuno is null)
-                {
-                    consumoDesayuno = new ConsumoDesayuno { UsuarioId = userId.Value, Fecha = hoyDes };
-                    _db.ConsumoDesayunos.Add(consumoDesayuno);
-                }
-            }
+            var consumoDesayuno = await _desayuno.ObtenerOCrearConsumoHoyAsync(userId.Value, usuario.DesayunoGratuito);
 
             foreach (var l in req.Lineas)
             {
@@ -157,20 +145,8 @@ public class PedidosController : ControllerBase
                 if (producto.Stock != -1) producto.Stock -= l.Cantidad;
 
                 // ── Desayuno gratuito: solo la primera unidad es gratis ───────
-                bool primeraUnidadGratis = false;
-                if (consumoDesayuno is not null)
-                {
-                    if (producto.ComponenteDesayuno == ComponenteDesayuno.Zumo && !consumoDesayuno.ZumoConsumido)
-                    {
-                        primeraUnidadGratis = true;
-                        consumoDesayuno.ZumoConsumido = true;
-                    }
-                    else if (producto.ComponenteDesayuno == ComponenteDesayuno.Bocata && !consumoDesayuno.BocataConsumido)
-                    {
-                        primeraUnidadGratis = true;
-                        consumoDesayuno.BocataConsumido = true;
-                    }
-                }
+                bool primeraUnidadGratis = consumoDesayuno is not null &&
+                    DesayunoService.AplicarDescuentoPrimeraUnidad(producto.ComponenteDesayuno, consumoDesayuno);
 
                 if (primeraUnidadGratis)
                 {
@@ -412,8 +388,12 @@ public class PedidosController : ControllerBase
             }
         }
 
+        var estadoAnterior = pedido.Estado;
         pedido.Estado = req.NuevoEstado;
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("[AUDIT] Usuario {ActorId} cambió estado del pedido #{NumeroPedido} (ID:{PedidoId}): {EstadoAnterior} → {EstadoNuevo}.",
+            User.GetUserId(), pedido.NumeroPedido, pedido.Id, estadoAnterior, req.NuevoEstado);
 
         // Notificaciones: envueltas en try-catch para no revertir el cambio de estado si fallan
         try
