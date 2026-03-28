@@ -204,14 +204,15 @@ public class AdminApiService
         => await SendBoolAsync(() => _http.DeleteAsync($"api/admin/horarios/{id}"));
 
     // ── Pedidos (paginado — fix #1) ───────────────────────────────────────────
-    public async Task<List<PedidoDto>> GetPedidosAsync(DateTime? desde = null, DateTime? hasta = null, int pageSize = 500, int? institutoId = null)
+    public async Task<List<PedidoDto>> GetPedidosAsync(DateTime? desde = null, DateTime? hasta = null, int pageSize = 500, int? institutoId = null, EstadoPedido? estado = null)
     {
         try
         {
             var qs = $"?pageSize={pageSize}";
-            if (desde.HasValue)      qs += $"&desde={desde:yyyy-MM-dd}";
-            if (hasta.HasValue)      qs += $"&hasta={hasta:yyyy-MM-dd}";
+            if (desde.HasValue)       qs += $"&desde={desde:yyyy-MM-dd}";
+            if (hasta.HasValue)       qs += $"&hasta={hasta:yyyy-MM-dd}";
             if (institutoId.HasValue) qs += $"&institutoId={institutoId}";
+            if (estado.HasValue)      qs += $"&estado={(int)estado}";  // PERF-016: filtrar por estado en servidor
             var resp = await SendAsync(() => _http.GetAsync($"api/admin/pedidos{qs}"));
             if (!resp.IsSuccessStatusCode) return new();
             var paginated = await resp.Content.ReadFromJsonAsync<PaginatedResponse<PedidoDto>>();

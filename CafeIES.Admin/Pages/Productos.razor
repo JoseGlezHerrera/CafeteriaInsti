@@ -28,6 +28,11 @@
     </label>
 </div>
 
+@if (_cargando)
+{
+    <div class="loading-wrap"><div class="spinner"></div><p>Cargando...</p></div>
+}
+
 <!-- Tabla de productos -->
 <div class="table-card">
     <table class="data-table">
@@ -101,7 +106,7 @@
                                 </div>
                                 <input type="number" class="stock-quick-edit"
                                        min="0" value="@prod.Stock"
-                                       @onchange="e => ActualizarStock(prod.Id, int.Parse(e.Value!.ToString()!))"
+                                       @onchange="async e => { if (int.TryParse(e.Value?.ToString(), out var s)) await ActualizarStock(prod.Id, s); }"  @* BUG-017: int.Parse lanzaba excepción con input vacío *@
                                        title="Editar stock"/>
                             }
                         </div>
@@ -275,6 +280,7 @@
     private List<ProductoDto>  _productos  = new();
     private List<CategoriaDto> _categorias = new();
     private List<AlergenoDto>  _alergenos  = new();
+    private bool               _cargando   = true;  // UX-014: spinner durante carga inicial
     private string  _busqueda        = string.Empty;
     private string  _categoriaFiltro = string.Empty;
     private bool    _mostrarOcultos  = false;
@@ -301,9 +307,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _categorias = await Api.GetCategoriasAsync();
-        _productos  = await Api.GetProductosAsync();
-        _alergenos  = await Api.GetAlergenosAsync();
+        // PERF-017: cargar en paralelo en lugar de 3 awaits secuenciales
+        var tCategorias = Api.GetCategoriasAsync();
+        var tProductos  = Api.GetProductosAsync();
+        var tAlergenos  = Api.GetAlergenosAsync();
+        await Task.WhenAll(tCategorias, tProductos, tAlergenos);
+        _categorias = tCategorias.Result;
+        _productos  = tProductos.Result;
+        _alergenos  = tAlergenos.Result;
+        _cargando   = false;
     }
 
     private void AbrirNuevoProducto()

@@ -249,8 +249,9 @@ else
     {
         _cargando = true;
         StateHasChanged(); // UX-009: mostrar spinner antes del await
-        int? institutoId = int.TryParse(_institutoFiltro, out var id) ? id : null;
-        _pedidos  = await Api.GetPedidosAsync(_desde, _hasta, institutoId: institutoId);
+        int? institutoId    = int.TryParse(_institutoFiltro, out var id) ? id : null;
+        EstadoPedido? estado = Enum.TryParse<EstadoPedido>(_estadoFiltro, out var e) ? e : null;  // PERF-016: filtrar por estado en servidor
+        _pedidos  = await Api.GetPedidosAsync(_desde, _hasta, institutoId: institutoId, estado: estado);
         _cargando = false;
     }
 

@@ -206,11 +206,20 @@ else
     private async Task OnInstitutoChanged(ChangeEventArgs e)
     {
         _institutoFiltro = int.TryParse(e.Value?.ToString(), out var id) ? id : null;
-        // UX-010: mostrar spinner mientras recarga (igual que UX-009 en Pedidos.razor)
+        // BUG-016: evita carrera si el timer o SignalR están refrescando al mismo tiempo
+        if (_refrescandoDashboard) return;
+        _refrescandoDashboard = true;
         _cargado = false;
         StateHasChanged();
-        _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
-        _cargado = true;
+        try
+        {
+            _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+        }
+        finally
+        {
+            _refrescandoDashboard = false;
+            _cargado = true;
+        }
     }
 
     private volatile bool _refrescandoDashboard; // PERF-015: evita refreshes concurrentes
