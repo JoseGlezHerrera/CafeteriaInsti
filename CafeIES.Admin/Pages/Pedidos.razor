@@ -164,6 +164,10 @@ else
 
     <div class="table-footer">
         <span>@PedidosFiltrados.Count() pedidos · Total: @PedidosFiltrados.Sum(p => p.Estado != EstadoPedido.Cancelado ? p.Total : 0).ToString("F2")€</span>
+        @if (_pedidos.Count >= 500)
+        {
+            <span style="color:var(--warning);margin-left:16px">⚠️ Resultado limitado a 500 — filtra por fecha para ver más.</span>
+        }
     </div>
 }
 
@@ -173,7 +177,7 @@ else
     private bool            _cargando   = true;
     private string          _estadoFiltro = string.Empty;
     private string          _institutoFiltro = string.Empty;
-    private DateTime?       _desde;
+    private DateTime?       _desde = DateTime.Now.Date;   // por defecto: hoy
     private DateTime?       _hasta;
 
     private IEnumerable<PedidoDto> PedidosFiltrados =>

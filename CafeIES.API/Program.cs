@@ -37,6 +37,9 @@ else
 builder.Services.AddHttpClient("fcm", c =>
     c.Timeout = TimeSpan.FromSeconds(10));
 
+// ── Caché en memoria ──────────────────────────────────────────────────────────
+builder.Services.AddMemoryCache();
+
 // ── Health check ──────────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks();
 

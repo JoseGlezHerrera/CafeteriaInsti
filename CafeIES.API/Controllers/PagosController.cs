@@ -1,5 +1,4 @@
 using System.Data;
-using System.Security.Claims;
 using System.Text.Json;
 using CafeIES.API.Data;
 using CafeIES.API.Extensions;

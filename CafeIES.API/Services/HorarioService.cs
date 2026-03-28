@@ -1,20 +1,25 @@
 using CafeIES.API.Data;
 using CafeIES.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CafeIES.API.Services;
 
 /// <summary>
 /// Servicio central de lógica de negocio para restricciones horarias.
 /// Determina si un usuario puede realizar un pedido en este momento.
+/// Las franjas horarias se cachean 2 minutos para evitar una query SQL en cada petición.
 /// </summary>
 public class HorarioService
 {
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(2);
 
-    public HorarioService(AppDbContext db)
+    public HorarioService(AppDbContext db, IMemoryCache cache)
     {
-        _db = db;
+        _db    = db;
+        _cache = cache;
     }
 
     /// <summary>
@@ -35,11 +40,17 @@ public class HorarioService
         if (usuario.Turno is null)
             return HorarioResult.Denegado("Tu cuenta no tiene turno asignado. Contacta con el administrador.");
 
-        var franjas = await _db.FranjasHorarias
-            .Where(f => f.Turno == usuario.Turno && f.Activa)
-            .ToListAsync();
+        // Cachear franjas por turno (cambian raramente; 2 min es seguro)
+        var cacheKey = $"franjas:{(int)usuario.Turno}";
+        var franjas = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            return await _db.FranjasHorarias
+                .Where(f => f.Turno == usuario.Turno && f.Activa)
+                .ToListAsync();
+        });
 
-        if (!franjas.Any())
+        if (franjas is null || !franjas.Any())
             return HorarioResult.Permitido("Pedidos disponibles.");
 
         // ¿Hay alguna franja bloqueada activa ahora mismo?
