@@ -50,7 +50,15 @@ public class NotificacionesController : ControllerBase
             existing.FechaActualizacion = DateTime.UtcNow;
         }
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // BUG-012: race condition — otra request concurrente ya insertó el mismo token;
+            // el resultado es idempotente (el token quedó registrado) → ignorar y devolver NoContent
+        }
         return NoContent();
     }
 

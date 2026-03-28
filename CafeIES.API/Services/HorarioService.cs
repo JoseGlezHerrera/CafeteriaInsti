@@ -40,8 +40,9 @@ public class HorarioService
         if (usuario is null)
             return HorarioResult.Error("Usuario no encontrado.");
 
-        // Admin, Profesor y Personal: sin restricción
-        if (usuario.Rol != RolUsuario.Alumno)
+        // SEC-016: check explícito — Empleado también queda exento junto a Admin/Profesor/Personal.
+        // Solo Alumno tiene franjas de bloqueo. Usar 'is' enumera los roles exentos claramente.
+        if (usuario.Rol is RolUsuario.Admin or RolUsuario.Empleado or RolUsuario.Profesor or RolUsuario.Personal)
             return HorarioResult.Permitido("Sin restricción horaria.");
 
         // Alumno sin turno asignado (no debería ocurrir)

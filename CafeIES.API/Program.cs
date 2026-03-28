@@ -15,8 +15,13 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Base de datos ─────────────────────────────────────────────────────────────
+// INC-022: fallo explícito si la cadena de conexión falta, en lugar de un error críptico en runtime
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "La cadena de conexión 'DefaultConnection' es obligatoria. " +
+        "Configúrala en appsettings.json o en las variables de entorno de Azure.");
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opt.UseSqlServer(connectionString));
 
 // ── Servicios de negocio ──────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();

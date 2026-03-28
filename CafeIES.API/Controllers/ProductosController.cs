@@ -44,6 +44,7 @@ public class ProductosController : ControllerBase
         var productos = await query
             .OrderBy(p => p.Categoria.Orden)
             .ThenBy(p => p.Nombre)
+            .ThenBy(p => p.Id)   // PERF-012: orden estable cuando dos productos comparten nombre
             .ToListAsync();
 
         return Ok(productos.Select(p => p.ToDto()).ToList());
