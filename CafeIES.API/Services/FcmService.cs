@@ -149,6 +149,13 @@ public class FcmService
             }
             return false;
         }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            // Error de red transitorio: no marcar el token como inválido, se reintentará en la próxima notificación
+            _logger.LogWarning(ex, "⚠️ Fallo de red transitorio al notificar FCM (token ...{Suffix}). Token conservado.",
+                token.Length > 8 ? token[^8..] : token);
+            return false;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error inesperado al enviar notificación FCM al token ...{Suffix}.",

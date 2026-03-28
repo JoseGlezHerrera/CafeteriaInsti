@@ -17,6 +17,7 @@ public partial class AdminPedidosPage : ContentPage
     {
         base.OnAppearing();
         Vm.Resubscribe();
+        Vm.CargarCommand.Execute(null);
     }
 
     // FIX-11: Desuscribir mensajes al desaparecer la página

@@ -90,11 +90,16 @@ public class PagosController : ControllerBase
             bocataAplicadoPago = consumoPago?.BocataConsumido ?? false;
         }
 
+        // Cargar todos los productos del carrito en una sola query (evita N round-trips a SQL)
+        var productoIds = req.Lineas.Select(l => l.ProductoId).ToHashSet();
+        var productos = await _db.Productos
+            .Where(p => productoIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
         var lineasConPrecio = new List<(int ProductoId, int Cantidad, decimal Precio)>();
         foreach (var l in req.Lineas)
         {
-            var producto = await _db.Productos.FindAsync(l.ProductoId);
-            if (producto is null || !producto.Activo)
+            if (!productos.TryGetValue(l.ProductoId, out var producto) || !producto.Activo)
                 return BadRequest(new { mensaje = $"Producto #{l.ProductoId} no disponible." });
 
             if (producto.Stock != -1 && producto.Stock < l.Cantidad)
@@ -288,6 +293,7 @@ public class PagosController : ControllerBase
     /// </summary>
     [HttpPost("webhook")]
     [AllowAnonymous]
+    [RequestSizeLimit(65_536)]   // Los eventos de Stripe nunca superan ~10 KB
     public async Task<IActionResult> Webhook()
     {
         var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();

@@ -132,10 +132,15 @@ public class PedidosController : ControllerBase
             // Cargar o crear consumo de desayuno del día (solo si es beneficiario)
             var consumoDesayuno = await _desayuno.ObtenerOCrearConsumoHoyAsync(userId.Value, usuario.DesayunoGratuito);
 
+            // Cargar todos los productos del carrito en una sola query (evita N round-trips a SQL)
+            var productoIds = req.Lineas.Select(l => l.ProductoId).ToHashSet();
+            var productos = await _db.Productos
+                .Where(p => productoIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
             foreach (var l in req.Lineas)
             {
-                var producto = await _db.Productos.FindAsync(l.ProductoId);
-                if (producto is null || !producto.Activo)
+                if (!productos.TryGetValue(l.ProductoId, out var producto) || !producto.Activo)
                     return BadRequest(new { mensaje = $"Producto #{l.ProductoId} no disponible." });
 
                 if (producto.Stock != -1 && producto.Stock < l.Cantidad)
@@ -400,6 +405,12 @@ public class PedidosController : ControllerBase
         {
             // Notificar al usuario propietario del pedido vía SignalR (tiempo real en app abierta)
             await _hub.Clients.Group($"user-{pedido.UsuarioId}")
+                .SendAsync("EstadoPedidoActualizado", new { pedido.Id, Estado = req.NuevoEstado.ToString() });
+
+            // Notificar al panel de la cafetería para que actualice la lista en tiempo real
+            var institutoId = pedido.Usuario?.InstitutoId;
+            var grupoCafeteria = institutoId.HasValue ? $"cafeteria-{institutoId}" : "cafeteria-global";
+            _ = _hub.Clients.Groups(grupoCafeteria, "cafeteria-global")
                 .SendAsync("EstadoPedidoActualizado", new { pedido.Id, Estado = req.NuevoEstado.ToString() });
 
             // Notificación push cuando el pedido está listo para recoger
