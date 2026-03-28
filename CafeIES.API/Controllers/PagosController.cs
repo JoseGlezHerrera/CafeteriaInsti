@@ -477,7 +477,8 @@ public class PagosController : ControllerBase
             }
 
             // Número de pedido: usar zona horaria España (igual que PedidosController)
-            var spainTz  = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+            var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
             var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
             var hoyEspUtcInicio = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
             var hoyEspUtcFin    = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date.AddDays(1), spainTz);

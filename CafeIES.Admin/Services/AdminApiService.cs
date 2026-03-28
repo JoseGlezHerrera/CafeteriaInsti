@@ -209,7 +209,8 @@ public class AdminApiService
         try
         {
             var qs = $"?pageSize={pageSize}";
-            if (desde.HasValue)      qs += $"&desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}";
+            if (desde.HasValue)      qs += $"&desde={desde:yyyy-MM-dd}";
+            if (hasta.HasValue)      qs += $"&hasta={hasta:yyyy-MM-dd}";
             if (institutoId.HasValue) qs += $"&institutoId={institutoId}";
             var resp = await SendAsync(() => _http.GetAsync($"api/admin/pedidos{qs}"));
             if (!resp.IsSuccessStatusCode) return new();
@@ -256,7 +257,7 @@ public class AdminApiService
             // BUG-005: leer bytes en memoria antes de reintentar para evitar "stream already consumed"
             using var stream = archivo.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
             var bytes = new byte[archivo.Size];
-            await stream.ReadAsync(bytes);
+            await stream.ReadExactlyAsync(bytes);
             var contentType = archivo.ContentType;
             var fileName    = archivo.Name;
 

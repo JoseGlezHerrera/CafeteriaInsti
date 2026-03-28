@@ -12,7 +12,8 @@ public class DesayunoService
 {
     private readonly AppDbContext _db;
     private static readonly TimeZoneInfo SpainTz =
-        TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+        TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
 
     public DesayunoService(AppDbContext db) => _db = db;
 

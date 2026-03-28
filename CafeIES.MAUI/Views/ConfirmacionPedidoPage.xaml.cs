@@ -85,7 +85,14 @@ public partial class ConfirmacionPedidoPage : ContentPage
                 NumeroPedidoLabel.Text = "Revisa tu\nhistorial");
     }
 
-    protected override bool OnBackButtonPressed() => true; // no volver a la pasarela
+    protected override bool OnBackButtonPressed()
+    {
+        // Pedido gratuito ya confirmado — permitir volver al historial
+        if (_paymentIntentId.StartsWith("gratuito-", StringComparison.OrdinalIgnoreCase))
+            return base.OnBackButtonPressed();
+        // Pago Stripe en curso — bloquear para no volver a la pasarela
+        return true;
+    }
 
     private async void OnVerPedidosClicked(object sender, EventArgs e)
         => await Shell.Current.GoToAsync("//Main/Pedidos");

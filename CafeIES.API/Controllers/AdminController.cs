@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CafeIES.API.Controllers;
 
@@ -17,11 +18,13 @@ public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ILogger<AdminController> _logger;
+    private readonly IMemoryCache _cache;
 
-    public AdminController(AppDbContext db, ILogger<AdminController> logger)
+    public AdminController(AppDbContext db, ILogger<AdminController> logger, IMemoryCache cache)
     {
         _db     = db;
         _logger = logger;
+        _cache  = cache;
     }
 
     /// <summary>
@@ -200,6 +203,9 @@ public class AdminController : ControllerBase
         user.Turno = req.Turno;
         await _db.SaveChangesAsync();
 
+        // INC-016: invalidar caché de HorarioService para que el nuevo turno surta efecto de inmediato
+        _cache.Remove($"usuario-horario:{id}");
+
         _logger.LogInformation("[AUDIT] {Admin} cambió el turno del usuario {UserId} ({Email}) de {Anterior} a {Nuevo}",
             adminEmail, id, user.Email, turnoAnterior, req.Turno);
 
@@ -234,7 +240,8 @@ public class AdminController : ControllerBase
     [HttpGet("desayunos/consumos")]
     public async Task<ActionResult> GetConsumosDesayuno([FromQuery] DateOnly? fecha, [FromQuery] int? institutoId)
     {
-        var spainTz = TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time");
+        var spainTz = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
         var dia = fecha ?? DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz));
 
         var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
@@ -312,6 +319,9 @@ public class AdminController : ControllerBase
         var rolAnterior = user.Rol;
         user.Rol = req.Rol;
         await _db.SaveChangesAsync();
+
+        // INC-016: invalidar caché de HorarioService para que la nueva restricción (o ausencia de ella) sea inmediata
+        _cache.Remove($"usuario-horario:{id}");
 
         _logger.LogInformation("[AUDIT] {Admin} cambió el rol del usuario {UserId} ({Email}) de {Anterior} a {Nuevo}",
             adminEmail, id, user.Email, rolAnterior, req.Rol);
