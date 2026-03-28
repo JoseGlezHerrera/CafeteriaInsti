@@ -193,8 +193,14 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _institutos = await Api.GetInstitutosAsync();
-        await Recargar();
+        // PERF-018: cargar institutos y usuarios en paralelo
+        var tInstitutos = Api.GetInstitutosAsync();
+        var tUsuarios   = Api.GetTodosUsuariosAsync();
+        await Task.WhenAll(tInstitutos, tUsuarios);
+        _institutos = tInstitutos.Result;
+        _todos      = tUsuarios.Result;
+        _pendientes = _todos.Where(u => u.Estado == EstadoCuenta.PendienteValidacion).ToList();
+        _cargando   = false;
     }
 
     private async Task Recargar()

@@ -24,14 +24,24 @@ public partial class AdminHorariosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
         HasError  = false;
-
-        var franjas = await _api.GetHorariosAsync();
-        Franjas.Clear();
-        foreach (var f in franjas) Franjas.Add(f);
-
-        IsLoading = false;
+        try
+        {
+            var franjas = await _api.GetHorariosAsync();
+            Franjas.Clear();
+            foreach (var f in franjas) Franjas.Add(f);
+        }
+        catch
+        {
+            Error    = "Error al cargar las franjas horarias.";
+            HasError = true;
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-037: siempre desactiva spinner
+        }
     }
 
     [RelayCommand]

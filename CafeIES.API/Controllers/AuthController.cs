@@ -15,11 +15,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuthService _auth;
+    private readonly ILogger<AuthController> _logger;  // SEC-022
 
-    public AuthController(AppDbContext db, AuthService auth)
+    public AuthController(AppDbContext db, AuthService auth, ILogger<AuthController> logger)
     {
-        _db   = db;
-        _auth = auth;
+        _db     = db;
+        _auth   = auth;
+        _logger = logger;
     }
 
     // ── POST /api/auth/login ─────────────────────────────────────────────────
@@ -35,7 +37,11 @@ public class AuthController : ControllerBase
         // si el email no existe se usa DummyHash, evitando enumeración de cuentas por timing.
         var passwordOk = _auth.VerificarPassword(req.Password, usuario?.PasswordHash ?? AuthService.DummyHash);
         if (usuario is null || !passwordOk)
+        {
+            _logger.LogWarning("[AUDIT] Login fallido para email={Email} IP={IP}",
+                req.Email, HttpContext.Connection.RemoteIpAddress);
             return Unauthorized(new { mensaje = "Credenciales incorrectas." });
+        }
 
         if (usuario.Estado != EstadoCuenta.Activa)
         {
@@ -46,6 +52,7 @@ public class AuthController : ControllerBase
                 EstadoCuenta.Rechazada           => "rechazada",
                 _                                => "inactiva"
             };
+            _logger.LogWarning("[AUDIT] Login bloqueado para {Email}: cuenta {Motivo}", req.Email, motivo);
             return StatusCode(403, new { motivo });
         }
 
@@ -57,6 +64,9 @@ public class AuthController : ControllerBase
         usuario.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();
         await tx.CommitAsync();
+
+        _logger.LogInformation("[AUDIT] Login exitoso: userId={Id} email={Email} rol={Rol}",
+            usuario.Id, usuario.Email, usuario.Rol);
 
         return Ok(new LoginResponse(
             accessToken,

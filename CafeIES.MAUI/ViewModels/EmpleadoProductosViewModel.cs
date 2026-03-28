@@ -19,11 +19,18 @@ public partial class EmpleadoProductosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
-        var productos = await _api.GetProductosAdminAsync();
-        Productos.Clear();
-        foreach (var p in productos) Productos.Add(p);
-        IsLoading = false;
+        try
+        {
+            var productos = await _api.GetProductosAdminAsync();
+            Productos.Clear();
+            foreach (var p in productos) Productos.Add(p);
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-038
+        }
     }
 
     [RelayCommand]

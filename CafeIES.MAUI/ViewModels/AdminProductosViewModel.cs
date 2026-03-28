@@ -21,11 +21,18 @@ public partial class AdminProductosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
-        var productos = await _api.GetProductosAdminAsync();
-        Productos.Clear();
-        foreach (var p in productos) Productos.Add(p);
-        IsLoading = false;
+        try
+        {
+            var productos = await _api.GetProductosAdminAsync();
+            Productos.Clear();
+            foreach (var p in productos) Productos.Add(p);
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-038
+        }
     }
 
     [RelayCommand]
@@ -114,55 +121,63 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
     {
         IsLoading = true;
         Error = string.Empty;
-
-        var cats = await _api.GetCategoriasAsync();
-        Categorias.Clear();
-        foreach (var c in cats) Categorias.Add(c);
-
-        var alergenos = await _api.GetAlergenosAsync();
-
-        if (ProductoId > 0)
+        try
         {
-            Titulo = "Editar producto";
-            var prod = await _api.GetProductoByIdAsync(ProductoId);
-            if (prod is not null)
+            var cats = await _api.GetCategoriasAsync();
+            Categorias.Clear();
+            foreach (var c in cats) Categorias.Add(c);
+
+            var alergenos = await _api.GetAlergenosAsync();
+
+            if (ProductoId > 0)
             {
-                Nombre       = prod.Nombre;
-                Descripcion  = prod.Descripcion ?? string.Empty;
-                Precio       = prod.Precio;
-                Stock        = prod.Stock;
-                ImagenUrl    = prod.ImagenUrl is not null
-                    ? _api.BuildImageUrl(prod.ImagenUrl)
-                    : null;
-                CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
-                ComponenteDesayuno   = prod.ComponenteDesayuno;
+                Titulo = "Editar producto";
+                var prod = await _api.GetProductoByIdAsync(ProductoId);
+                if (prod is not null)
+                {
+                    Nombre       = prod.Nombre;
+                    Descripcion  = prod.Descripcion ?? string.Empty;
+                    Precio       = prod.Precio;
+                    Stock        = prod.Stock;
+                    ImagenUrl    = prod.ImagenUrl is not null
+                        ? _api.BuildImageUrl(prod.ImagenUrl)
+                        : null;
+                    CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);
+                    ComponenteDesayuno   = prod.ComponenteDesayuno;
+
+                    Alergenos.Clear();
+                    foreach (var a in alergenos)
+                        Alergenos.Add(new AlergenoSeleccionable
+                        {
+                            Alergeno = a,
+                            Seleccionado = prod.Alergenos.Any(pa => pa.Id == a.Id)
+                        });
+                }
+            }
+            else
+            {
+                Titulo = "Nuevo producto";
+                Nombre       = string.Empty;
+                Descripcion  = string.Empty;
+                Precio       = 0;
+                Stock        = -1;
+                ImagenUrl    = null;
+                CategoriaSeleccionada = Categorias.FirstOrDefault();
+                ComponenteDesayuno    = ComponenteDesayuno.Ninguno;
 
                 Alergenos.Clear();
                 foreach (var a in alergenos)
-                    Alergenos.Add(new AlergenoSeleccionable
-                    {
-                        Alergeno = a,
-                        Seleccionado = prod.Alergenos.Any(pa => pa.Id == a.Id)
-                    });
+                    Alergenos.Add(new AlergenoSeleccionable { Alergeno = a, Seleccionado = false });
             }
         }
-        else
+        catch
         {
-            Titulo = "Nuevo producto";
-            Nombre       = string.Empty;
-            Descripcion  = string.Empty;
-            Precio       = 0;
-            Stock        = -1;
-            ImagenUrl    = null;
-            CategoriaSeleccionada = Categorias.FirstOrDefault();
-            ComponenteDesayuno    = ComponenteDesayuno.Ninguno;
-
-            Alergenos.Clear();
-            foreach (var a in alergenos)
-                Alergenos.Add(new AlergenoSeleccionable { Alergeno = a, Seleccionado = false });
+            Error = "Error al cargar el producto. Inténtalo de nuevo.";
         }
-
-        IsLoading = false;
+        finally
+        {
+            IsLoading = false;  // BUG-039: siempre desactiva spinner
+        }
     }
 
     [RelayCommand]
