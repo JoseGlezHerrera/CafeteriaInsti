@@ -111,7 +111,7 @@ public record ActualizarStockRequest([Required] int NuevoStock);
 public record CrearPedidoRequest(
     [Required, MinLength(1), MaxLength(30)] List<LineaPedidoRequest> Lineas,
     MetodoPago MetodoPago,
-    string? Notas,
+    [MaxLength(300)] string? Notas,  // BUG-015: alineado con [MaxLength(300)] de la entidad Pedido
     string? StripePaymentIntentId
 );
 

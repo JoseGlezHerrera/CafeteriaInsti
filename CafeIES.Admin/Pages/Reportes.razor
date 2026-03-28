@@ -134,9 +134,10 @@ else if (_generado)
     {
         _cargando    = true;
         _exportError = null;
-        _pedidos     = await Api.GetAllPedidosAsync(_desde, _hasta);
-        _cargando    = false;
-        _generado    = true;
+        StateHasChanged(); // SEC-019: deshabilitar botón y mostrar spinner antes del await
+        _pedidos  = await Api.GetAllPedidosAsync(_desde, _hasta);
+        _cargando = false;
+        _generado = true;
     }
 
     private async Task DescargarExcel()

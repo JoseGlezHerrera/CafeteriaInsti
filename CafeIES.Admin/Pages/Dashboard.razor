@@ -145,10 +145,21 @@ else
         // Timer como fallback cada 60s (antes era 30s)
         _timer = new Timer(async _ =>
         {
+            // INC-025: envolver en InvokeAsync para thread-safety (callback del Timer ejecuta en hilo del pool)
+            // PERF-015: saltar si ya hay un refresh en curso (evita que timer y SignalR solapen)
             try
             {
-                _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
-                await InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () =>
+                {
+                    if (_refrescandoDashboard) return;
+                    _refrescandoDashboard = true;
+                    try
+                    {
+                        _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+                        StateHasChanged();
+                    }
+                    finally { _refrescandoDashboard = false; }
+                });
             }
             catch { /* ignorar errores de red en auto-refresh */ }
         }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
@@ -171,14 +182,19 @@ else
                 .WithAutomaticReconnect()
                 .Build();
 
-            // INC-023: toda la mutación de estado dentro de InvokeAsync para thread-safety
-            // (el callback de SignalR se ejecuta en un hilo secundario, no en el de renderizado Blazor)
+            // INC-023 + PERF-015: InvokeAsync para thread-safety + guard de refresh concurrente
             _hubConnection.On<object>("NuevoPedido", async _ =>
             {
                 await InvokeAsync(async () =>
                 {
-                    _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
-                    StateHasChanged();
+                    if (_refrescandoDashboard) return;
+                    _refrescandoDashboard = true;
+                    try
+                    {
+                        _dashboard = await Api.GetDashboardAsync(_institutoFiltro);
+                        StateHasChanged();
+                    }
+                    finally { _refrescandoDashboard = false; }
                 });
             });
 
@@ -197,6 +213,7 @@ else
         _cargado = true;
     }
 
+    private volatile bool _refrescandoDashboard; // PERF-015: evita refreshes concurrentes
     private int? _procesandoPedidoId;  // INC-024: evita doble clic durante cambio de estado
     private string _errorEstado = string.Empty;
 

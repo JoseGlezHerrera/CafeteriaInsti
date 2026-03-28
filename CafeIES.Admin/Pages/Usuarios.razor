@@ -38,6 +38,11 @@
     </div>
 }
 
+@if (_cargando)
+{
+    <div class="loading-wrap"><div class="spinner"></div><p>Cargando...</p></div>
+}
+
 <!-- Tabla todos los usuarios -->
 <div class="section">
     <div class="section-header">
@@ -171,6 +176,7 @@
     private List<UsuarioDto> _todos      = new();
     private List<UsuarioDto> _pendientes = new();
     private List<InstitutoDto> _institutos = new();
+    private bool   _cargando = true;  // UX-013: estado de carga para mostrar spinner
     private string _busqueda  = string.Empty;
     private string _rolFiltro = string.Empty;
     private string _institutoFiltro = string.Empty;
@@ -193,8 +199,11 @@
 
     private async Task Recargar()
     {
+        _cargando = true;
+        StateHasChanged(); // UX-013: mostrar spinner antes del await
         _todos      = await Api.GetTodosUsuariosAsync();
         _pendientes = _todos.Where(u => u.Estado == EstadoCuenta.PendienteValidacion).ToList();
+        _cargando   = false;
     }
 
     private async Task ValidarAlumno(int id, bool aprobar)
