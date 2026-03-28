@@ -248,6 +248,7 @@ else
     private async Task Recargar()
     {
         _cargando = true;
+        StateHasChanged(); // UX-009: mostrar spinner antes del await
         int? institutoId = int.TryParse(_institutoFiltro, out var id) ? id : null;
         _pedidos  = await Api.GetPedidosAsync(_desde, _hasta, institutoId: institutoId);
         _cargando = false;

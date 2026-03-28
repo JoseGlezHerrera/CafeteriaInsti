@@ -312,10 +312,13 @@ public class PedidosController : ControllerBase
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
-        var query = _db.Pedidos.Where(p => p.UsuarioId == userId && p.Estado != EstadoPedido.Cancelado);
-        var totalPedidos = await query.CountAsync();
-        var totalGastado = await query.SumAsync(p => (decimal?)p.Total) ?? 0;
-        return Ok(new UsuarioStatsDto(totalPedidos, totalGastado));
+        // Fusionar Count + Sum en una sola query GroupBy (evita 2 round-trips al servidor)
+        var stats = await _db.Pedidos
+            .Where(p => p.UsuarioId == userId && p.Estado != EstadoPedido.Cancelado)
+            .GroupBy(_ => 0)
+            .Select(g => new { Count = g.Count(), Sum = (decimal?)g.Sum(p => p.Total) })
+            .FirstOrDefaultAsync();
+        return Ok(new UsuarioStatsDto(stats?.Count ?? 0, stats?.Sum ?? 0m));
     }
 
     // ── GET /api/pedidos/{id} ────────────────────────────────────────────────
@@ -462,16 +465,20 @@ public class PedidosController : ControllerBase
         var esEmpleado = User.IsInRole("Empleado");
         var institutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
 
+        // SEC-013/BUG-010: Empleado/Personal sin instituto asignado en JWT → lista vacía por seguridad
+        var esPersonal = User.IsInRole("Personal");
+        if ((esEmpleado || esPersonal) && !institutoId.HasValue)
+            return Ok(new List<PedidoDto>());
+
         var query = _db.Pedidos
             .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
-            .OrderBy(p => p.FechaCreacion)
+            .OrderBy(p => p.FechaCreacion).ThenBy(p => p.Id)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .AsQueryable();
 
         // Empleado y Personal solo ven pedidos de su propio instituto
-        var esPersonal = User.IsInRole("Personal");
-        if ((esEmpleado || esPersonal) && institutoId.HasValue)
+        if (esEmpleado || esPersonal)
             query = query.Where(p => p.Usuario.InstitutoId == institutoId);
 
         var pedidos = await query.ToListAsync();

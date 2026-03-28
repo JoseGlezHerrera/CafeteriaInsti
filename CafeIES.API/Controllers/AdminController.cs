@@ -130,7 +130,9 @@ public class AdminController : ControllerBase
                 users.Select(u => u.ToDto()).ToList(), totalCount, p, pageSize));
         }
 
-        var allUsers = await query.OrderBy(u => u.NombreCompleto).ToListAsync();
+        // Sin paginación: limitar a 500 para evitar cargar toda la tabla en memoria.
+        // Usar ?page= para obtener más resultados.
+        var allUsers = await query.OrderBy(u => u.NombreCompleto).Take(500).ToListAsync();
         return Ok(allUsers.Select(u => u.ToDto()).ToList());
     }
 
@@ -328,6 +330,10 @@ public class AdminController : ControllerBase
         // FIX-07: No se puede cambiar el rol de otro admin
         if (user.Rol == RolUsuario.Admin)
             return BadRequest(new { mensaje = "No se puede cambiar el rol de un administrador." });
+
+        // SEC-014: No se puede asignar el rol Admin desde este endpoint (escala de privilegios)
+        if (req.Rol == RolUsuario.Admin)
+            return BadRequest(new { mensaje = "No se puede asignar el rol de administrador desde aquí." });
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
         var rolAnterior = user.Rol;
