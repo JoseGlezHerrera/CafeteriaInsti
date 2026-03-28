@@ -23,6 +23,9 @@
     <label class="filter-check">
         <input type="checkbox" @bind="_mostrarOcultos"/> Mostrar ocultos
     </label>
+    <label class="filter-check">
+        <input type="checkbox" @bind="_soloDesayuno"/> 🍊 Solo desayuno
+    </label>
 </div>
 
 <!-- Tabla de productos -->
@@ -33,6 +36,7 @@
                 <th>Foto</th>
                 <th>Producto</th>
                 <th>Categoría</th>
+                <th>Desayuno 🍊</th>
                 <th>Precio</th>
                 <th>Stock</th>
                 <th>Estado</th>
@@ -63,6 +67,20 @@
                         </div>
                     </td>
                     <td><span class="cat-badge">@prod.CategoriaNombre</span></td>
+                    <td style="text-align:center">
+                        @if (prod.ComponenteDesayuno == ComponenteDesayuno.Zumo)
+                        {
+                            <span class="desayuno-badge desayuno-badge--zumo" title="Componente: Zumo">🥤 Zumo</span>
+                        }
+                        else if (prod.ComponenteDesayuno == ComponenteDesayuno.Bocata)
+                        {
+                            <span class="desayuno-badge desayuno-badge--bocata" title="Componente: Bocata">🥪 Bocata</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--muted);font-size:12px">—</span>
+                        }
+                    </td>
                     <td class="price-cell">@prod.Precio.ToString("F2")€</td>
                     <td>
                         <div class="stock-cell">
@@ -260,6 +278,7 @@
     private string  _busqueda        = string.Empty;
     private string  _categoriaFiltro = string.Empty;
     private bool    _mostrarOcultos  = false;
+    private bool    _soloDesayuno    = false;
     private bool    _mostrarModal    = false;
     private bool    _guardando       = false;
     private int?    _editandoId;
@@ -277,7 +296,8 @@
             .Where(p => _mostrarOcultos || p.Activo)
             .Where(p => string.IsNullOrEmpty(_busqueda) ||
                         p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(p => string.IsNullOrEmpty(_categoriaFiltro) || p.CategoriaNombre == _categoriaFiltro);
+            .Where(p => string.IsNullOrEmpty(_categoriaFiltro) || p.CategoriaNombre == _categoriaFiltro)
+            .Where(p => !_soloDesayuno || p.ComponenteDesayuno != ComponenteDesayuno.Ninguno);
 
     protected override async Task OnInitializedAsync()
     {

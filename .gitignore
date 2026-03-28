@@ -76,7 +76,11 @@ Platforms/Windows/BundleArtifacts/**
 
 # Publish artifacts
 publish/
+# Ignorar wwwroot generados (MAUI, outputs de build) pero NO el de Admin (tiene CSS fuente)
 wwwroot/
+!CafeIES.Admin/wwwroot/
+# appsettings.json lo inyecta CI/CD desde secretos — no debe estar en repo
+CafeIES.Admin/wwwroot/appsettings.json
 
 # User secrets
 secrets.json
