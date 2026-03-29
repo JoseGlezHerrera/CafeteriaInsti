@@ -61,11 +61,17 @@ public partial class PedidosViewModel : ObservableObject
         _todos.Clear();
         _paginaActual = 1;
         IsLoading = true;
-        var pedidos = await _api.GetMisPedidosAsync(page: 1, pageSize: PageSize);
-        _todos.AddRange(pedidos);
-        _hayMasServidor = pedidos.Count == PageSize;
-        AplicarFiltro();
-        IsLoading = false;
+        try
+        {
+            var pedidos = await _api.GetMisPedidosAsync(page: 1, pageSize: PageSize);
+            _todos.AddRange(pedidos);
+            _hayMasServidor = pedidos.Count == PageSize;
+            AplicarFiltro();
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-043
+        }
     }
 
     [RelayCommand]
@@ -178,14 +184,15 @@ public partial class PerfilViewModel : ObservableObject
         }
 
         // Horario y estadísticas solo son relevantes para usuarios que hacen pedidos
+        // PERF-019: llamadas en paralelo
         if (!EsEmpleadoCafeteria)
         {
-            var status = await _api.GetHorarioStatusAsync();
-            ResumenHorario = status?.Mensaje ?? "Sin información";
-
-            var stats = await _api.GetMisEstadisticasAsync();
-            TotalPedidos = stats?.TotalPedidos ?? 0;
-            TotalGastado = stats?.TotalGastado ?? 0;
+            var tHorario = _api.GetHorarioStatusAsync();
+            var tStats   = _api.GetMisEstadisticasAsync();
+            await Task.WhenAll(tHorario, tStats);
+            ResumenHorario = tHorario.Result?.Mensaje ?? "Sin información";
+            TotalPedidos   = tStats.Result?.TotalPedidos ?? 0;
+            TotalGastado   = tStats.Result?.TotalGastado ?? 0;
         }
     }
 

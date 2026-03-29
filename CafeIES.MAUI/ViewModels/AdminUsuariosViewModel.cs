@@ -85,10 +85,17 @@ public partial class AdminUsuariosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
-        _todos = await _api.GetTodosUsuariosAsync();
-        AplicarFiltros();
-        IsLoading = false;
+        try
+        {
+            _todos = await _api.GetTodosUsuariosAsync();
+            AplicarFiltros();
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-041
+        }
     }
 
     private void AplicarFiltros()

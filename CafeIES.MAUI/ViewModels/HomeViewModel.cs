@@ -79,49 +79,57 @@ public partial class HomeViewModel : ObservableObject
     {
         if (IsLoading) return;
         IsLoading = true;
-
-        var usarCache = _cacheProductos is not null
-                     && _cacheCategorias is not null
-                     && DateTime.UtcNow - _cacheTimestamp < CacheDuration;
-
-        var horarioTask = _api.GetHorarioStatusAsync();
-        var categoriasTask = usarCache ? Task.FromResult(_cacheCategorias!) : _api.GetCategoriasAsync();
-        var productosTask  = usarCache ? Task.FromResult(_cacheProductos!)  : _api.GetProductosAsync();
-
-        await Task.WhenAll(horarioTask, categoriasTask, productosTask);
-
-        var horario    = horarioTask.Result;
-        var categorias = categoriasTask.Result;
-        var productos  = productosTask.Result;
-
-        if (!usarCache)
+        try
         {
-            _cacheCategorias  = categorias;
-            _cacheProductos   = productos;
-            _cacheTimestamp   = DateTime.UtcNow;
+            var usarCache = _cacheProductos is not null
+                         && _cacheCategorias is not null
+                         && DateTime.UtcNow - _cacheTimestamp < CacheDuration;
+
+            var horarioTask    = _api.GetHorarioStatusAsync();
+            var categoriasTask = usarCache ? Task.FromResult(_cacheCategorias!) : _api.GetCategoriasAsync();
+            var productosTask  = usarCache ? Task.FromResult(_cacheProductos!)  : _api.GetProductosAsync();
+
+            await Task.WhenAll(horarioTask, categoriasTask, productosTask);
+
+            var horario    = horarioTask.Result;
+            var categorias = categoriasTask.Result;
+            var productos  = productosTask.Result;
+
+            if (!usarCache)
+            {
+                _cacheCategorias  = categorias;
+                _cacheProductos   = productos;
+                _cacheTimestamp   = DateTime.UtcNow;
+            }
+
+            // Estado horario — si la API falla (horario null), asumir permisivo:
+            // el servidor hará la validación definitiva al crear el pedido.
+            PuedePedir           = horario?.PuedePedir ?? true;
+            MensajeHorario       = horario?.Mensaje ?? string.Empty;
+            MostrarBannerBloqueo = horario is not null && !horario.PuedePedir;
+
+            if (horario is not null && !horario.PuedePedir && horario.ProximaHora is not null)
+                ProximaFranja = $"Próxima ventana: {horario.ProximaFranja} a las {horario.ProximaHora}";
+
+            // Categorías
+            Categorias.Clear();
+            Categorias.Add(new CategoriaChipItem { Nombre = "Todo", Emoji = "🍽️", IsSelected = CategoriaSeleccionada == "Todo" });
+            foreach (var c in categorias)
+                Categorias.Add(new CategoriaChipItem { Nombre = c.Nombre, Emoji = c.Emoji, IsSelected = c.Nombre == CategoriaSeleccionada });
+
+            // Productos
+            Productos.Clear();
+            foreach (var p in productos) Productos.Add(p);
+            FiltrarProductos();
         }
-
-        // Estado horario — si la API falla (horario null), asumir permisivo:
-        // el servidor hará la validación definitiva al crear el pedido.
-        PuedePedir           = horario?.PuedePedir ?? true;
-        MensajeHorario       = horario?.Mensaje ?? string.Empty;
-        MostrarBannerBloqueo = horario is not null && !horario.PuedePedir;
-
-        if (horario is not null && !horario.PuedePedir && horario.ProximaHora is not null)
-            ProximaFranja = $"Próxima ventana: {horario.ProximaFranja} a las {horario.ProximaHora}";
-
-        // Categorías
-        Categorias.Clear();
-        Categorias.Add(new CategoriaChipItem { Nombre = "Todo", Emoji = "🍽️", IsSelected = CategoriaSeleccionada == "Todo" });
-        foreach (var c in categorias)
-            Categorias.Add(new CategoriaChipItem { Nombre = c.Nombre, Emoji = c.Emoji, IsSelected = c.Nombre == CategoriaSeleccionada });
-
-        // Productos
-        Productos.Clear();
-        foreach (var p in productos) Productos.Add(p);
-        FiltrarProductos();
-
-        IsLoading = false;
+        catch
+        {
+            // BUG-042: en error de red mostrar catálogo vacío pero no spinner permanente
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     // ── Filtro por categoría ──────────────────────────────────────────────────

@@ -74,10 +74,14 @@ public partial class RegistroViewModel : ObservableObject
             return;
         }
 
-        if (Password.Length < 8)
+        // UX-016: validación idéntica a PasswordComplexityAttribute del servidor
+        if (Password.Length < 8 ||
+            !Password.Any(char.IsUpper) ||
+            !Password.Any(char.IsDigit) ||
+            !Password.Any(c => !char.IsLetterOrDigit(c)))
         {
             HayError     = true;
-            ErrorMessage = "La contraseña debe tener al menos 8 caracteres.";
+            ErrorMessage = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.";
             return;
         }
 
