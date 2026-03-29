@@ -69,9 +69,15 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     {
         if (IsLoading) return;  // BUG-036: evita race condition con SignalR
         IsLoading = true;
-        _todos = await _api.GetPedidosEnCursoAsync();
-        AplicarFiltro();
-        IsLoading = false;
+        try
+        {
+            _todos = await _api.GetPedidosEnCursoAsync();
+            AplicarFiltro();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]

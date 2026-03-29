@@ -130,17 +130,23 @@ public partial class AdminPedidosViewModel : ObservableObject
             }
         }
 
-        var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
-        var desde       = DesdeParaFiltro();
-        var result = await _api.GetPedidosAdminPaginadoAsync(page: 1, pageSize: PageSize, institutoId: institutoId, desde: desde);
-        if (result is not null)
+        try
         {
-            _totalCount = result.TotalCount;
-            foreach (var p in result.Items) _todos.Add(p);
-            HayMas = _todos.Count < _totalCount;
+            var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
+            var desde       = DesdeParaFiltro();
+            var result = await _api.GetPedidosAdminPaginadoAsync(page: 1, pageSize: PageSize, institutoId: institutoId, desde: desde);
+            if (result is not null)
+            {
+                _totalCount = result.TotalCount;
+                foreach (var p in result.Items) _todos.Add(p);
+                HayMas = _todos.Count < _totalCount;
+            }
+            AplicarFiltro();
         }
-        AplicarFiltro();
-        IsLoading = false;
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     // BUG-022: usar zona horaria España para calcular medianoche local;
