@@ -178,7 +178,7 @@ CafeIES/
 │       └── css/app.css                 Estilos custom (ahora correctamente en git)
 │
 ├── CafeIES.Tests/                      ← Tests unitarios (xUnit + EF InMemory)
-│   └── ...                             95 tests: HorarioService, AuthService, dominio, validaciones
+│   └── ...                             96 tests: HorarioService, AuthService, dominio, validaciones
 │
 └── .github/workflows/
     ├── deploy-api.yml                  Push a main + API/Shared → Azure App Service (~4 min)
@@ -216,7 +216,7 @@ Crear `appsettings.Development.json` (no commitear):
     "Audience": "CafeIES"
   },
   "Admin": {
-    "Email": "admin@cafeies.com",
+    "Email": "admin@cafeies.local",
     "Password": "Admin1234!"
   },
   "Stripe": {
@@ -549,7 +549,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
 - Infraestructura Azure operativa — App Service + SQL + Blob Storage + Static Web Apps
 - CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min)
-- 95 tests unitarios — HorarioService, AuthService, dominio, validaciones
+- 96 tests unitarios — HorarioService, AuthService, dominio, validaciones
 - Health check en `/health` para Azure App Service
 - Warmup automático al arrancar (ping a `/health` en frío para reducir lag)
 - Hard delete de productos con historial conservado (FK nullable `SET NULL`)
@@ -571,6 +571,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Desayuno gratuito | ✅ Completada | Programa escolar: zumo + bocata/día; flujo gratuito sin Stripe |
 | Auto-login + UX pulida | ✅ Completada | Sin flash de login, panel contextual animado, filtros por fecha |
 | Desayuno — robustez completa | ✅ Completada | Race condition, webhook, metadata split, ComponenteDesayuno en MAUI |
+| Robustez y calidad | ✅ Completada | 96 tests, guards IsLoading, audit logging extendido, validación contraseña client-side, carga paralela |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -580,6 +581,34 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.15.0 — Robustez: 96 tests, guards IsLoading, audit logging y UX polish
+
+#### Fiabilidad de ViewModels (MAUI)
+- Todos los `CargarAsync` usan `try/finally { IsLoading = false; }` — el spinner se desactiva siempre, incluso si la red falla
+- Guard `if (IsLoading) return;` en todos los ViewModels de carga: evita race conditions entre SignalR y llamadas directas
+- ViewModels afectados: `EmpleadoPedidosViewModel`, `AdminPedidosViewModel`, `AdminHorariosViewModel`, `AdminProductosViewModel`, `AdminEditProductoViewModel`, `EmpleadoProductosViewModel`, `AdminUsuariosViewModel`, `HomeViewModel`, `PedidosViewModel`, `ProductoDetalleViewModel`, `DetallePedidoViewModel`, `AdminInvitacionesViewModel`
+
+#### Audit logging extendido
+- `AuthController`: log `[AUDIT]` en login exitoso, login fallido y cuenta bloqueada — con email e IP
+- `InvitacionesController`: log `[AUDIT]` al crear y revocar invitaciones
+
+#### Guards anti-doble-clic (Blazor Admin)
+- `Institutos.razor`: `_guardando` en botón Guardar y `_toggling` en ToggleActivo — el botón se deshabilita durante la petición
+
+#### Rendimiento (Blazor Admin)
+- `Dashboard.razor`, `Pedidos.razor`, `Usuarios.razor`: carga paralela con `Task.WhenAll` — institutos + datos principales en una sola espera
+- `PerfilViewModel` (MAUI): horario y estadísticas en paralelo
+
+#### Validación de contraseña client-side (MAUI)
+- `RegistroViewModel` y `RegistroInvitacionViewModel`: validación local antes de llamar a la API — mínimo 8 caracteres + mayúscula + número + símbolo, alineado con `PasswordComplexityAttribute` del servidor
+- Eliminado el ejemplo de contraseña `(ej: Admin1234!)` del placeholder de la pantalla de registro
+
+#### Tests
+- Test `PuedePedirAhora_FranjaBloqueoActiva_RetornaDenegado` añadido y funcionando — cobertura del modelo "permisivo por defecto + ventanas de bloqueo" de `HorarioService`
+- Total: **96 tests**, todos en verde
+
+---
 
 ### v0.14.0 — Desayuno gratuito: robustez completa + ComponenteDesayuno en MAUI
 
@@ -692,7 +721,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 - **v0.8.0**: `IBlobStorageService` local/Azure; health check; GitHub Actions API + Admin
 - **v0.7.0**: Infraestructura FCM (tokens, FcmService, NotificacionesController)
-- **v0.6.0**: 95 tests unitarios; reportes Excel/PDF; subida de imágenes
+- **v0.6.0**: 96 tests unitarios; reportes Excel/PDF; subida de imágenes
 - **v0.5.0**: Rate limiting auth; audit trail; complejidad contraseña; null-safe claims
 - **v0.4.0**: Stripe PaymentIntent + webhook; multi-instituto
 

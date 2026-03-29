@@ -58,7 +58,7 @@
                 <Entry Style="{StaticResource InputEntry}"
                        Text="{Binding Password}" Placeholder="Mínimo 8 caracteres" IsPassword="True"/>
             </Border>
-            <Label Text="La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo (ej: Admin1234!)"
+            <Label Text="La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo"
                    FontFamily="DMSans" FontSize="12"
                    TextColor="{StaticResource MutedColor}"
                    Margin="2,6,2,0"
