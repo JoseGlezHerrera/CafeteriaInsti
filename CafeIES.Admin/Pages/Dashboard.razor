@@ -135,8 +135,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _institutos = await Api.GetInstitutosAsync();
-        _dashboard  = await Api.GetDashboardAsync(_institutoFiltro);
+        // PERF-020: cargar institutos y dashboard en paralelo
+        var tInstitutos = Api.GetInstitutosAsync();
+        var tDashboard  = Api.GetDashboardAsync(_institutoFiltro);
+        await Task.WhenAll(tInstitutos, tDashboard);
+        _institutos = tInstitutos.Result;
+        _dashboard  = tDashboard.Result;
         _cargado    = true;
 
         // FIX-18: Conectar a SignalR para recibir NuevoPedido en tiempo real

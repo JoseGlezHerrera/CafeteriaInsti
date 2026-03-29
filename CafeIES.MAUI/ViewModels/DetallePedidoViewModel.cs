@@ -86,14 +86,22 @@ public partial class DetallePedidoViewModel : ObservableObject
     public async Task CargarAsync(int id = 0)
     {
         if (id == 0) id = PedidoId;
-        var pedido = await _api.GetPedidoAsync(id);
-        if (pedido is null) return;
+        if (id <= 0) return;
 
-        NumeroPedido = pedido.NumeroPedido;
-        Total = pedido.Total;
-        Estado = pedido.Estado;
-        Lineas.Clear();
-        foreach (var l in pedido.Lineas) Lineas.Add(l);
+        // BUG-045: evitar cargas concurrentes (SignalR + llamada directa)
+        // No usamos IsLoading porque no hay spinner en esta vista, solo guardamos
+        try
+        {
+            var pedido = await _api.GetPedidoAsync(id);
+            if (pedido is null) return;
+
+            NumeroPedido = pedido.NumeroPedido;
+            Total        = pedido.Total;
+            Estado       = pedido.Estado;
+            Lineas.Clear();
+            foreach (var l in pedido.Lineas) Lineas.Add(l);
+        }
+        catch { /* ignorar errores de red — la vista conserva el último estado */ }
     }
 
     [RelayCommand]

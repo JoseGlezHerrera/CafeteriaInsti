@@ -200,8 +200,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _institutos = await Api.GetInstitutosAsync();
-        await Recargar();
+        // PERF-021: institutos y pedidos en paralelo
+        var tInstitutos = Api.GetInstitutosAsync();
+        var tPedidos    = Api.GetPedidosAsync(_desde, _hasta);
+        await Task.WhenAll(tInstitutos, tPedidos);
+        _institutos = tInstitutos.Result;
+        _pedidos    = tPedidos.Result;
+        _cargando   = false;
         await ConectarSignalRAsync();
     }
 

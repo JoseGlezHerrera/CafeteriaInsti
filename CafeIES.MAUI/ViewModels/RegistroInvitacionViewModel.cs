@@ -100,10 +100,21 @@ public partial class RegistroInvitacionViewModel : ObservableObject
     [RelayCommand]
     private async Task ActivarAsync()
     {
-        if (string.IsNullOrWhiteSpace(Nombre) || string.IsNullOrWhiteSpace(Email) || Password.Length < 8)
+        if (string.IsNullOrWhiteSpace(Nombre) || string.IsNullOrWhiteSpace(Email) ||
+            string.IsNullOrWhiteSpace(Password))
         {
             HayError     = true;
-            ErrorMessage = "Completa todos los campos (contraseña mínimo 8 caracteres).";
+            ErrorMessage = "Completa todos los campos.";
+            return;
+        }
+        // UX-017: validación idéntica a PasswordComplexityAttribute del servidor
+        if (Password.Length < 8 ||
+            !Password.Any(char.IsUpper) ||
+            !Password.Any(char.IsDigit) ||
+            !Password.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            HayError     = true;
+            ErrorMessage = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.";
             return;
         }
 

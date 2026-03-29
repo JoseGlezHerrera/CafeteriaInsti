@@ -50,8 +50,14 @@ public partial class ProductoDetalleViewModel : ObservableObject
         if (IsLoading) return; // evitar doble carga (OnProductoIdChanged + EventToCommandBehavior)
 
         IsLoading = true;
-        Producto  = await _api.GetProductoByIdAsync(ProductoId);
-        IsLoading = false;
+        try
+        {
+            Producto = await _api.GetProductoByIdAsync(ProductoId);
+        }
+        finally
+        {
+            IsLoading = false;  // BUG-044
+        }
     }
 
     [RelayCommand]
