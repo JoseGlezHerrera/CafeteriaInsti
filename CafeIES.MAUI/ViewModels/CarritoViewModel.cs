@@ -188,9 +188,10 @@ public partial class CarritoViewModel : ObservableObject
 
     // ── Gestión del carrito ───────────────────────────────────────────────────
 
-    /// <returns>true si se añadió o incrementó; false si el producto ya está en el límite de 20.</returns>
+    /// <returns>true si se añadió o incrementó; false si el producto ya está en el límite de 20 o hay un pago en curso.</returns>
     public bool AnadirProducto(ProductoDto producto)
     {
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return false; // pago en curso
         var existente = Items.FirstOrDefault(i => i.ProductoId == producto.Id);
         if (existente is not null)
         {
@@ -226,6 +227,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void IncrementarCantidad(ItemCarrito item)
     {
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
         if (item.Cantidad >= 20) return;
         item.Cantidad++;
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -240,6 +242,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void DecrementarCantidad(ItemCarrito item)
     {
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
         if (item.Cantidad > 1) item.Cantidad--;
         else Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -254,6 +257,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void EliminarItem(ItemCarrito item)
     {
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
         Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
@@ -328,6 +332,11 @@ public partial class CarritoViewModel : ObservableObject
         PendingPublishableKey  = config.PublishableKey;
         PendingPaymentIntentId = intent.PaymentIntentId;
 
+        // Eliminar carrito de Preferences en cuanto se inicia el pago:
+        // si el usuario cierra la app antes de que FinalizarPagoAsync complete,
+        // el carrito NO se restaurará al reabrir (el webhook crea el pedido igualmente).
+        Preferences.Default.Remove(CarritoKey);
+
         IsLoading = false; EstadoPago = string.Empty;
 
         await Shell.Current.GoToAsync("PagamentoWeb");
@@ -376,6 +385,7 @@ public partial class CarritoViewModel : ObservableObject
 
         // Limpiar carrito y estado pendiente INMEDIATAMENTE
         Items.Clear();
+        Preferences.Default.Remove(CarritoKey); // persistir el vaciado
         TotalItems = 0;
         OnPropertyChanged(nameof(Total));
         Notas                  = string.Empty;
@@ -404,9 +414,17 @@ public partial class CarritoViewModel : ObservableObject
             try
             {
                 var req = new CrearPedidoRequest(lineas, MetodoPago.Tarjeta, notas, paymentIntentId);
-                await _api.CrearPedidoAsync(req);
-                // Confirmar estado real desde servidor una vez registrado el pedido
-                await MainThread.InvokeOnMainThreadAsync(CargarDesayunoStatusAsync);
+                var (pedido, _) = await _api.CrearPedidoAsync(req);
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    // Notificar a PedidosViewModel para que la lista se actualice sin
+                    // que el usuario tenga que hacer pull-to-refresh manualmente.
+                    if (pedido is not null)
+                        WeakReferenceMessenger.Default.Send(
+                            new PedidoActualizadoMessage(pedido.Id, pedido.Estado.ToString()));
+                    // Confirmar estado real de desayuno desde servidor
+                    await CargarDesayunoStatusAsync();
+                });
             }
             catch { /* best-effort: el webhook de Stripe es el respaldo */ }
         });

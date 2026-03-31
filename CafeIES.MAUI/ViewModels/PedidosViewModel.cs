@@ -27,7 +27,6 @@ public partial class PedidosViewModel : ObservableObject
             MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
-    [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _isCargandoMas;
     [ObservableProperty] private bool _hayMas;
 
@@ -57,21 +56,19 @@ public partial class PedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
-        if (IsLoading) return;   // Evita ejecuciones concurrentes → duplicados
+        // AsyncRelayCommand (AllowConcurrentExecutions=false por defecto) evita re-entradas.
+        // IsRefreshing del RefreshView se bindea a CargarCommand.IsRunning para que el
+        // framework gestione el ciclo vida del spinner sin conflictos con Appearing.
         _todos.Clear();
         _paginaActual = 1;
-        IsLoading = true;
         try
         {
             var pedidos = await _api.GetMisPedidosAsync(page: 1, pageSize: PageSize);
             _todos.AddRange(pedidos);
             _hayMasServidor = pedidos.Count == PageSize;
-            AplicarFiltro();
         }
-        finally
-        {
-            IsLoading = false;  // BUG-043
-        }
+        catch { /* ignorar errores de red — AplicarFiltro muestra lista vacía */ }
+        AplicarFiltro();
     }
 
     [RelayCommand]

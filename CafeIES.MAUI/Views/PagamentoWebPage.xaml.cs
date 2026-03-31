@@ -77,17 +77,28 @@ public partial class PagamentoWebPage : ContentPage
         await _carrito.FinalizarPagoAsync(piId);
     }
 
-    // Bloquear el botón "←" mientras se procesa el pago para evitar doble navegación
+    // Botón "←" de la UI: bloquea mientras procesa; muestra confirmación en otro caso
     private async void OnVolverClicked(object? sender, EventArgs e)
     {
         if (Volatile.Read(ref _procesando) != 0) return;
-        await Shell.Current.GoToAsync("..");
+        await MostrarDialogoCancelarAsync();
     }
 
-    // Bloquear el botón físico atrás de Android mientras se procesa el pago
+    // Botón físico atrás de Android: bloquea mientras procesa; confirmación en otro caso
     protected override bool OnBackButtonPressed()
     {
-        if (Volatile.Read(ref _procesando) != 0) return true; // true = no hacer nada
-        return base.OnBackButtonPressed();
+        if (Volatile.Read(ref _procesando) != 0) return true; // bloquear durante pago
+        _ = MostrarDialogoCancelarAsync();
+        return true; // interceptar siempre — el diálogo decide si navegar
+    }
+
+    private async Task MostrarDialogoCancelarAsync()
+    {
+        var confirmar = await DisplayAlert(
+            "Cancelar pago",
+            "¿Quieres cancelar el pago y volver al carrito?",
+            "Sí, cancelar", "No, continuar");
+        if (confirmar)
+            await Shell.Current.GoToAsync("..");
     }
 }
