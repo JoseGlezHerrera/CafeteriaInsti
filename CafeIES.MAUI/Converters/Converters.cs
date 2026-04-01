@@ -442,6 +442,24 @@ public class TurnoDisplayConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// Convierte un DateTime UTC a hora local del dispositivo y lo formatea.
+/// Usar ConverterParameter para pasar el formato (defecto: "dd/MM/yyyy HH:mm").
+/// </summary>
+public class UtcToLocalDateTimeConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not DateTime dt) return string.Empty;
+        var local = dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+        var fmt   = parameter as string ?? "dd/MM/yyyy HH:mm";
+        return local.ToString(fmt, CultureInfo.CurrentCulture);
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>true → ChipButtonActive style, false → ChipButton style</summary>
 public class BoolToChipStyleConverter : IValueConverter
 {

@@ -39,7 +39,13 @@ public class AdminController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> Dashboard([FromQuery] int? institutoId)
     {
-        var hoy = DateTime.UtcNow.Date;
+        // BUG-A: usar zona horaria España para que "hoy" coincida con medianoche local,
+        // no con medianoche UTC (que en invierno es 01:00 y en verano las 02:00 en España).
+        var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+        var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
+        var hoy      = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
+        var manana   = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date.AddDays(1), spainTz);
 
         // El instituto del admin en JWT tiene prioridad — un admin de instituto A no puede ver el B
         var institutoEfectivo = GetAdminInstitutoId() ?? institutoId;
@@ -54,7 +60,6 @@ public class AdminController : ControllerBase
 
         // FIX-04: SARGable date comparison
         // PERF: pedidosHoy + ingresosHoy en una sola query (GroupBy); idem productosActivos + stockBajo
-        var manana = hoy.AddDays(1);
         var statsHoy = await pedidosQuery
             .Where(p => p.FechaCreacion >= hoy && p.FechaCreacion < manana && p.Estado != EstadoPedido.Cancelado)
             .GroupBy(_ => 0)

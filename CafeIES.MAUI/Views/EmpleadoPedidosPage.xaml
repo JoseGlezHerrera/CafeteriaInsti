@@ -64,7 +64,7 @@
                                 </Grid>
                                 <Label Grid.Row="1" Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}" Style="{StaticResource SubtitleLabel}" FontSize="13" LineBreakMode="TailTruncation"/>
                                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" Text="{Binding FechaCreacion, StringFormat='{0:dd/MM HH:mm}'}" Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
+                                    <Label Grid.Column="0" Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM HH:mm'}" Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
                                     <HorizontalStackLayout Grid.Column="1" Spacing="6">
                                         <Button Text="Preparar" FontFamily="SyneBold" FontSize="11"
                                                 BackgroundColor="#1ae8834a" TextColor="#e8834a"

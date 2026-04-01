@@ -86,7 +86,7 @@
                                 <!-- Fila 3: Fecha + total -->
                                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
                                     <Label Grid.Column="0"
-                                           Text="{Binding FechaCreacion, StringFormat='{0:dd/MM/yyyy HH:mm}'}"
+                                           Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM/yyyy HH:mm'}"
                                            Style="{StaticResource CaptionLabel}"/>
                                     <Label Grid.Column="1" FontFamily="SyneBold" FontSize="15"
                                            TextColor="{StaticResource TextColor}">

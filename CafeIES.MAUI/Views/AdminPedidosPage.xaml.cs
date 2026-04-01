@@ -16,8 +16,9 @@ public partial class AdminPedidosPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        // Resubscribir mensajes WeakReference al volver a la página (tab cacheado).
+        // La carga la dispara el EventToCommandBehavior del XAML — no llamar aquí para evitar doble petición.
         Vm.Resubscribe();
-        Vm.CargarCommand.Execute(null);
     }
 
     // FIX-11: Desuscribir mensajes al desaparecer la página

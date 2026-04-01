@@ -6,6 +6,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
 using System.Collections.ObjectModel;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 
 namespace CafeIES.MAUI.ViewModels;
 
@@ -224,10 +226,21 @@ public partial class CarritoViewModel : ObservableObject
         return true;
     }
 
+    private static async Task MostrarToastPagoEnCurso()
+    {
+        try
+        {
+            var toast = Toast.Make("El pago está en curso, no puedes modificar el carrito",
+                                   ToastDuration.Short, 13);
+            await toast.Show();
+        }
+        catch { /* Toast no disponible en esta plataforma/configuración */ }
+    }
+
     [RelayCommand]
     private void IncrementarCantidad(ItemCarrito item)
     {
-        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) { _ = MostrarToastPagoEnCurso(); return; }
         if (item.Cantidad >= 20) return;
         item.Cantidad++;
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -242,7 +255,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void DecrementarCantidad(ItemCarrito item)
     {
-        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) { _ = MostrarToastPagoEnCurso(); return; }
         if (item.Cantidad > 1) item.Cantidad--;
         else Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -257,7 +270,7 @@ public partial class CarritoViewModel : ObservableObject
     [RelayCommand]
     private void EliminarItem(ItemCarrito item)
     {
-        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return; // pago en curso
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) { _ = MostrarToastPagoEnCurso(); return; }
         Items.Remove(item);
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
