@@ -414,17 +414,11 @@ public partial class CarritoViewModel : ObservableObject
             try
             {
                 var req = new CrearPedidoRequest(lineas, MetodoPago.Tarjeta, notas, paymentIntentId);
-                var (pedido, _) = await _api.CrearPedidoAsync(req);
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    // Notificar a PedidosViewModel para que la lista se actualice sin
-                    // que el usuario tenga que hacer pull-to-refresh manualmente.
-                    if (pedido is not null)
-                        WeakReferenceMessenger.Default.Send(
-                            new PedidoActualizadoMessage(pedido.Id, pedido.Estado.ToString()));
-                    // Confirmar estado real de desayuno desde servidor
-                    await CargarDesayunoStatusAsync();
-                });
+                await _api.CrearPedidoAsync(req);
+                // No enviamos PedidoActualizadoMessage aquí: cuando el usuario navega a
+                // PedidosPage el Appearing dispara CargarAsync, que ya incluye el pedido nuevo.
+                // Enviar el mensaje causaría un segundo CargarAsync simultáneo → duplicado visual.
+                await MainThread.InvokeOnMainThreadAsync(CargarDesayunoStatusAsync);
             }
             catch { /* best-effort: el webhook de Stripe es el respaldo */ }
         });
