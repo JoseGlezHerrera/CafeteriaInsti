@@ -457,6 +457,43 @@ public class PedidosController : ControllerBase
         return NoContent();
     }
 
+    // ── GET /api/pedidos/historial  (Admin / Personal / Empleado) ────────────
+    /// <summary>
+    /// Devuelve los pedidos de hoy en todos los estados (hasta 200), para la
+    /// vista de historial del empleado. Los empleados/personal solo ven su instituto.
+    /// </summary>
+    [HttpGet("historial")]
+    [Authorize(Roles = "Admin,Personal,Empleado")]
+    public async Task<ActionResult<List<PedidoDto>>> Historial()
+    {
+        var esAdmin    = User.IsInRole("Admin");
+        var esPersonal = User.IsInRole("Personal");
+        var esEmpleado = User.IsInRole("Empleado");
+        var institutoId = int.TryParse(User.FindFirst("institutoId")?.Value, out var iid) && iid > 0 ? iid : (int?)null;
+
+        if ((esEmpleado || esPersonal) && !institutoId.HasValue)
+            return Ok(new List<PedidoDto>());
+
+        var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+        var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
+        var desde    = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
+
+        IQueryable<Pedido> query = _db.Pedidos.Where(p => p.FechaCreacion >= desde);
+
+        if (esEmpleado || esPersonal)
+            query = query.Where(p => p.Usuario!.InstitutoId == institutoId);
+
+        var pedidos = await query
+            .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
+            .Take(200)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
+            .ToListAsync();
+
+        return Ok(pedidos.Select(p => p.ToDto()).ToList());
+    }
+
     // ── GET /api/pedidos/en-curso  (Admin / Cafetería / Empleado) ────────────
     [HttpGet("en-curso")]
     [Authorize(Roles = "Admin,Personal,Empleado")]

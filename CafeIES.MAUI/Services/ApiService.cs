@@ -547,6 +547,22 @@ public class ApiService
         }
     }
 
+    // ── Empleado: Historial pedidos del día (todos los estados) ──────────────
+    public async Task<List<PedidoDto>> GetHistorialStaffAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/pedidos/historial");
+            if (!resp.IsSuccessStatusCode) return new();
+            return await resp.Content.ReadFromJsonAsync<List<PedidoDto>>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error en GetHistorialStaffAsync.");
+            return new();
+        }
+    }
+
     // ── Admin: Pedidos (paginado) ────────────────────────────────────────────
     // FIX-19: Método paginado para evitar cargar todos los pedidos en memoria
     public async Task<PaginatedResponse<PedidoDto>?> GetPedidosAdminPaginadoAsync(int page = 1, int pageSize = 30, int? institutoId = null, DateTime? desde = null)

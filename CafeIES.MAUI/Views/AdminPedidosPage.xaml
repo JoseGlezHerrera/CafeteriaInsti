@@ -75,7 +75,7 @@
         </ScrollView>
 
         <RefreshView Grid.Row="4"
-                     IsRefreshing="{Binding IsLoading}"
+                     IsRefreshing="{Binding CargarCommand.IsRunning}"
                      Command="{Binding CargarCommand}"
                      RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
@@ -176,6 +176,23 @@
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+
+                <!-- D-1: Paginación — botón cargar más -->
+                <CollectionView.Footer>
+                    <VerticalStackLayout IsVisible="{Binding HayMas}" Padding="0,4,0,20">
+                        <Button Text="Cargar más"
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding CargarMasCommand}"
+                                IsEnabled="{Binding IsCargandoMas, Converter={StaticResource InvertBoolConverter}}"
+                                HorizontalOptions="Center"
+                                WidthRequest="180"/>
+                        <ActivityIndicator IsRunning="{Binding IsCargandoMas}"
+                                           IsVisible="{Binding IsCargandoMas}"
+                                           Color="{StaticResource AccentColor}"
+                                           Margin="0,4"/>
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
+
             </CollectionView>
         </RefreshView>
 

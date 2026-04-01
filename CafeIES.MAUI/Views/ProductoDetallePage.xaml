@@ -42,15 +42,21 @@
             <VerticalStackLayout Padding="24,20" Spacing="20"
                                  IsVisible="{Binding TieneProducto}">
 
-                <!-- Emoji / Imagen grande -->
+                <!-- Imagen / Emoji del producto -->
                 <Border BackgroundColor="{StaticResource Surface2Color}"
                         WidthRequest="160" HeightRequest="160"
                         HorizontalOptions="Center"
                         StrokeThickness="1" Stroke="{StaticResource BorderColor}">
                     <Border.StrokeShape><RoundRectangle CornerRadius="28"/></Border.StrokeShape>
-                    <Label Text="{Binding Producto.CategoriaEmoji}"
-                           FontSize="72"
-                           HorizontalOptions="Center" VerticalOptions="Center"/>
+                    <Grid>
+                        <Image Source="{Binding ImagenUrlCompleta}"
+                               Aspect="AspectFill"
+                               IsVisible="{Binding TieneImagen}"/>
+                        <Label Text="{Binding Producto.CategoriaEmoji}"
+                               FontSize="72"
+                               HorizontalOptions="Center" VerticalOptions="Center"
+                               IsVisible="{Binding TieneImagen, Converter={StaticResource InvertBoolConverter}}"/>
+                    </Grid>
                 </Border>
 
                 <!-- Nombre -->

@@ -26,7 +26,6 @@ public partial class AdminPedidosViewModel : ObservableObject
             MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
-    [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _isCargandoMas;
     [ObservableProperty] private bool _hayMas;
 
@@ -104,8 +103,6 @@ public partial class AdminPedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
-        if (IsLoading) return;
-        IsLoading = true;
         _todos.Clear();
         _paginaActual = 1;
 
@@ -143,10 +140,7 @@ public partial class AdminPedidosViewModel : ObservableObject
             }
             AplicarFiltro();
         }
-        finally
-        {
-            IsLoading = false;
-        }
+        catch { /* ignorar errores de red — AplicarFiltro muestra lista vacía */ }
     }
 
     // BUG-022: usar zona horaria España para calcular medianoche local;

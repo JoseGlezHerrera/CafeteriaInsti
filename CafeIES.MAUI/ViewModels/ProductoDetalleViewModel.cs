@@ -26,11 +26,16 @@ public partial class ProductoDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TieneDescripcion))]
     [NotifyPropertyChangedFor(nameof(AlergenosTexto))]
     [NotifyPropertyChangedFor(nameof(PuedeAnadir))]
+    [NotifyPropertyChangedFor(nameof(ImagenUrlCompleta))]
+    [NotifyPropertyChangedFor(nameof(TieneImagen))]
     private ProductoDto? _producto;
 
-    public bool  TieneProducto   => Producto is not null;
-    public bool  TieneDescripcion => !string.IsNullOrWhiteSpace(Producto?.Descripcion);
-    public bool  PuedeAnadir     => Producto is not null && Producto.NivelStock != "agotado";
+    public bool   TieneProducto    => Producto is not null;
+    public bool   TieneDescripcion => !string.IsNullOrWhiteSpace(Producto?.Descripcion);
+    public bool   PuedeAnadir     => Producto is not null && Producto.NivelStock != "agotado";
+    public string ImagenUrlCompleta => Producto?.ImagenUrl is { Length: > 0 } url
+        ? _api.BuildImageUrl(url) : string.Empty;
+    public bool   TieneImagen     => !string.IsNullOrEmpty(ImagenUrlCompleta);
 
     /// <summary>Texto con emojis y nombres de todos los alérgenos.</summary>
     public string AlergenosTexto =>

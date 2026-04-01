@@ -19,8 +19,6 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
             MainThread.BeginInvokeOnMainThread(() => CargarCommand.Execute(null)));
     }
 
-    [ObservableProperty] private bool _isLoading;
-
     private string _filtroEstado = string.Empty;
     public string FiltroEstado
     {
@@ -33,6 +31,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
                 OnPropertyChanged(nameof(FiltroEnCursoActivo));
                 OnPropertyChanged(nameof(FiltroPendienteActivo));
                 OnPropertyChanged(nameof(FiltroEnPrepActivo));
+                OnPropertyChanged(nameof(FiltroListoActivo));
+                OnPropertyChanged(nameof(FiltroEntregadoActivo));
+                OnPropertyChanged(nameof(FiltroCanceladoActivo));
             }
         }
     }
@@ -40,6 +41,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     public bool FiltroEnCursoActivo   => FiltroEstado == "";
     public bool FiltroPendienteActivo => FiltroEstado == "Pendiente";
     public bool FiltroEnPrepActivo    => FiltroEstado == "EnPreparacion";
+    public bool FiltroListoActivo     => FiltroEstado == "Listo";
+    public bool FiltroEntregadoActivo => FiltroEstado == "Entregado";
+    public bool FiltroCanceladoActivo => FiltroEstado == "Cancelado";
 
     // ── Filtro por fecha ──────────────────────────────────────────────────────
     private string _filtroFecha = "Hoy";
@@ -67,17 +71,12 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
-        if (IsLoading) return;  // BUG-036: evita race condition con SignalR
-        IsLoading = true;
         try
         {
-            _todos = await _api.GetPedidosEnCursoAsync();
+            _todos = await _api.GetHistorialStaffAsync();
             AplicarFiltro();
         }
-        finally
-        {
-            IsLoading = false;
-        }
+        catch { /* ignorar errores de red */ }
     }
 
     [RelayCommand]
@@ -92,7 +91,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
         if (FiltroFecha == "Hoy")
             filtrados = filtrados.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy);
 
-        if (!string.IsNullOrEmpty(FiltroEstado))
+        if (string.IsNullOrEmpty(FiltroEstado))
+            filtrados = filtrados.Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion);
+        else
             filtrados = filtrados.Where(p => p.Estado.ToString() == FiltroEstado);
 
         foreach (var p in filtrados) Pedidos.Add(p);

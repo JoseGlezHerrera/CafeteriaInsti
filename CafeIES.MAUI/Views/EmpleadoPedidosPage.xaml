@@ -36,9 +36,18 @@
                 <Button Text="En prep."
                         Style="{Binding FiltroEnPrepActivo,    Converter={StaticResource BoolToChipStyleConverter}}"
                         Command="{Binding SetFiltroCommand}" CommandParameter="EnPreparacion"/>
+                <Button Text="Listo"
+                        Style="{Binding FiltroListoActivo,     Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter="Listo"/>
+                <Button Text="Entregado"
+                        Style="{Binding FiltroEntregadoActivo, Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter="Entregado"/>
+                <Button Text="Cancelado"
+                        Style="{Binding FiltroCanceladoActivo, Converter={StaticResource BoolToChipStyleConverter}}"
+                        Command="{Binding SetFiltroCommand}" CommandParameter="Cancelado"/>
             </HorizontalStackLayout>
         </ScrollView>
-        <RefreshView Grid.Row="3" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
+        <RefreshView Grid.Row="3" IsRefreshing="{Binding CargarCommand.IsRunning}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Margin="0,80">
