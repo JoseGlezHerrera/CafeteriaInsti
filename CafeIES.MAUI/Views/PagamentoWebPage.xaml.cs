@@ -33,9 +33,9 @@ public partial class PagamentoWebPage : ContentPage
         Interlocked.Exchange(ref _procesando, 0);
         LoadingOverlay.IsVisible = true;
 
+        // BUG-E: pk ya no se pasa en la URL — el servidor lo inyecta desde configuración.
         var url = $"{_api.ApiBaseUrl}/api/pagos/stripe-form"
-                + $"?pk={Uri.EscapeDataString(_carrito.PendingPublishableKey)}"
-                + $"&cs={Uri.EscapeDataString(_carrito.PendingClientSecret)}";
+                + $"?cs={Uri.EscapeDataString(_carrito.PendingClientSecret)}";
 
         FormWebView.Source = new UrlWebViewSource { Url = url };
     }

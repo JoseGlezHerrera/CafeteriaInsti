@@ -246,8 +246,12 @@ public partial class PerfilViewModel : ObservableObject
             PasswordMessage  = string.Empty;
             PasswordIsError  = false;
 
-            var toast = Toast.Make("✓ Contraseña actualizada correctamente", ToastDuration.Short, 14);
-            await toast.Show();
+            // D-4: avisar antes de cerrar sesión para que no sea inesperado
+            await Shell.Current.DisplayAlert(
+                "Contraseña actualizada",
+                "Tu contraseña se ha actualizado. Por seguridad, debes iniciar sesión de nuevo.",
+                "OK");
+            await _api.CerrarSesionAsync();
         }
         else
         {

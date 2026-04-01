@@ -77,7 +77,7 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
-        if (IsLoading) return;
+        // D-3: AsyncRelayCommand (AllowConcurrentExecutions=false por defecto) ya evita re-entradas.
         IsLoading = true;
         try
         {

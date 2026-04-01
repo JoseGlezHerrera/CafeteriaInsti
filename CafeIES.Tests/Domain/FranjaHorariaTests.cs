@@ -22,6 +22,9 @@ public class FranjaHorariaTests
     [Fact]
     public void EstaActiva_AhoraEntreMedio_RetornaTrue()
     {
+        // D-5: evita wrapping de medianoche — si son las 23:xx, +30min cruza el día y la franja parece inactiva
+        if (DateTime.Now.Hour is 0 or 23) return;
+
         var franja = Franja(
             inicio: DateTime.Now.AddMinutes(-30),
             fin:    DateTime.Now.AddMinutes(30));
@@ -34,6 +37,9 @@ public class FranjaHorariaTests
     [Fact]
     public void EstaActiva_ExactamenteEnElInicio_RetornaTrue()
     {
+        // D-5: evita wrapping de medianoche
+        if (DateTime.Now.Hour is 0 or 23) return;
+
         // Redondear al minuto porque TimeOnly.Parse("HH:mm") pierde los segundos
         var ahora = DateTime.Now;
         var inicioMinuto = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, 0);

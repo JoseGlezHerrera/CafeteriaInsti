@@ -1077,4 +1077,20 @@ public class ApiService
             _hub = null;
         }
     }
+
+    /// <summary>
+    /// D-4: Cierra la sesión explícitamente (p. ej. tras cambio de contraseña).
+    /// Limpia los tokens locales, desconecta SignalR y navega al login.
+    /// </summary>
+    public async Task CerrarSesionAsync()
+    {
+        await DesconectarSignalRAsync();
+        _tokens.LimpiarTokens();
+        WeakReferenceMessenger.Default.Send(new SesionExpiradaMessage());
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            try { await Shell.Current.GoToAsync("//Login"); }
+            catch (Exception ex) { _logger.LogError(ex, "Error navegando a login tras cerrar sesión."); }
+        });
+    }
 }
