@@ -16,6 +16,7 @@ public partial class HomePage : ContentPage
     {
         base.OnAppearing();
         _vm.Resubscribe();
+        StartSkeletonAnimation();
     }
 
     // FIX-12: Desuscribir al desaparecer para evitar memory leaks
@@ -23,5 +24,13 @@ public partial class HomePage : ContentPage
     {
         base.OnDisappearing();
         _vm.Cleanup();
+        this.AbortAnimation("skeleton");
+    }
+
+    private void StartSkeletonAnimation()
+    {
+        this.AbortAnimation("skeleton");
+        var anim = new Animation(v => SkeletonGrid.Opacity = v, 0.35, 1.0);
+        anim.Commit(this, "skeleton", length: 900, easing: Easing.SinInOut, repeat: () => true);
     }
 }

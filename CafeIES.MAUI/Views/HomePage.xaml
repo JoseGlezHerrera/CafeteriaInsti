@@ -6,7 +6,7 @@
              xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
              x:Class="CafeIES.MAUI.Views.HomePage"
              x:DataType="vm:HomeViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
@@ -15,19 +15,21 @@
     <Grid RowDefinitions="Auto,*">
 
         <!-- ── Header fijo ─────────────────────────────────────────────────── -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}"
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
               Padding="24,16" ColumnDefinitions="*,Auto">
 
             <VerticalStackLayout Grid.Column="0">
                 <Label Text="¿Qué quieres hoy?" FontFamily="SyneBold"
-                       FontSize="22" TextColor="{StaticResource TextColor}"/>
+                       FontSize="22" TextColor="{DynamicResource TextColor}"
+                       SemanticProperties.HeadingLevel="Level1"/>
             </VerticalStackLayout>
 
             <!-- Botón carrito con badge -->
             <Grid Grid.Column="1" WidthRequest="44" HeightRequest="44">
-                <Border BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}"
-                        WidthRequest="44" HeightRequest="44">
+                <Border BackgroundColor="{DynamicResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                        WidthRequest="44" HeightRequest="44"
+                        SemanticProperties.Description="Abrir carrito">
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding IrAlCarritoCommand}"/>
@@ -68,22 +70,23 @@
 
                 <!-- Buscador -->
                 <Border Margin="24,16,24,0" Padding="14,12"
-                        BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                        BackgroundColor="{DynamicResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Grid ColumnDefinitions="Auto,*">
                         <Label Grid.Column="0" Text="🔍" FontSize="16" Margin="0,0,10,0"/>
                         <Entry Grid.Column="1" Placeholder="Buscar bocadillo, bebida..."
-                               PlaceholderColor="{StaticResource MutedColor}"
-                               TextColor="{StaticResource TextColor}"
+                               PlaceholderColor="{DynamicResource MutedColor}"
+                               TextColor="{DynamicResource TextColor}"
                                BackgroundColor="Transparent"
-                               Text="{Binding Busqueda}"/>
+                               Text="{Binding Busqueda}"
+                               SemanticProperties.Description="Buscar productos"/>
                     </Grid>
                 </Border>
 
                 <!-- Categorías (scroll horizontal) -->
                 <Label Text="Categorías" FontFamily="SyneBold" FontSize="16"
-                       TextColor="{StaticResource TextColor}" Margin="24,20,24,12"/>
+                       TextColor="{DynamicResource TextColor}" Margin="24,20,24,12"/>
 
                 <CollectionView ItemsSource="{Binding Categorias}"
                                 ItemsLayout="HorizontalList"
@@ -111,11 +114,56 @@
 
                 <!-- Grid de productos -->
                 <Label Text="Disponibles hoy" FontFamily="SyneBold" FontSize="16"
-                       TextColor="{StaticResource TextColor}" Margin="24,20,24,12"/>
+                       TextColor="{DynamicResource TextColor}" Margin="24,20,24,12"
+                       SemanticProperties.HeadingLevel="Level2"/>
 
-                <!-- Loading -->
-                <ActivityIndicator IsRunning="{Binding IsLoading}" Color="{StaticResource AccentColor}"
-                                   Margin="0,20" IsVisible="{Binding IsLoading}" HeightRequest="40"/>
+                <!-- Skeleton loading (visible mientras carga la primera vez) -->
+                <Grid x:Name="SkeletonGrid" IsVisible="{Binding IsLoading}"
+                      Margin="24,0,24,24" RowDefinitions="Auto,Auto" RowSpacing="12"
+                      ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <!-- Fila 1 -->
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Padding="0">
+                        <Grid RowDefinitions="110,Auto">
+                            <BoxView Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="20,20,0,0"/>
+                            <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="8">
+                                <BoxView HeightRequest="14" WidthRequest="100" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="70"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="50"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4" Margin="0,4,0,0"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Card}" Padding="0">
+                        <Grid RowDefinitions="110,Auto">
+                            <BoxView Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="20,20,0,0"/>
+                            <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="8">
+                                <BoxView HeightRequest="14" WidthRequest="80"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="60"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="50"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4" Margin="0,4,0,0"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                    <!-- Fila 2 -->
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}" Padding="0">
+                        <Grid RowDefinitions="110,Auto">
+                            <BoxView Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="20,20,0,0"/>
+                            <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="8">
+                                <BoxView HeightRequest="14" WidthRequest="90"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="65"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="50"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4" Margin="0,4,0,0"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Padding="0">
+                        <Grid RowDefinitions="110,Auto">
+                            <BoxView Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="20,20,0,0"/>
+                            <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="8">
+                                <BoxView HeightRequest="14" WidthRequest="110" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="75"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                                <BoxView HeightRequest="11" WidthRequest="50"  HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4" Margin="0,4,0,0"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </Grid>
 
                 <!-- Productos en grid 2 columnas -->
                 <CollectionView ItemsSource="{Binding ProductosFiltrados}"
@@ -126,7 +174,7 @@
                                              Spacing="10" Margin="0,40">
                             <Label Text="🔍" FontSize="44" HorizontalOptions="Center"/>
                             <Label Text="Sin resultados" FontFamily="SyneBold" FontSize="16"
-                                   TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                                   TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                             <Label Text="Prueba con otra búsqueda o categoría"
                                    Style="{StaticResource SubtitleLabel}" HorizontalOptions="Center"/>
                         </VerticalStackLayout>
@@ -147,7 +195,7 @@
                                 <Grid RowDefinitions="110,Auto">
 
                                     <!-- Imagen / Emoji -->
-                                    <Grid Grid.Row="0" BackgroundColor="{StaticResource Surface2Color}">
+                                    <Grid Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}">
                                         <Label Text="{Binding CategoriaEmoji}" FontSize="44"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                         <!-- Stock badge: solo muestra "Agotado" cuando Stock == 0 -->
@@ -164,7 +212,7 @@
                                     <!-- Info -->
                                     <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
                                         <Label Text="{Binding Nombre}" FontFamily="SyneBold"
-                                               FontSize="14" TextColor="{StaticResource TextColor}"
+                                               FontSize="14" TextColor="{DynamicResource TextColor}"
                                                LineBreakMode="TailTruncation"/>
                                         <Label Text="{Binding Descripcion}" Style="{StaticResource CaptionLabel}"
                                                LineBreakMode="TailTruncation"/>
@@ -189,7 +237,8 @@
                                             <!-- Botón + (deshabilitado si agotado) -->
                                             <Border Grid.Column="1" BackgroundColor="{StaticResource AccentColor}"
                                                     WidthRequest="30" HeightRequest="30"
-                                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}">
+                                                    Opacity="{Binding Stock, Converter={StaticResource StockToOpacityConverter}}"
+                                                    SemanticProperties.Description="Añadir al carrito">
                                                 <Border.StrokeShape><RoundRectangle CornerRadius="9"/></Border.StrokeShape>
                                                 <Border.GestureRecognizers>
                                                     <TapGestureRecognizer

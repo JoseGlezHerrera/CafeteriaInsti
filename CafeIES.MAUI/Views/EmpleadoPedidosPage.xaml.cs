@@ -26,20 +26,37 @@ public partial class EmpleadoPedidosPage : ContentPage
         Vm.Cleanup();
     }
 
-    private void OnPrepararClicked(object sender, EventArgs e)
+    private async void OnPrepararClicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p) Vm.PrepararCommand.Execute(p);
+        if (sender is not Button btn) return;
+        await AnimatePress(btn);
+        if (btn.CommandParameter is PedidoDto p) Vm.PrepararCommand.Execute(p);
     }
-    private void OnListoClicked(object sender, EventArgs e)
+
+    private async void OnListoClicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p) Vm.ListoCommand.Execute(p);
+        if (sender is not Button btn) return;
+        await AnimatePress(btn);
+        if (btn.CommandParameter is PedidoDto p) Vm.ListoCommand.Execute(p);
     }
-    private void OnEntregarClicked(object sender, EventArgs e)
+
+    private async void OnEntregarClicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p) Vm.EntregarCommand.Execute(p);
+        if (sender is not Button btn) return;
+        await AnimatePress(btn);
+        if (btn.CommandParameter is PedidoDto p) Vm.EntregarCommand.Execute(p);
     }
-    private void OnCancelarClicked(object sender, EventArgs e)
+
+    private async void OnCancelarClicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p) Vm.CancelarCommand.Execute(p);
+        if (sender is not Button btn) return;
+        await AnimatePress(btn);
+        if (btn.CommandParameter is PedidoDto p) Vm.CancelarCommand.Execute(p);
+    }
+
+    private static async Task AnimatePress(VisualElement el)
+    {
+        await el.ScaleTo(0.88, 80, Easing.CubicIn);
+        await el.ScaleTo(1.0,  80, Easing.CubicOut);
     }
 }

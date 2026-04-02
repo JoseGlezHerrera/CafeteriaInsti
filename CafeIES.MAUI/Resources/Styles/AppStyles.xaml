@@ -4,7 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <!-- ═══════════════════════════════════════════════
-         PALETA DE COLORES  (dark & warm, igual que el prototipo)
+         PALETA DE COLORES — valores iniciales (dark).
+         App.xaml.cs actualiza dinámicamente según RequestedTheme.
+         Se usan con DynamicResource para que respondan al cambio.
     ═══════════════════════════════════════════════ -->
 
     <!-- Fondos -->
@@ -18,11 +20,11 @@
     <Color x:Key="TextColor">#F2EDE6</Color>
     <Color x:Key="MutedColor">#7A7468</Color>
 
-    <!-- Acento principal: ámbar/naranja -->
+    <!-- Acento principal: ámbar/naranja (igual en ambos temas) -->
     <Color x:Key="AccentColor">#F5A623</Color>
     <Color x:Key="Accent2Color">#E8834A</Color>
 
-    <!-- Semánticos -->
+    <!-- Semánticos (igual en ambos temas) -->
     <Color x:Key="GreenColor">#4CAF82</Color>
     <Color x:Key="RedColor">#E05252</Color>
 
@@ -39,38 +41,38 @@
 
     <!-- Página base -->
     <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
-        <Setter Property="BackgroundColor" Value="{StaticResource BgColor}"/>
+        <Setter Property="BackgroundColor" Value="{DynamicResource BgColor}"/>
     </Style>
 
     <!-- Labels -->
     <Style x:Key="H1" TargetType="Label">
         <Setter Property="FontFamily"  Value="SyneBold"/>
         <Setter Property="FontSize"    Value="28"/>
-        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+        <Setter Property="TextColor"   Value="{DynamicResource TextColor}"/>
     </Style>
 
     <Style x:Key="H2" TargetType="Label">
         <Setter Property="FontFamily"  Value="SyneBold"/>
         <Setter Property="FontSize"    Value="20"/>
-        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+        <Setter Property="TextColor"   Value="{DynamicResource TextColor}"/>
     </Style>
 
     <Style x:Key="H3" TargetType="Label">
         <Setter Property="FontFamily"  Value="SyneBold"/>
         <Setter Property="FontSize"    Value="16"/>
-        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+        <Setter Property="TextColor"   Value="{DynamicResource TextColor}"/>
     </Style>
 
     <Style x:Key="Body" TargetType="Label">
         <Setter Property="FontFamily"  Value="DMSans"/>
         <Setter Property="FontSize"    Value="14"/>
-        <Setter Property="TextColor"   Value="{StaticResource TextColor}"/>
+        <Setter Property="TextColor"   Value="{DynamicResource TextColor}"/>
     </Style>
 
     <Style x:Key="Caption" TargetType="Label">
         <Setter Property="FontFamily"  Value="DMSans"/>
         <Setter Property="FontSize"    Value="12"/>
-        <Setter Property="TextColor"   Value="{StaticResource MutedColor}"/>
+        <Setter Property="TextColor"   Value="{DynamicResource MutedColor}"/>
     </Style>
 
     <Style x:Key="AccentLabel" TargetType="Label">
@@ -82,17 +84,17 @@
     <Style x:Key="InputStyle" TargetType="Entry">
         <Setter Property="FontFamily"       Value="DMSans"/>
         <Setter Property="FontSize"         Value="15"/>
-        <Setter Property="TextColor"        Value="{StaticResource TextColor}"/>
-        <Setter Property="PlaceholderColor" Value="{StaticResource MutedColor}"/>
+        <Setter Property="TextColor"        Value="{DynamicResource TextColor}"/>
+        <Setter Property="PlaceholderColor" Value="{DynamicResource MutedColor}"/>
         <Setter Property="BackgroundColor"  Value="Transparent"/>
         <Setter Property="HeightRequest"    Value="50"/>
     </Style>
 
     <!-- Input container (borde + fondo) -->
     <Style x:Key="InputBox" TargetType="Border">
-        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="BackgroundColor"  Value="{DynamicResource Surface2Color}"/>
         <Setter Property="StrokeThickness"  Value="1.5"/>
-        <Setter Property="Stroke"          Value="{StaticResource BorderColor}"/>
+        <Setter Property="Stroke"          Value="{DynamicResource BorderColor}"/>
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="14"/>
@@ -105,7 +107,7 @@
     <Style x:Key="BtnPrimary" TargetType="Button">
         <Setter Property="FontFamily"       Value="SyneBold"/>
         <Setter Property="FontSize"         Value="15"/>
-        <Setter Property="TextColor"        Value="#0F0E0C"/>
+        <Setter Property="TextColor"        Value="#1A1614"/>
         <Setter Property="BackgroundColor"  Value="{StaticResource AccentColor}"/>
         <Setter Property="CornerRadius"     Value="16"/>
         <Setter Property="HeightRequest"    Value="54"/>
@@ -126,9 +128,9 @@
 
     <!-- Card -->
     <Style x:Key="CardStyle" TargetType="Border">
-        <Setter Property="BackgroundColor"  Value="{StaticResource CardColor}"/>
+        <Setter Property="BackgroundColor"  Value="{DynamicResource CardColor}"/>
         <Setter Property="StrokeThickness"  Value="1"/>
-        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="Stroke"           Value="{DynamicResource BorderColor}"/>
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="20"/>
@@ -138,9 +140,9 @@
 
     <!-- Surface card (más claro) -->
     <Style x:Key="SurfaceCard" TargetType="Border">
-        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="BackgroundColor"  Value="{DynamicResource Surface2Color}"/>
         <Setter Property="StrokeThickness"  Value="1"/>
-        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="Stroke"           Value="{DynamicResource BorderColor}"/>
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="16"/>
@@ -150,9 +152,9 @@
 
     <!-- Chip de categoría inactivo -->
     <Style x:Key="CategoryChip" TargetType="Border">
-        <Setter Property="BackgroundColor"  Value="{StaticResource Surface2Color}"/>
+        <Setter Property="BackgroundColor"  Value="{DynamicResource Surface2Color}"/>
         <Setter Property="StrokeThickness"  Value="1.5"/>
-        <Setter Property="Stroke"           Value="{StaticResource BorderColor}"/>
+        <Setter Property="Stroke"           Value="{DynamicResource BorderColor}"/>
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="50"/>

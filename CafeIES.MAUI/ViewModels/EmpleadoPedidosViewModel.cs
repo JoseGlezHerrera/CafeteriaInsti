@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -102,9 +103,10 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     [RelayCommand]
     private async Task PrepararAsync(PedidoDto pedido)
     {
-        // FIX-14: Verificar resultado y mostrar error si falla
         var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.EnPreparacion);
-        if (!ok)
+        if (ok)
+            await Toast.Make($"Pedido #{pedido.NumeroPedido:D3} en preparación 🍳").Show();
+        else
             await Shell.Current.DisplayAlert("Error", "No se pudo cambiar el estado del pedido.", "OK");
         await CargarAsync();
     }
@@ -113,7 +115,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     private async Task ListoAsync(PedidoDto pedido)
     {
         var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Listo);
-        if (!ok)
+        if (ok)
+            await Toast.Make($"Pedido #{pedido.NumeroPedido:D3} listo ✅").Show();
+        else
             await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como listo.", "OK");
         await CargarAsync();
     }
@@ -122,7 +126,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
     private async Task EntregarAsync(PedidoDto pedido)
     {
         var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Entregado);
-        if (!ok)
+        if (ok)
+            await Toast.Make($"Pedido #{pedido.NumeroPedido:D3} entregado 🎉").Show();
+        else
             await Shell.Current.DisplayAlert("Error", "No se pudo marcar el pedido como entregado.", "OK");
         await CargarAsync();
     }
@@ -134,8 +140,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
             "Cancelar pedido", $"¿Cancelar el pedido #{pedido.NumeroPedido:D3}?", "Sí, cancelar", "No");
         if (!confirmar) return;
         var ok = await _api.CambiarEstadoPedidoAsync(pedido.Id, EstadoPedido.Cancelado);
-        // FIX-14: Informar al usuario si falla
-        if (!ok)
+        if (ok)
+            await Toast.Make($"Pedido #{pedido.NumeroPedido:D3} cancelado").Show();
+        else
             await Shell.Current.DisplayAlert("Error", "No se pudo cancelar el pedido. Inténtalo de nuevo.", "OK");
         await CargarAsync();
     }
