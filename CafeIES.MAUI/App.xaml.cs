@@ -29,10 +29,7 @@ public partial class App : Application
     {
         InitializeComponent();
 
-        // Aplicar tema inicial según preferencia del sistema
-        ApplyTheme(RequestedTheme);
-
-        // Actualizar cuando cambie el tema del sistema
+        // Actualizar cuando cambie el tema del sistema en caliente
         RequestedThemeChanged += (_, e) => ApplyTheme(e.RequestedTheme);
 
         // Captura de excepciones no controladas — escribir a archivo para diagnóstico
@@ -61,12 +58,16 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new AppShell());
+        var window = new Window(new AppShell());
+        // Aplicar tema inicial aquí: RequestedTheme ya está resuelto por la plataforma
+        ApplyTheme(RequestedTheme);
+        return window;
     }
 
     private void ApplyTheme(AppTheme theme)
     {
-        var palette = theme == AppTheme.Light ? LightPalette : DarkPalette;
+        // Unspecified → el OS no ha declarado preferencia: usar Light como predeterminado
+        var palette = theme == AppTheme.Dark ? DarkPalette : LightPalette;
         foreach (var (key, hex) in palette)
             Resources[key] = Color.FromArgb(hex);
     }
