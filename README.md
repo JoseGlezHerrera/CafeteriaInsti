@@ -505,6 +505,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 **Catálogo y carrito**
 - Catálogo de productos con categorías, filtros y búsqueda
+- Skeleton loading animado durante la carga del catálogo (tarjetas placeholder pulsantes)
+- Tema claro/oscuro adaptativo — sigue la preferencia del sistema automáticamente
 - Carrito persistente entre sesiones (via `Preferences`) — se recupera al volver a la app
 - Control de cantidad y stock; productos agotados bloqueados visualmente
 - Validación horaria por turno antes de crear el pedido
@@ -529,7 +531,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Historial con chips Hoy/Todo en vista usuario y empleado (filtrado client-side)
 - Chips Hoy/Semana/Todo en vista admin (filtrado server-side con parámetro `desde`)
 - Estado activo visual en todos los chips de fecha y estado (resalte ámbar)
-- Botones de acción (Preparar/Listo/Entregar/Cancelar) en forma de píldora con borde semántico
+- Botones de acción (Preparar/Listo/Entregar/Cancelar) en forma de píldora con borde semántico y animación de press
+- Toast de confirmación tras cada cambio de estado (EmpleadoPedidosPage)
 - Detalle de pedido en tiempo real (SignalR)
 - Historial completo del día para empleados: chips Listo, Entregado y Cancelado además de los activos
 - "Cargar más" paginado en AdminPedidosPage cuando hay más de 20 pedidos (modo Todo)
@@ -552,7 +555,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
 - Infraestructura Azure operativa — App Service + SQL + Blob Storage + Static Web Apps
 - CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min)
-- 96 tests unitarios — HorarioService, AuthService, dominio, validaciones
+- 108 tests unitarios — HorarioService, AuthService, dominio, validaciones, DesayunoService
 - Health check en `/health` para Azure App Service
 - Warmup automático al arrancar (ping a `/health` en frío para reducir lag)
 - Hard delete de productos con historial conservado (FK nullable `SET NULL`)
@@ -577,6 +580,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Robustez y calidad | ✅ Completada | 96 tests, guards IsLoading, audit logging extendido, validación contraseña client-side, carga paralela |
 | Historial staff + imagen detalle | ✅ Completada | Endpoint historial empleados/admin; chips estado completos; imagen real en detalle producto; Cargar más paginado |
 | Seguridad pagos + deudas técnicas | ✅ Completada | Stripe pk server-side; transacción RepeatableRead desayuno; CerrarSesionAsync centralizado; tests robustos |
+| UX sprint — tema claro, skeleton y accesibilidad | ✅ Completada | Tema claro/oscuro reactivo; skeleton loading; SemanticProperties; animaciones de press; toasts; 108 tests |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -586,6 +590,40 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.18.0 — UX sprint: tema claro, skeleton loading, accesibilidad y animaciones
+
+#### Tema claro/oscuro adaptativo
+- La app detecta el tema del sistema (claro u oscuro) al arrancar y cuando el usuario lo cambia
+- 7 colores de UI se actualizan dinámicamente vía `DynamicResource` + `RequestedThemeChanged` en `App.xaml.cs`
+- Paleta clara: fondos crema (`#FAF8F5`/`#FFFFFF`), bordes suaves (`#E5DFD7`), texto carbón (`#1A1614`)
+- Paleta oscura: fondos casi-negro (`#0F0E0C`/`#1A1916`), texto cálido (`#F2EDE6`) — misma que v0.17
+- Los 20 archivos XAML ya usaban `DynamicResource`, por lo que el cambio es instantáneo y sin parpadeo
+
+#### Skeleton loading en HomePage
+- El `ActivityIndicator` de carga del catálogo fue reemplazado por un grid 2×2 de tarjetas placeholder con `BoxView`
+- Las tarjetas skeleton replican exactamente la estructura del producto real (zona imagen 110px + 3 líneas de texto)
+- Animación pulsante (opacidad 35%→100%, 900ms, `SinInOut`, infinita) activada en `OnAppearing`
+
+#### Accesibilidad — SemanticProperties
+- `SemanticProperties.Description` en buscador de HomePage, botón carrito y botón "+" añadir al carrito
+- `SemanticProperties.HeadingLevel` en los dos títulos principales de HomePage
+- `SemanticProperties.Hint` en los 4 botones de acción de EmpleadoPedidosPage (Preparar / Listo / Entregar / Cancelar)
+
+#### Animaciones de interacción en EmpleadoPedidosPage
+- Press animation (`ScaleTo 88%` + rebote) en todos los botones de acción
+- Toast de confirmación (`CommunityToolkit.Maui.Alerts.Toast`) tras cada cambio de estado exitoso
+- Arreglados 4 avisos XC0022 (Picker sin `x:DataType`) en RegistroPage, RegistroInvitacionPage, AdminPedidosPage y AdminEditProductoPage
+
+#### Robustez de pagos (BUG-F: recuperación de pago incompleto)
+- `CarritoViewModel` persiste el `PaymentIntentId` en `Preferences` al iniciar un pago
+- Si la app se cierra durante el pago y reabre, `PedidosPage.OnAppearing` detecta el PI pendiente y redirige a `ConfirmacionPedidoPage`
+- Añadido catch de `SqlException 1205` (deadlock SQL Server) en `PedidosController` — responde 503 con mensaje amigable
+
+#### Tests
+- 12 nuevos tests para `DesayunoService` (108 en total, 0 errores)
+
+---
 
 ### v0.17.0 — Seguridad pagos, deudas técnicas y robustez de tests
 
