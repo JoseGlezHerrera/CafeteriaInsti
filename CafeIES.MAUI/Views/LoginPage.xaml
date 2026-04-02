@@ -4,7 +4,7 @@
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
              x:Class="CafeIES.MAUI.Views.LoginPage"
              x:DataType="vm:LoginViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ScrollView x:Name="ContenidoLogin" Opacity="0">
         <Grid RowDefinitions="*, Auto" MinimumHeightRequest="700" Padding="32">
@@ -21,7 +21,9 @@
             <VerticalStackLayout Grid.Row="0" VerticalOptions="Center" Spacing="0">
 
                 <!-- Logo -->
-                <Label FontFamily="SyneBold" FontSize="42" TextColor="{StaticResource TextColor}"
+                <Label FontFamily="SyneBold" FontSize="42" TextColor="{DynamicResource TextColor}"
+                       SemanticProperties.HeadingLevel="Level1"
+                       SemanticProperties.Description="CaféIES"
                        Margin="0,0,0,4">
                     <Label.FormattedText>
                         <FormattedString>
@@ -35,26 +37,28 @@
 
                 <!-- Email -->
                 <Label Text="EMAIL" FontFamily="SyneBold" FontSize="11"
-                       TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
-                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                       TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
+                <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                        BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Entry Style="{StaticResource InputEntry}"
                            Text="{Binding Email}"
                            Placeholder="correo@ies.edu"
-                           Keyboard="Email"/>
+                           Keyboard="Email"
+                           SemanticProperties.Description="Correo electrónico"/>
                 </Border>
 
                 <!-- Password -->
                 <Label Text="CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
-                       TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
-                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                       TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+                <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                        BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Entry Style="{StaticResource InputEntry}"
                            Text="{Binding Password}"
                            Placeholder="••••••••"
-                           IsPassword="True"/>
+                           IsPassword="True"
+                           SemanticProperties.Description="Contraseña"/>
                 </Border>
 
                 <!-- Error -->
@@ -72,31 +76,34 @@
 
                 <!-- Botón login -->
                 <Button Text="Entrar →" Style="{StaticResource PrimaryButton}"
-                        Command="{Binding LoginCommand}" Margin="0,24,0,0"/>
+                        Command="{Binding LoginCommand}" Margin="0,24,0,0"
+                        SemanticProperties.Hint="Pulsa para iniciar sesión"/>
 
                 <!-- Separador -->
                 <Grid ColumnDefinitions="*,Auto,*" Margin="0,24">
-                    <BoxView Grid.Column="0" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center"/>
-                    <Label Grid.Column="1" Text="¿Primera vez?" TextColor="{StaticResource MutedColor}"
+                    <BoxView Grid.Column="0" HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" VerticalOptions="Center"/>
+                    <Label Grid.Column="1" Text="¿Primera vez?" TextColor="{DynamicResource MutedColor}"
                            FontSize="12" Margin="12,0"/>
-                    <BoxView Grid.Column="2" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center"/>
+                    <BoxView Grid.Column="2" HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" VerticalOptions="Center"/>
                 </Grid>
 
                 <!-- Botón registro alumno -->
                 <Button Text="Crear cuenta →" Style="{StaticResource SecondaryButton}"
-                        Command="{Binding IrARegistroCommand}"/>
+                        Command="{Binding IrARegistroCommand}"
+                        SemanticProperties.Hint="Pulsa para crear una cuenta de alumno"/>
 
                 <!-- Botón invitación (profesor / personal / empleado cafetería) -->
                 <Button Text="🔗 Tengo un código de invitación"
                         BackgroundColor="Transparent"
-                        TextColor="{StaticResource MutedColor}"
+                        TextColor="{DynamicResource MutedColor}"
                         FontFamily="DMSans" FontSize="13"
                         HeightRequest="44"
                         Command="{Binding IrARegistroInvitacionCommand}"
-                        Margin="0,8,0,0"/>
+                        Margin="0,8,0,0"
+                        SemanticProperties.Hint="Pulsa si tienes un código de invitación"/>
 
                 <Label Text="¿Problemas? Contacta con secretaría"
-                       TextColor="{StaticResource MutedColor}" FontSize="12"
+                       TextColor="{DynamicResource MutedColor}" FontSize="12"
                        HorizontalOptions="Center" Margin="0,12,0,0"/>
             </VerticalStackLayout>
 

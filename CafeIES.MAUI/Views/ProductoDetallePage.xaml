@@ -6,16 +6,16 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="CafeIES.MAUI.Views.ProductoDetallePage"
              x:DataType="vm:ProductoDetalleViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid x:Name="PageContent" RowDefinitions="Auto,*,Auto" Opacity="0" TranslationY="18">
 
         <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}"
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
               Padding="16,14" ColumnDefinitions="Auto,*">
             <Button Grid.Column="0"
                     Text="Volver"
@@ -25,7 +25,7 @@
             <Label Grid.Column="1"
                    Text="Detalle del producto"
                    FontFamily="SyneBold" FontSize="18"
-                   TextColor="{StaticResource TextColor}"
+                   TextColor="{DynamicResource TextColor}"
                    Margin="12,0,0,0" VerticalOptions="Center"/>
         </Grid>
 
@@ -43,10 +43,10 @@
                                  IsVisible="{Binding TieneProducto}">
 
                 <!-- Imagen / Emoji del producto -->
-                <Border BackgroundColor="{StaticResource Surface2Color}"
+                <Border BackgroundColor="{DynamicResource Surface2Color}"
                         WidthRequest="160" HeightRequest="160"
                         HorizontalOptions="Center"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                     <Border.StrokeShape><RoundRectangle CornerRadius="28"/></Border.StrokeShape>
                     <Grid>
                         <Image Source="{Binding ImagenUrlCompleta}"
@@ -62,7 +62,7 @@
                 <!-- Nombre -->
                 <Label Text="{Binding Producto.Nombre}"
                        FontFamily="SyneBold" FontSize="26"
-                       TextColor="{StaticResource TextColor}"
+                       TextColor="{DynamicResource TextColor}"
                        HorizontalOptions="Center"
                        HorizontalTextAlignment="Center"/>
 
@@ -81,20 +81,20 @@
                 <!-- Descripcion -->
                 <Label Text="{Binding Producto.Descripcion}"
                        FontFamily="DMSans" FontSize="15"
-                       TextColor="{StaticResource TextColor}"
+                       TextColor="{DynamicResource TextColor}"
                        HorizontalTextAlignment="Center"
                        LineBreakMode="WordWrap"
                        IsVisible="{Binding TieneDescripcion}"/>
 
                 <!-- Separador -->
-                <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" Margin="0,4"/>
+                <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" Margin="0,4"/>
 
                 <!-- Sección de alérgenos -->
                 <VerticalStackLayout Spacing="12"
                                      IsVisible="{Binding Producto.Alergenos, Converter={StaticResource AlergenosVisibleConverter}}">
                     <Label Text="Contiene alérgenos"
                            FontFamily="SyneBold" FontSize="14"
-                           TextColor="{StaticResource MutedColor}"/>
+                           TextColor="{DynamicResource MutedColor}"/>
                     <CollectionView ItemsSource="{Binding Producto.Alergenos}"
                                     SelectionMode="None">
                         <CollectionView.ItemsLayout>
@@ -103,15 +103,15 @@
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="dto:AlergenoDto">
                                 <HorizontalStackLayout Spacing="10">
-                                    <Border BackgroundColor="{StaticResource Surface2Color}"
+                                    <Border BackgroundColor="{DynamicResource Surface2Color}"
                                             Padding="10,6"
-                                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="10"/></Border.StrokeShape>
                                         <HorizontalStackLayout Spacing="6">
                                             <Label Text="{Binding Emoji}" FontSize="16" VerticalOptions="Center"/>
                                             <Label Text="{Binding Nombre}"
                                                    FontFamily="DMSans" FontSize="13"
-                                                   TextColor="{StaticResource TextColor}"
+                                                   TextColor="{DynamicResource TextColor}"
                                                    VerticalOptions="Center"/>
                                         </HorizontalStackLayout>
                                     </Border>
@@ -126,8 +126,8 @@
 
         <!-- Botón añadir al carrito -->
         <Border Grid.Row="2"
-                BackgroundColor="{StaticResource SurfaceColor}"
-                StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                BackgroundColor="{DynamicResource SurfaceColor}"
+                StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                 Padding="24,16"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}">
             <Border.StrokeShape><RoundRectangle CornerRadius="0"/></Border.StrokeShape>

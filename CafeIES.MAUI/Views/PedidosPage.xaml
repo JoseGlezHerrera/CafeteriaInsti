@@ -6,7 +6,7 @@
              xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
              x:Class="CafeIES.MAUI.Views.PedidosPage"
              x:DataType="vm:PedidosViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
@@ -14,14 +14,14 @@
 
     <Grid RowDefinitions="Auto,Auto,*">
         <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="24,16">
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}" Padding="24,16">
             <Label Text="Mis pedidos" FontFamily="SyneBold" FontSize="22"
-                   TextColor="{StaticResource TextColor}"/>
+                   TextColor="{DynamicResource TextColor}"/>
         </Grid>
 
         <!-- Filtro por fecha -->
         <ScrollView Grid.Row="1" Orientation="Horizontal"
-                    BackgroundColor="{StaticResource SurfaceColor}"
+                    BackgroundColor="{DynamicResource SurfaceColor}"
                     Padding="16,10,16,14" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Hoy"  Command="{Binding SetFiltroFechaCommand}" CommandParameter="Hoy"
@@ -31,16 +31,64 @@
             </HorizontalStackLayout>
         </ScrollView>
 
+        <!-- Skeleton — visible en la primera carga mientras la lista está vacía -->
+        <VerticalStackLayout x:Name="SkeletonPedidos" Grid.Row="2"
+                              BackgroundColor="{DynamicResource BgColor}"
+                              IsVisible="{Binding CargarCommand.IsRunning}"
+                              Margin="24,16" Spacing="12">
+            <!-- 3 filas skeleton de tarjeta de pedido -->
+            <Border Style="{StaticResource Card}" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="16" WidthRequest="60" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="6"/>
+                        <BoxView Grid.Column="1" HeightRequest="22" WidthRequest="80" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="11"/>
+                    </Grid>
+                    <BoxView Grid.Row="1" HeightRequest="13" WidthRequest="200" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="11" WidthRequest="130" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                        <BoxView Grid.Column="1" HeightRequest="15" WidthRequest="55" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource Card}" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="16" WidthRequest="60" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="6"/>
+                        <BoxView Grid.Column="1" HeightRequest="22" WidthRequest="80" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="11"/>
+                    </Grid>
+                    <BoxView Grid.Row="1" HeightRequest="13" WidthRequest="180" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="11" WidthRequest="130" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                        <BoxView Grid.Column="1" HeightRequest="15" WidthRequest="55" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource Card}" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="16" WidthRequest="60" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="6"/>
+                        <BoxView Grid.Column="1" HeightRequest="22" WidthRequest="70" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="11"/>
+                    </Grid>
+                    <BoxView Grid.Row="1" HeightRequest="13" WidthRequest="220" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                        <BoxView Grid.Column="0" HeightRequest="11" WidthRequest="130" HorizontalOptions="Start" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                        <BoxView Grid.Column="1" HeightRequest="15" WidthRequest="55" BackgroundColor="{DynamicResource Surface2Color}" CornerRadius="4"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+
         <RefreshView Grid.Row="2" Command="{Binding CargarCommand}"
                      IsRefreshing="{Binding CargarCommand.IsRunning}"
                      RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="24,16">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
-                                         Spacing="12" Margin="0,80">
+                                         Spacing="12" Margin="0,80"
+                                         IsVisible="{Binding CargarCommand.IsRunning, Converter={StaticResource InvertBoolConverter}}">
                         <Label Text="📋" FontSize="60" HorizontalOptions="Center"/>
                         <Label Text="Sin pedidos aún" FontFamily="SyneBold" FontSize="18"
-                               TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                               TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                         <Label Text="Tus pedidos aparecerán aquí" Style="{StaticResource SubtitleLabel}"
                                HorizontalOptions="Center"/>
                     </VerticalStackLayout>
@@ -89,7 +137,7 @@
                                            Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM/yyyy HH:mm'}"
                                            Style="{StaticResource CaptionLabel}"/>
                                     <Label Grid.Column="1" FontFamily="SyneBold" FontSize="15"
-                                           TextColor="{StaticResource TextColor}">
+                                           TextColor="{DynamicResource TextColor}">
                                         <Label.FormattedText>
                                             <FormattedString>
                                                 <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>

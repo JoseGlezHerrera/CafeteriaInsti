@@ -22,6 +22,9 @@ public partial class HomeViewModel : ObservableObject
     // FIX-12: Guardar referencia al handler para poder desuscribirse
     private readonly System.ComponentModel.PropertyChangedEventHandler _carritoHandler;
 
+    // U-06: Token para cancelar el timer de auto-refresh del horario
+    private CancellationTokenSource? _horarioCts;
+
     public HomeViewModel(ApiService api, CarritoViewModel carrito)
     {
         _api = api;
@@ -40,6 +43,8 @@ public partial class HomeViewModel : ObservableObject
     public void Cleanup()
     {
         _carrito.PropertyChanged -= _carritoHandler;
+        _horarioCts?.Cancel();
+        _horarioCts = null;
     }
 
     /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
@@ -49,6 +54,30 @@ public partial class HomeViewModel : ObservableObject
         _carrito.PropertyChanged += _carritoHandler;
         // Sincronizar badge inmediatamente por si cambió mientras no estábamos suscritos
         ItemsEnCarrito = _carrito.TotalItems;
+        // U-06: reiniciar timer de auto-refresh del horario
+        _horarioCts?.Cancel();
+        _horarioCts = new CancellationTokenSource();
+        _ = RefrescarHorarioPeriodicoAsync(_horarioCts.Token);
+    }
+
+    /// <summary>U-06: Refresca el estado del horario cada minuto para mantener el banner actualizado.</summary>
+    private async Task RefrescarHorarioPeriodicoAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+        while (await timer.WaitForNextTickAsync(ct))
+        {
+            var horario = await _api.GetHorarioStatusAsync();
+            if (horario is null) continue;
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                PuedePedir           = horario.PuedePedir;
+                MensajeHorario       = horario.Mensaje ?? string.Empty;
+                MostrarBannerBloqueo = !horario.PuedePedir;
+                ProximaFranja = (!horario.PuedePedir && horario.ProximaHora is not null)
+                    ? $"Próxima ventana: {horario.ProximaFranja} a las {horario.ProximaHora}"
+                    : string.Empty;
+            });
+        }
     }
 
     // ── Estado horario ────────────────────────────────────────────────────────

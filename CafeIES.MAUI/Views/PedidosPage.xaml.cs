@@ -35,12 +35,32 @@ public partial class PedidosPage : ContentPage
         }
 
         _vm.Resubscribe();
+        _vm.PropertyChanged += OnVmPropertyChanged;
+        if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
     }
 
     // FIX-11: Desuscribir mensajes al desaparecer la página
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        _vm.PropertyChanged -= OnVmPropertyChanged;
         _vm.Cleanup();
+        this.AbortAnimation("skeletonPedidos");
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == "IsRunning") // CargarCommand.IsRunning notifica como "IsRunning"
+        {
+            if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
+            else this.AbortAnimation("skeletonPedidos");
+        }
+    }
+
+    private void StartSkeletonAnimation()
+    {
+        this.AbortAnimation("skeletonPedidos");
+        var anim = new Animation(v => SkeletonPedidos.Opacity = v, 0.35, 1.0);
+        anim.Commit(this, "skeletonPedidos", length: 900, easing: Easing.SinInOut, repeat: () => true);
     }
 }
