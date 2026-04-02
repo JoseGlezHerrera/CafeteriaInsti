@@ -184,18 +184,26 @@ public partial class ApiService
         return all;
     }
 
-    public async Task<bool> CambiarEstadoPedidoAsync(int id, EstadoPedido estado)
+    public async Task<(bool Ok, string? Error)> CambiarEstadoPedidoAsync(int id, EstadoPedido estado)
     {
         try
         {
             var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/pedidos/{id}/estado",
                 JsonContent.Create(new CambiarEstadoRequest(estado)));
-            return resp.IsSuccessStatusCode;
+            if (resp.IsSuccessStatusCode) return (true, null);
+            string? msg = null;
+            try
+            {
+                var err = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                msg = err?.GetValueOrDefault("mensaje");
+            }
+            catch { /* body no es JSON */ }
+            return (false, msg);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error al cambiar el estado del pedido {Id}.", id);
-            return false;
+            return (false, null);
         }
     }
 }

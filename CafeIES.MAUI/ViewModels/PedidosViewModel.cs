@@ -76,12 +76,16 @@ public partial class PedidosViewModel : ObservableObject
     {
         if (IsCargandoMas || !HayMas) return;
         IsCargandoMas = true;
-        _paginaActual++;
-        var pedidos = await _api.GetMisPedidosAsync(page: _paginaActual, pageSize: PageSize);
-        _todos.AddRange(pedidos);
-        _hayMasServidor = pedidos.Count == PageSize;
-        AplicarFiltro();
-        IsCargandoMas = false;
+        try
+        {
+            _paginaActual++;
+            var pedidos = await _api.GetMisPedidosAsync(page: _paginaActual, pageSize: PageSize);
+            _todos.AddRange(pedidos);
+            _hayMasServidor = pedidos.Count == PageSize;
+            AplicarFiltro();
+        }
+        catch { /* ignorar errores de red */ }
+        finally { IsCargandoMas = false; }
     }
 
     private void AplicarFiltro()

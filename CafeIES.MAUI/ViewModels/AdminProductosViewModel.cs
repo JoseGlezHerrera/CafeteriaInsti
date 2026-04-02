@@ -139,7 +139,7 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                     Descripcion  = prod.Descripcion ?? string.Empty;
                     Precio       = prod.Precio;
                     Stock        = prod.Stock;
-                    ImagenUrl    = prod.ImagenUrl is not null
+                    ImagenUrl    = !string.IsNullOrEmpty(prod.ImagenUrl)
                         ? _api.BuildImageUrl(prod.ImagenUrl)
                         : null;
                     CategoriaSeleccionada = Categorias.FirstOrDefault(c => c.Id == prod.CategoriaId);

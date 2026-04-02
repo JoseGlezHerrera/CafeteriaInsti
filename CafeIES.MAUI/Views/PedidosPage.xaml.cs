@@ -26,8 +26,11 @@ public partial class PedidosPage : ContentPage
         {
             Preferences.Default.Remove(PendingPiKey);
             Dispatcher.Dispatch(async () =>
+            {
+                if (Shell.Current is null) return;
                 await Shell.Current.GoToAsync(
-                    $"ConfirmacionPedido?paymentIntentId={Uri.EscapeDataString(pendingPi)}&total=0.00"));
+                    $"ConfirmacionPedido?paymentIntentId={Uri.EscapeDataString(pendingPi)}&total=0.00");
+            });
             return;
         }
 
