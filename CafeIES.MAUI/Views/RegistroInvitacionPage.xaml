@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
+    xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
     x:DataType="vm:RegistroInvitacionViewModel"
     Shell.NavBarIsVisible="False">
 
@@ -139,7 +140,7 @@
                    Margin="0,8,0,8"/>
             <Border Style="{StaticResource InputBox}" Margin="0,0,0,8">
                 <Picker ItemsSource="{Binding Institutos}"
-                        ItemDisplayBinding="{Binding Nombre}"
+                        ItemDisplayBinding="{Binding Nombre, x:DataType=dto:InstitutoDto}"
                         SelectedItem="{Binding InstitutoSeleccionado}"
                         Title="Selecciona tu instituto"
                         TextColor="{StaticResource TextColor}"

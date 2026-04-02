@@ -1,4 +1,5 @@
 using System.Data;
+using Microsoft.Data.SqlClient;
 using CafeIES.API.Data;
 using CafeIES.API.Extensions;
 using CafeIES.API.Hubs;
@@ -274,6 +275,14 @@ public class PedidosController : ControllerBase
             // Otro pedido simultáneo agotó el stock entre nuestra lectura y escritura
             await transaction.RollbackAsync();
             return Conflict(new { mensaje = "El stock de uno o más productos cambió mientras procesabas el pedido. Comprueba la disponibilidad y vuelve a intentarlo." });
+        }
+        catch (SqlException ex) when (ex.Number == 1205)
+        {
+            // Deadlock SQL Server — la transacción Serializable puede verse afectada bajo carga alta.
+            // Devolver 503 para que el cliente pueda reintentar el pedido.
+            await transaction.RollbackAsync();
+            _logger.LogWarning("Deadlock al crear pedido para usuario {UserId}. El cliente debe reintentar.", userId);
+            return StatusCode(503, new { mensaje = "El sistema está ocupado en este momento. Inténtalo de nuevo en unos segundos." });
         }
         catch (Exception ex)
         {

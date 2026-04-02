@@ -137,8 +137,9 @@ public partial class CarritoViewModel : ObservableObject
     public bool PuedePulsarPagar => !IsLoading && !IsLoadingDesayuno;
 
     // ── Datos pendientes de pago (establecidos antes de navegar al WebView) ───
+    private const string PendingPiKey = "pending_pi_v1";
+
     public string PendingClientSecret    { get; private set; } = string.Empty;
-    public string PendingPublishableKey  { get; private set; } = string.Empty;
     public string PendingPaymentIntentId { get; private set; } = string.Empty;
     private List<LineaPedidoRequest> _pendingLineas = new();
     private string? _pendingNotas;
@@ -342,8 +343,11 @@ public partial class CarritoViewModel : ObservableObject
         _pendingLineas         = lineas;
         _pendingNotas          = notas;
         PendingClientSecret    = intent.ClientSecret;
-        PendingPublishableKey  = config.PublishableKey;
         PendingPaymentIntentId = intent.PaymentIntentId;
+
+        // FIX-PI: Persistir el PI en Preferences por si la app se cierra durante el pago.
+        // PedidosPage.OnAppearing lo detecta al reabrir y redirige a ConfirmacionPedidoPage.
+        Preferences.Default.Set(PendingPiKey, intent.PaymentIntentId);
 
         // Eliminar carrito de Preferences en cuanto se inicia el pago:
         // si el usuario cierra la app antes de que FinalizarPagoAsync complete,
@@ -403,8 +407,8 @@ public partial class CarritoViewModel : ObservableObject
         OnPropertyChanged(nameof(Total));
         Notas                  = string.Empty;
         PendingClientSecret    = string.Empty;
-        PendingPublishableKey  = string.Empty;
         PendingPaymentIntentId = string.Empty;
+        Preferences.Default.Remove(PendingPiKey);
         _pendingLineas         = new();
         _pendingNotas          = null;
         HayErrorPago           = false;
@@ -448,8 +452,8 @@ public partial class CarritoViewModel : ObservableObject
             _ = _api.CancelarPagoIntentAsync(PendingPaymentIntentId);
 
         PendingClientSecret    = string.Empty;
-        PendingPublishableKey  = string.Empty;
         PendingPaymentIntentId = string.Empty;
+        Preferences.Default.Remove(PendingPiKey);
         _pendingLineas = new();
         _pendingNotas  = null;
         HayErrorPago  = false;

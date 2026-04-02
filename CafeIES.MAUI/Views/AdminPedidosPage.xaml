@@ -25,7 +25,7 @@
                 StrokeThickness="0" Padding="16,0,16,12">
             <Border Style="{StaticResource InputBox}">
                 <Picker ItemsSource="{Binding Institutos}"
-                        ItemDisplayBinding="{Binding Nombre}"
+                        ItemDisplayBinding="{Binding Nombre, x:DataType=dto:InstitutoDto}"
                         SelectedItem="{Binding FiltroInstituto}"
                         Title="Todos los centros"
                         TextColor="{StaticResource TextColor}"
