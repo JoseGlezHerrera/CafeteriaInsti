@@ -581,6 +581,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Historial staff + imagen detalle | ✅ Completada | Endpoint historial empleados/admin; chips estado completos; imagen real en detalle producto; Cargar más paginado |
 | Seguridad pagos + deudas técnicas | ✅ Completada | Stripe pk server-side; transacción RepeatableRead desayuno; CerrarSesionAsync centralizado; tests robustos |
 | UX sprint — tema claro, skeleton y accesibilidad | ✅ Completada | Tema claro/oscuro reactivo; skeleton loading; SemanticProperties; animaciones de press; toasts; 108 tests |
+| Deuda técnica + Bugs + UX 2ª ronda | ✅ Completada | ApiService partial classes; PedidoCardView; errores servidor en toasts; skeleton en PedidosPage; entrada animada; timer horario |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -590,6 +591,34 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.19.0 — Deuda técnica, bugs/robustez y UX 2ª ronda (2026-04-02)
+
+#### Deuda técnica (T-01..T-06)
+- `ApiService.cs` (~1100 líneas) refactorizado en 6 clases parciales por dominio: Auth, Pagos, Catalog, Pedidos, Admin
+- `PedidoCardView` — ContentView reutilizable con events tipados `EventHandler<PedidoDto>`; usado en AdminPedidosPage y EmpleadoPedidosPage
+- Tema claro/oscuro: reemplazados `AppThemeColor` (incompatibles con XamlC) por `<Color>` + código en `App.xaml.cs`
+- `MauiEnableXamlCBindingWithSourceCompilation=true` — elimina 12 avisos XC0025 de compiled bindings
+- `OperatingSystem.IsAndroidVersionAtLeast(35)` guard en `MainActivity.cs` — resuelve CA1422
+- `#pragma warning disable CS0649` en `PushNotificationService` — campo `_currentToken` intencionalmente sin asignar
+
+#### Bugs / Robustez (B-01..B-06)
+- `CambiarEstadoPedidoAsync` ahora devuelve `(bool Ok, string? Error)` — se muestra el mensaje real del servidor en los diálogos
+- `PedidosViewModel.CargarMasAsync` envuelto en try/finally — `IsCargandoMas` siempre se resetea aunque falle la red
+- `PedidosPage.OnAppearing` — null-check de `Shell.Current` en la recuperación de PaymentIntent pendiente
+- Toast en `EmpleadoPedidosViewModel` envueltos en try-catch (COMException en Windows/unpackaged)
+- `AdminEditProductoViewModel` — `IsNullOrEmpty` en lugar de `is not null` para `ImagenUrl`; evita pasar `""` a `BuildImageUrl`
+- Skeleton de `HomePage` solo arranca si `IsLoading=true`; se para/reanuda via `PropertyChanged`
+
+#### UX / Calidad visual (U-01..U-06)
+- `LoginPage` — `SemanticProperties` en heading, campos de texto y los 3 botones
+- `PedidosPage` — `EmptyView` oculto mientras `CargarCommand.IsRunning` (ya no aparece "Sin pedidos" durante la carga inicial)
+- `ProductoDetallePage` — animación de entrada fade+slide (280ms, `CubicOut`) al abrir la página
+- `CarritoPage` — press animation en botón Pagar (`ScaleTo 94%` + rebote); `InputTransparent` en el ScrollView mientras `IsLoading`
+- `PedidosPage` — skeleton loading con 3 tarjetas placeholder y animación pulsante (igual que `HomePage`)
+- `HomeViewModel` — `PeriodicTimer` cada 60 s que refresca solo el banner de horario sin recargar el catálogo
+
+---
 
 ### v0.18.0 — UX sprint: tema claro, skeleton loading, accesibilidad y animaciones
 
