@@ -136,20 +136,20 @@ CafeIES/
 │   │   ├── RegistroPage                Registro alumno con instituto y turno
 │   │   ├── RegistroInvitacionPage      Registro por enlace/QR de invitación
 │   │   ├── HomePage                    Catálogo con categorías, búsqueda y filtros; guard IsLoading
-│   │   ├── ProductoDetallePage         Detalle de producto; bloqueado si sin stock
+│   │   ├── ProductoDetallePage         Detalle de producto con imagen real (fallback emoji); bloqueado si sin stock
 │   │   ├── CarritoPage                 Resumen, spinner desayuno, banner 🍊, descuento, TotalEfectivo
 │   │   ├── PagamentoWebPage            WebView con Stripe.js
 │   │   ├── ConfirmacionPedidoPage      Polling cada 2s; token "gratuito-{num}" sin polling
 │   │   ├── PedidosPage                 Historial con chips Hoy/Todo y paginación
 │   │   ├── DetallePedidoPage           Detalle en tiempo real vía SignalR
 │   │   ├── PerfilPage                  Datos personales, cambio de contraseña
-│   │   ├── AdminPedidosPage            Todos los pedidos: filtro por instituto, fecha y estado
+│   │   ├── AdminPedidosPage            Todos los pedidos: filtro por instituto, fecha y estado; Cargar más paginado
 │   │   ├── AdminProductosPage          Gestión de productos con imagen
 │   │   ├── AdminEditProductoPage       Crear/editar producto con selector ComponenteDesayuno
 │   │   ├── AdminUsuariosPage           Panel contextual animado con acciones contextuales
 │   │   ├── AdminInvitacionesPage       Crear/listar invitaciones con QR descargable
 │   │   ├── AdminHorariosPage           Gestión de franjas horarias por instituto
-│   │   └── EmpleadoPedidosPage         Pedidos en curso: filtro por fecha y estado
+│   │   └── EmpleadoPedidosPage         Historial del día: activos (Pendiente/EnPrep) + cerrados (Listo/Entregado/Cancelado)
 │   ├── ViewModels/                     MVVM con CommunityToolkit.Mvvm
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR; warmup a /health
@@ -425,6 +425,7 @@ Si el total es 0 € (desayuno completamente gratuito), se salta Stripe y se va 
 - El total **siempre** lo calcula el servidor — el cliente nunca envía el importe.
 - Redondeo correcto a céntimos: `Math.Round(total * 100, MidpointRounding.AwayFromZero)`.
 - Rate limiting específico en `POST /api/pagos/crear-intent` (20 req/min/IP).
+- La clave pública de Stripe se inyecta desde configuración del servidor — el cliente nunca la maneja ni la expone en la URL.
 - El webhook rechaza con 503 si `WebhookSecret` no está configurado.
 - `confirmation_method: automatic` (compatible con Stripe.js en WebView).
 
@@ -530,6 +531,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Estado activo visual en todos los chips de fecha y estado (resalte ámbar)
 - Botones de acción (Preparar/Listo/Entregar/Cancelar) en forma de píldora con borde semántico
 - Detalle de pedido en tiempo real (SignalR)
+- Historial completo del día para empleados: chips Listo, Entregado y Cancelado además de los activos
+- "Cargar más" paginado en AdminPedidosPage cuando hay más de 20 pedidos (modo Todo)
 - Gestión de estado con máquina de estados (transiciones válidas)
 
 **Panel admin web (Blazor WASM) — 10 páginas**
@@ -572,6 +575,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Auto-login + UX pulida | ✅ Completada | Sin flash de login, panel contextual animado, filtros por fecha |
 | Desayuno — robustez completa | ✅ Completada | Race condition, webhook, metadata split, ComponenteDesayuno en MAUI |
 | Robustez y calidad | ✅ Completada | 96 tests, guards IsLoading, audit logging extendido, validación contraseña client-side, carga paralela |
+| Historial staff + imagen detalle | ✅ Completada | Endpoint historial empleados/admin; chips estado completos; imagen real en detalle producto; Cargar más paginado |
+| Seguridad pagos + deudas técnicas | ✅ Completada | Stripe pk server-side; transacción RepeatableRead desayuno; CerrarSesionAsync centralizado; tests robustos |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -581,6 +586,47 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.17.0 — Seguridad pagos, deudas técnicas y robustez de tests
+
+#### Seguridad Stripe (BUG-E)
+- La clave pública de Stripe (`pk`) ya no viaja en la URL de la página de pago — el servidor la lee de `Stripe:PublishableKey` (configuración) y la valida con regex antes de inyectarla en el HTML
+- Ambas claves (`pk` y `cs`) se sanitizan con regex antes de insertarse en el `<script>` — previene XSS si llegaran valores maliciosos
+- `PagamentoWebPage` simplificada: solo pasa `?cs=` en la URL
+
+#### Race condition desayuno gratuito (BUG-D)
+- `POST /api/pagos/crear-intent`: la lectura del estado de desayuno usa `IsolationLevel.RepeatableRead` — reduce la ventana temporal en la que dos requests simultáneos podrían leer "no consumido" y aplicar el beneficio dos veces
+- La validación definitiva continúa siendo la transacción `Serializable` en `POST /api/pedidos` (FIX-02 existente)
+
+#### Cierre de sesión explícito (D-4)
+- Al cambiar la contraseña con éxito, se muestra un `DisplayAlert` informativo antes de cerrar la sesión — el usuario no se queda desconectado sin aviso
+- Nuevo método `ApiService.CerrarSesionAsync()`: desconecta SignalR, limpia tokens, envía `SesionExpiradaMessage` y navega a login — reutilizable desde cualquier ViewModel
+
+#### Robustez ViewModels y tests (D-3, D-5)
+- `HomeViewModel.CargarAsync()`: eliminado guard manual `if (IsLoading) return;` — `AsyncRelayCommand(AllowConcurrentExecutions=false)` ya previene re-entradas de forma segura
+- `FranjaHorariaTests`: añadidos guards `if (DateTime.Now.Hour is 0 or 23) return;` en 2 tests — evitan falsos negativos a las 23:xx cuando `AddMinutes(+30)` cruza la medianoche
+
+---
+
+### v0.16.0 — Historial staff, imagen detalle y paginación admin
+
+#### Historial completo para empleados (F-3)
+- Nuevo endpoint `GET /api/pedidos/historial` (Empleado/Personal/Admin): devuelve hasta 200 pedidos del día en todos los estados, filtrado por instituto para no-admin
+- `EmpleadoPedidosPage` reemplaza "pedidos en curso" por historial completo del día: chips activos (Pendiente/En preparación) + chips cerrados (Listo, Entregado, Cancelado)
+- `ApiService.GetHistorialStaffAsync()` añadido
+
+#### Imagen real en detalle de producto (BUG-H)
+- `ProductoDetallePage` muestra la imagen real del producto cuando está disponible; fallback al emoji si no hay imagen
+- `ProductoDetalleViewModel`: propiedades calculadas `ImagenUrlCompleta` (URL absoluta) y `TieneImagen` para controlar visibilidad
+
+#### Paginación "Cargar más" en admin (D-1)
+- `AdminPedidosPage`: `CollectionView.Footer` con botón "Cargar más" y `ActivityIndicator`, visibles solo cuando `HayMas = true` (modo Todo, hay más páginas en servidor)
+
+#### Corrección guards IsLoading en ViewModels (BUG-F)
+- `AdminPedidosViewModel` y `EmpleadoPedidosViewModel`: eliminado `[ObservableProperty] _isLoading` y sus guards manuales
+- `IsRefreshing` del `RefreshView` bindeado a `CargarCommand.IsRunning` — el framework gestiona el ciclo de vida del spinner sin conflictos
+
+---
 
 ### v0.15.0 — Robustez: 96 tests, guards IsLoading, audit logging y UX polish
 
