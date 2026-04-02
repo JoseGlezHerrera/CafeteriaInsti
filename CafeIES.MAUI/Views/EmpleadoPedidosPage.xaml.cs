@@ -1,3 +1,4 @@
+using CafeIES.MAUI.Controls;
 using CafeIES.MAUI.ViewModels;
 using CafeIES.Shared.Models;
 
@@ -26,37 +27,8 @@ public partial class EmpleadoPedidosPage : ContentPage
         Vm.Cleanup();
     }
 
-    private async void OnPrepararClicked(object sender, EventArgs e)
-    {
-        if (sender is not Button btn) return;
-        await AnimatePress(btn);
-        if (btn.CommandParameter is PedidoDto p) Vm.PrepararCommand.Execute(p);
-    }
-
-    private async void OnListoClicked(object sender, EventArgs e)
-    {
-        if (sender is not Button btn) return;
-        await AnimatePress(btn);
-        if (btn.CommandParameter is PedidoDto p) Vm.ListoCommand.Execute(p);
-    }
-
-    private async void OnEntregarClicked(object sender, EventArgs e)
-    {
-        if (sender is not Button btn) return;
-        await AnimatePress(btn);
-        if (btn.CommandParameter is PedidoDto p) Vm.EntregarCommand.Execute(p);
-    }
-
-    private async void OnCancelarClicked(object sender, EventArgs e)
-    {
-        if (sender is not Button btn) return;
-        await AnimatePress(btn);
-        if (btn.CommandParameter is PedidoDto p) Vm.CancelarCommand.Execute(p);
-    }
-
-    private static async Task AnimatePress(VisualElement el)
-    {
-        await el.ScaleTo(0.88, 80, Easing.CubicIn);
-        await el.ScaleTo(1.0,  80, Easing.CubicOut);
-    }
+    private void OnPrepararRequested(object? sender, PedidoDto p)  => Vm.PrepararCommand.Execute(p);
+    private void OnListoRequested(object? sender, PedidoDto p)     => Vm.ListoCommand.Execute(p);
+    private void OnEntregarRequested(object? sender, PedidoDto p)  => Vm.EntregarCommand.Execute(p);
+    private void OnCancelarRequested(object? sender, PedidoDto p)  => Vm.CancelarCommand.Execute(p);
 }

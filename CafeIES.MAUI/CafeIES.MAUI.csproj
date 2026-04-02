@@ -10,6 +10,8 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseMaui>true</UseMaui>
+		<!-- Habilita compilación de bindings con Source (RelativeSource AncestorType, etc.) — elimina XC0025 -->
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 		<SingleProject>true</SingleProject>
 		<SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
 		<!-- Permite ejecutar sin despliegue MSIX en Windows -->

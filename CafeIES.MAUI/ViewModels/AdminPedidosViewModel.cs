@@ -165,16 +165,20 @@ public partial class AdminPedidosViewModel : ObservableObject
     {
         if (IsCargandoMas || !HayMas) return;
         IsCargandoMas = true;
-        _paginaActual++;
-        var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
-        var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId, desde: DesdeParaFiltro());
-        if (result is not null)
+        try
         {
-            foreach (var p in result.Items) _todos.Add(p);
-            HayMas = _todos.Count < _totalCount;
+            _paginaActual++;
+            var institutoId = _filtroInstituto?.Id > 0 ? _filtroInstituto.Id : (int?)null;
+            var result = await _api.GetPedidosAdminPaginadoAsync(page: _paginaActual, pageSize: PageSize, institutoId: institutoId, desde: DesdeParaFiltro());
+            if (result is not null)
+            {
+                foreach (var p in result.Items) _todos.Add(p);
+                HayMas = _todos.Count < _totalCount;
+            }
+            AplicarFiltro();
         }
-        AplicarFiltro();
-        IsCargandoMas = false;
+        catch { /* ignorar errores de red */ }
+        finally { IsCargandoMas = false; }
     }
 
     [RelayCommand]

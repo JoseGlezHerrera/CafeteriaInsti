@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             x:Class="CafeIES.MAUI.Controls.PedidoCardView"
+             x:DataType="dto:PedidoDto">
+
+    <Border Style="{StaticResource Card}">
+        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+
+            <!-- Cabecera: número + usuario + estado pill -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Label Grid.Column="0"
+                       FontFamily="SyneBold" FontSize="14"
+                       TextColor="{StaticResource AccentColor}"
+                       VerticalOptions="Center">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="#"/>
+                            <Span Text="{Binding NumeroPedido, StringFormat='{0:D3}'}"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <Label Grid.Column="1"
+                       Text="{Binding UsuarioNombre}"
+                       FontFamily="SyneBold" FontSize="14"
+                       TextColor="{DynamicResource TextColor}"
+                       VerticalOptions="Center"
+                       LineBreakMode="TailTruncation"/>
+                <Border Grid.Column="2"
+                        Padding="10,4"
+                        BackgroundColor="{Binding Estado, Converter={StaticResource EstadoPedidoBgConverter}}"
+                        StrokeThickness="0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                    <Label Text="{Binding Estado, Converter={StaticResource EstadoPedidoLabelConverter}}"
+                           FontFamily="SyneBold" FontSize="10"
+                           TextColor="{Binding Estado, Converter={StaticResource EstadoPedidoTextConverter}}"/>
+                </Border>
+            </Grid>
+
+            <!-- Resumen de items -->
+            <Label Grid.Row="1"
+                   Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}"
+                   Style="{StaticResource SubtitleLabel}" FontSize="13"
+                   LineBreakMode="TailTruncation"/>
+
+            <!-- Fecha + botones de acción -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM HH:mm'}"
+                       Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
+                <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                    <Button Text="Preparar"
+                            FontFamily="SyneBold" FontSize="11"
+                            BackgroundColor="#1ae8834a" TextColor="#e8834a"
+                            BorderColor="#e8834a" BorderWidth="1"
+                            CornerRadius="50" HeightRequest="32" Padding="14,0"
+                            IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Pendiente}"
+                            SemanticProperties.Hint="Marcar como en preparación"
+                            CommandParameter="{Binding .}"
+                            Clicked="OnPrepararClicked"/>
+                    <Button Text="Listo"
+                            FontFamily="SyneBold" FontSize="11"
+                            BackgroundColor="#1a4caf82" TextColor="#4caf82"
+                            BorderColor="#4caf82" BorderWidth="1"
+                            CornerRadius="50" HeightRequest="32" Padding="14,0"
+                            IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=EnPreparacion}"
+                            SemanticProperties.Hint="Marcar como listo para entregar"
+                            CommandParameter="{Binding .}"
+                            Clicked="OnListoClicked"/>
+                    <Button Text="Entregar"
+                            FontFamily="SyneBold" FontSize="11"
+                            BackgroundColor="#1a4caf82" TextColor="#4caf82"
+                            BorderColor="#4caf82" BorderWidth="1"
+                            CornerRadius="50" HeightRequest="32" Padding="14,0"
+                            IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Listo}"
+                            SemanticProperties.Hint="Marcar como entregado al cliente"
+                            CommandParameter="{Binding .}"
+                            Clicked="OnEntregarClicked"/>
+                    <Button Text="Cancelar"
+                            FontFamily="SyneBold" FontSize="11"
+                            BackgroundColor="#1ae05252" TextColor="#e05252"
+                            BorderColor="#e05252" BorderWidth="1"
+                            CornerRadius="50" HeightRequest="32" Padding="14,0"
+                            IsVisible="{Binding Estado, Converter={StaticResource EstadoCancelableConverter}}"
+                            SemanticProperties.Hint="Cancelar este pedido"
+                            CommandParameter="{Binding .}"
+                            Clicked="OnCancelarClicked"/>
+                </HorizontalStackLayout>
+            </Grid>
+
+        </Grid>
+    </Border>
+</ContentView>

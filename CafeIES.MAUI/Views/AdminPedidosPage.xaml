@@ -4,9 +4,10 @@
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
              xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ctrl="clr-namespace:CafeIES.MAUI.Controls"
              x:Class="CafeIES.MAUI.Views.AdminPedidosPage"
              x:DataType="vm:AdminPedidosViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
@@ -15,28 +16,28 @@
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
         <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="20,16">
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}" Padding="20,16">
             <Label Text="Todos los pedidos" FontFamily="SyneBold" FontSize="22"
-                   TextColor="{StaticResource TextColor}"/>
+                   TextColor="{DynamicResource TextColor}"/>
         </Grid>
 
         <!-- Filtro por instituto -->
-        <Border Grid.Row="1" BackgroundColor="{StaticResource SurfaceColor}"
+        <Border Grid.Row="1" BackgroundColor="{DynamicResource SurfaceColor}"
                 StrokeThickness="0" Padding="16,0,16,12">
             <Border Style="{StaticResource InputBox}">
                 <Picker ItemsSource="{Binding Institutos}"
                         ItemDisplayBinding="{Binding Nombre, x:DataType=dto:InstitutoDto}"
                         SelectedItem="{Binding FiltroInstituto}"
                         Title="Todos los centros"
-                        TextColor="{StaticResource TextColor}"
-                        TitleColor="{StaticResource MutedColor}"
+                        TextColor="{DynamicResource TextColor}"
+                        TitleColor="{DynamicResource MutedColor}"
                         FontFamily="DMSans" FontSize="14"/>
             </Border>
         </Border>
 
         <!-- Filtro por fecha -->
         <ScrollView Grid.Row="2" Orientation="Horizontal"
-                    BackgroundColor="{StaticResource SurfaceColor}"
+                    BackgroundColor="{DynamicResource SurfaceColor}"
                     Padding="16,10,16,4" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Hoy"    Command="{Binding SetFiltroFechaCommand}" CommandParameter="Hoy"
@@ -50,7 +51,7 @@
 
         <!-- Filtro por estado -->
         <ScrollView Grid.Row="3" Orientation="Horizontal"
-                    BackgroundColor="{StaticResource SurfaceColor}"
+                    BackgroundColor="{DynamicResource SurfaceColor}"
                     Padding="16,4,16,14" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Todos"
@@ -92,88 +93,11 @@
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="dto:PedidoDto">
-                        <Border Style="{StaticResource Card}">
-                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-
-                                <!-- Cabecera: número + usuario + estado pill -->
-                                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                                    <Label Grid.Column="0"
-                                           FontFamily="SyneBold" FontSize="14"
-                                           TextColor="{StaticResource AccentColor}"
-                                           VerticalOptions="Center">
-                                        <Label.FormattedText>
-                                            <FormattedString>
-                                                <Span Text="#"/>
-                                                <Span Text="{Binding NumeroPedido, StringFormat='{0:D3}'}"/>
-                                            </FormattedString>
-                                        </Label.FormattedText>
-                                    </Label>
-                                    <Label Grid.Column="1"
-                                           Text="{Binding UsuarioNombre}"
-                                           FontFamily="SyneBold" FontSize="14"
-                                           TextColor="{StaticResource TextColor}"
-                                           VerticalOptions="Center"
-                                           LineBreakMode="TailTruncation"/>
-                                    <Border Grid.Column="2"
-                                            Padding="10,4"
-                                            BackgroundColor="{Binding Estado, Converter={StaticResource EstadoPedidoBgConverter}}"
-                                            StrokeThickness="0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
-                                        <Label Text="{Binding Estado, Converter={StaticResource EstadoPedidoLabelConverter}}"
-                                               FontFamily="SyneBold" FontSize="10"
-                                               TextColor="{Binding Estado, Converter={StaticResource EstadoPedidoTextConverter}}"/>
-                                    </Border>
-                                </Grid>
-
-                                <!-- Resumen de items -->
-                                <Label Grid.Row="1"
-                                       Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}"
-                                       Style="{StaticResource SubtitleLabel}" FontSize="13"
-                                       LineBreakMode="TailTruncation"/>
-
-                                <!-- Fecha + botones de accion -->
-                                <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0"
-                                           Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM HH:mm'}"
-                                           Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
-                                    <HorizontalStackLayout Grid.Column="1" Spacing="6">
-                                        <Button Text="Preparar"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="#1ae8834a" TextColor="#e8834a"
-                                                BorderColor="#e8834a" BorderWidth="1"
-                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
-                                                IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Pendiente}"
-                                                CommandParameter="{Binding .}"
-                                                Clicked="OnPrepararClicked"/>
-                                        <Button Text="Listo"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="#1a4caf82" TextColor="#4caf82"
-                                                BorderColor="#4caf82" BorderWidth="1"
-                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
-                                                IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=EnPreparacion}"
-                                                CommandParameter="{Binding .}"
-                                                Clicked="OnListoClicked"/>
-                                        <Button Text="Entregar"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="#1a4caf82" TextColor="#4caf82"
-                                                BorderColor="#4caf82" BorderWidth="1"
-                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
-                                                IsVisible="{Binding Estado, Converter={StaticResource EstadoEsConverter}, ConverterParameter=Listo}"
-                                                CommandParameter="{Binding .}"
-                                                Clicked="OnEntregarClicked"/>
-                                        <Button Text="Cancelar"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="#1ae05252" TextColor="#e05252"
-                                                BorderColor="#e05252" BorderWidth="1"
-                                                CornerRadius="50" HeightRequest="32" Padding="14,0"
-                                                IsVisible="{Binding Estado, Converter={StaticResource EstadoCancelableConverter}}"
-                                                CommandParameter="{Binding .}"
-                                                Clicked="OnCancelarClicked"/>
-                                    </HorizontalStackLayout>
-                                </Grid>
-
-                            </Grid>
-                        </Border>
+                        <ctrl:PedidoCardView
+                            PrepararRequested="OnPrepararRequested"
+                            ListoRequested="OnListoRequested"
+                            EntregarRequested="OnEntregarRequested"
+                            CancelarRequested="OnCancelarRequested"/>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
 

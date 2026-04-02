@@ -28,27 +28,8 @@ public partial class AdminPedidosPage : ContentPage
         Vm.Cleanup();
     }
 
-    private void OnPrepararClicked(object sender, EventArgs e)
-    {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p)
-            Vm.PrepararCommand.Execute(p);
-    }
-
-    private void OnListoClicked(object sender, EventArgs e)
-    {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p)
-            Vm.ListoCommand.Execute(p);
-    }
-
-    private void OnEntregarClicked(object sender, EventArgs e)
-    {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p)
-            Vm.EntregarCommand.Execute(p);
-    }
-
-    private void OnCancelarClicked(object sender, EventArgs e)
-    {
-        if (sender is Button btn && btn.CommandParameter is PedidoDto p)
-            Vm.CancelarCommand.Execute(p);
-    }
+    private void OnPrepararRequested(object? sender, PedidoDto p)  => Vm.PrepararCommand.Execute(p);
+    private void OnListoRequested(object? sender, PedidoDto p)     => Vm.ListoCommand.Execute(p);
+    private void OnEntregarRequested(object? sender, PedidoDto p)  => Vm.EntregarCommand.Execute(p);
+    private void OnCancelarRequested(object? sender, PedidoDto p)  => Vm.CancelarCommand.Execute(p);
 }

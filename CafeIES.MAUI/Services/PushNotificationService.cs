@@ -29,7 +29,9 @@ public class PushNotificationService
 {
     private readonly ApiService            _api;
     private readonly ILogger<PushNotificationService> _logger;
+#pragma warning disable CS0649  // campo asignado en código FCM comentado hasta configurar Firebase
     private string? _currentToken;
+#pragma warning restore CS0649
 
     public PushNotificationService(ApiService api, ILogger<PushNotificationService> logger)
     {

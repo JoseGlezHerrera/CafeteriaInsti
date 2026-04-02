@@ -21,9 +21,15 @@ public class MainActivity : MauiAppCompatActivity
 
         if (Window != null)
         {
-            // Barra de estado y de navegación transparentes para que el fondo de la app se vea
-            Window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-            Window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+            // Android <35: fijar barras transparentes vía API legacy (obsoleta en Android 35)
+            // Android 35+: edge-to-edge es obligatorio; las barras son transparentes por defecto
+            if (!OperatingSystem.IsAndroidVersionAtLeast(35))
+            {
+#pragma warning disable CA1422
+                Window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+                Window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+#pragma warning restore CA1422
+            }
 
             // Iconos de la barra de estado en claro (adecuado para fondo oscuro de CaféIES)
             var insetsController = WindowCompat.GetInsetsController(Window, Window.DecorView);
