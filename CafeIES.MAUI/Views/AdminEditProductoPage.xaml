@@ -302,6 +302,87 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
+                <!-- Ingredientes personalizables -->
+                <VerticalStackLayout Spacing="8" IsVisible="{Binding TieneIngredientes}">
+                    <Label Text="Ingredientes personalizables"
+                           FontFamily="SyneBold" FontSize="13"
+                           TextColor="{DynamicResource MutedColor}"/>
+                    <CollectionView ItemsSource="{Binding Ingredientes}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="{x:Type vm:IngredienteSeleccionable}">
+                                <Border Style="{StaticResource Card}" Padding="12,10" Margin="0,0,0,6">
+                                    <VerticalStackLayout Spacing="8">
+
+                                        <!-- Fila principal: switch + emoji + nombre + precio -->
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+                                            <Switch Grid.Column="0"
+                                                    IsToggled="{Binding Seleccionado}"
+                                                    OnColor="{StaticResource AccentColor}"
+                                                    VerticalOptions="Center"/>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding Ingrediente.Emoji}"
+                                                   FontSize="20" VerticalOptions="Center"/>
+                                            <Label Grid.Column="2"
+                                                   Text="{Binding Ingrediente.Nombre}"
+                                                   FontFamily="SyneBold" FontSize="13"
+                                                   TextColor="{DynamicResource TextColor}"
+                                                   VerticalOptions="Center"/>
+                                            <Label Grid.Column="3"
+                                                   IsVisible="{Binding IngredienteConPrecio}"
+                                                   FontFamily="DMSans" FontSize="12"
+                                                   TextColor="{DynamicResource MutedColor}"
+                                                   VerticalOptions="Center">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="+"/>
+                                                        <Span Text="{Binding Ingrediente.PrecioExtra, StringFormat='{0:F2}'}"/>
+                                                        <Span Text="€"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </Grid>
+
+                                        <!-- Configuración (solo cuando está asignado) -->
+                                        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8"
+                                              IsVisible="{Binding Seleccionado}">
+                                            <HorizontalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                                                <CheckBox IsChecked="{Binding EsBase}"
+                                                          Color="{StaticResource AccentColor}"/>
+                                                <Label Text="Base" FontFamily="DMSans" FontSize="12"
+                                                       TextColor="{DynamicResource TextColor}"
+                                                       VerticalOptions="Center"/>
+                                            </HorizontalStackLayout>
+                                            <HorizontalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                                <CheckBox IsChecked="{Binding EsQuitable}"
+                                                          Color="{StaticResource AccentColor}"/>
+                                                <Label Text="Quitable" FontFamily="DMSans" FontSize="12"
+                                                       TextColor="{DynamicResource TextColor}"
+                                                       VerticalOptions="Center"/>
+                                            </HorizontalStackLayout>
+                                            <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                                                <Label Text="Orden" FontFamily="DMSans" FontSize="12"
+                                                       TextColor="{DynamicResource MutedColor}"
+                                                       VerticalOptions="Center"/>
+                                                <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                        WidthRequest="54">
+                                                    <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                                    <Entry Text="{Binding Orden}" Keyboard="Numeric"
+                                                           FontSize="13" Margin="4,0" HeightRequest="36"/>
+                                                </Border>
+                                            </HorizontalStackLayout>
+                                        </Grid>
+
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Label Text="Base = incluido por defecto · Quitable = el cliente puede pedirlo sin él."
+                           FontFamily="DMSans" FontSize="11"
+                           TextColor="{DynamicResource MutedColor}"/>
+                </VerticalStackLayout>
+
                 <!-- Mensaje de error -->
                 <Border BackgroundColor="#1ae05252"
                         StrokeThickness="1" Stroke="#40e05252"

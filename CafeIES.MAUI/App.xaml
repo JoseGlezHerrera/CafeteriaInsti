@@ -48,6 +48,7 @@
             <conv:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
             <conv:AccionIngredienteConverter x:Key="AccionIngredienteConverter"/>
             <conv:ListNotEmptyConverter x:Key="ListNotEmptyConverter"/>
+            <conv:DecimalPositivoConverter x:Key="DecimalPositivoConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

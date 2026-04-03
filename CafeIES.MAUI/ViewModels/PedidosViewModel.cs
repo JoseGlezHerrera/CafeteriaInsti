@@ -287,4 +287,8 @@ public partial class PerfilViewModel : ObservableObject
     [RelayCommand]
     private async Task IrInvitacionesAsync() =>
         await Shell.Current.GoToAsync("AdminInvitaciones");
+
+    [RelayCommand]
+    private async Task IrIngredientesAsync() =>
+        await Shell.Current.GoToAsync("AdminIngredientes");
     }

@@ -352,6 +352,87 @@ public partial class ApiService
         }
     }
 
+    // ── Ingredientes ──────────────────────────────────────────────────────────
+    public async Task<List<IngredienteDto>> GetIngredientesAdminAsync()
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/ingredientes");
+            return resp.IsSuccessStatusCode
+                ? await resp.Content.ReadFromJsonAsync<List<IngredienteDto>>() ?? new()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al obtener ingredientes (admin).");
+            return new();
+        }
+    }
+
+    public async Task<bool> CrearIngredienteAsync(CrearIngredienteRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/ingredientes",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear el ingrediente.");
+            return false;
+        }
+    }
+
+    public async Task<bool> ActualizarIngredienteAsync(int id, CrearIngredienteRequest req)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Put, $"api/ingredientes/{id}",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al actualizar el ingrediente {Id}.", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> ToggleActivoIngredienteAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Patch, $"api/ingredientes/{id}/toggle", null);
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cambiar el estado activo del ingrediente {Id}.", id);
+            return false;
+        }
+    }
+
+    public async Task<(bool Ok, string? Error)> EliminarIngredienteAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/ingredientes/{id}");
+            if (resp.IsSuccessStatusCode) return (true, null);
+            if (resp.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                var err = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                return (false, err?.GetValueOrDefault("mensaje") ?? "No se puede eliminar: está asignado a productos.");
+            }
+            return (false, "Error al eliminar el ingrediente.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar el ingrediente {Id}.", id);
+            return (false, "Error de conexión.");
+        }
+    }
+
     // ── Notificaciones push ───────────────────────────────────────────────────
     public async Task RegistrarTokenPushAsync(string token, string plataforma)
     {

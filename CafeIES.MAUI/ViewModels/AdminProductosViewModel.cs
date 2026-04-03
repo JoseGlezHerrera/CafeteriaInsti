@@ -72,6 +72,18 @@ public partial class AlergenoSeleccionable : ObservableObject
     [ObservableProperty] private bool _seleccionado;
 }
 
+/// <summary>Ingrediente con configuración de personalización para el formulario de producto.</summary>
+public partial class IngredienteSeleccionable : ObservableObject
+{
+    public IngredienteDto Ingrediente { get; init; } = null!;
+    [ObservableProperty] private bool _seleccionado;
+    [ObservableProperty] private bool _esBase     = true;
+    [ObservableProperty] private bool _esQuitable = true;
+    [ObservableProperty] private int  _orden;
+
+    public bool IngredienteConPrecio => Ingrediente.PrecioExtra > 0;
+}
+
 public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttributable
 {
     private readonly ApiService _api;
@@ -106,8 +118,11 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
     [ObservableProperty]
     private ComponenteDesayuno _componenteDesayuno = ComponenteDesayuno.Ninguno;
 
-    public ObservableCollection<CategoriaDto> Categorias { get; } = new();
-    public ObservableCollection<AlergenoSeleccionable> Alergenos { get; } = new();
+    public ObservableCollection<CategoriaDto>          Categorias   { get; } = new();
+    public ObservableCollection<AlergenoSeleccionable> Alergenos    { get; } = new();
+    public ObservableCollection<IngredienteSeleccionable> Ingredientes { get; } = new();
+
+    public bool TieneIngredientes => Ingredientes.Count > 0;
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
@@ -123,11 +138,17 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         Error = string.Empty;
         try
         {
-            var cats = await _api.GetCategoriasAsync();
+            var tCats   = _api.GetCategoriasAsync();
+            var tAlerg  = _api.GetAlergenosAsync();
+            var tIngred = _api.GetIngredientesAdminAsync();
+            await Task.WhenAll(tCats, tAlerg, tIngred);
+
+            var cats      = tCats.Result;
+            var alergenos = tAlerg.Result;
+            var ingredientes = tIngred.Result.Where(i => i.Activo).ToList();
+
             Categorias.Clear();
             foreach (var c in cats) Categorias.Add(c);
-
-            var alergenos = await _api.GetAlergenosAsync();
 
             if (ProductoId > 0)
             {
@@ -149,9 +170,23 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                     foreach (var a in alergenos)
                         Alergenos.Add(new AlergenoSeleccionable
                         {
-                            Alergeno = a,
+                            Alergeno     = a,
                             Seleccionado = prod.Alergenos.Any(pa => pa.Id == a.Id)
                         });
+
+                    Ingredientes.Clear();
+                    foreach (var ing in ingredientes)
+                    {
+                        var cfg = prod.Ingredientes?.FirstOrDefault(pi => pi.IngredienteId == ing.Id);
+                        Ingredientes.Add(new IngredienteSeleccionable
+                        {
+                            Ingrediente  = ing,
+                            Seleccionado = cfg is not null,
+                            EsBase       = cfg?.EsBase     ?? true,
+                            EsQuitable   = cfg?.EsQuitable ?? true,
+                            Orden        = cfg?.Orden      ?? 0
+                        });
+                    }
                 }
             }
             else
@@ -168,7 +203,12 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                 Alergenos.Clear();
                 foreach (var a in alergenos)
                     Alergenos.Add(new AlergenoSeleccionable { Alergeno = a, Seleccionado = false });
+
+                Ingredientes.Clear();
+                foreach (var ing in ingredientes)
+                    Ingredientes.Add(new IngredienteSeleccionable { Ingrediente = ing });
             }
+            OnPropertyChanged(nameof(TieneIngredientes));
         }
         catch
         {
@@ -209,9 +249,15 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
             .Select(a => a.Alergeno.Id)
             .ToList();
 
+        var ingredientesAsignados = Ingredientes
+            .Where(i => i.Seleccionado)
+            .Select(i => new AsignarIngredienteRequest(i.Ingrediente.Id, i.EsBase, i.EsQuitable, i.Orden))
+            .ToList();
+
         var req = new CrearProductoRequest(
             Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds,
-            ComponenteDesayuno);
+            ComponenteDesayuno,
+            ingredientesAsignados.Count > 0 ? ingredientesAsignados : null);
 
         bool ok = ProductoId > 0
             ? await _api.ActualizarProductoAsync(ProductoId, req)

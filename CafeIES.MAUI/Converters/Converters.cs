@@ -497,6 +497,16 @@ public class UtcToLocalDateTimeConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>decimal > 0 → true (para mostrar precio extra de ingrediente)</summary>
+public class DecimalPositivoConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is decimal d && d > 0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>true → ChipButtonActive style, false → ChipButton style</summary>
 public class BoolToChipStyleConverter : IValueConverter
 {
