@@ -201,8 +201,8 @@
                                         <!-- Stock badge: solo muestra "Agotado" cuando Stock == 0 -->
                                         <Border HorizontalOptions="End" VerticalOptions="Start"
                                                 Margin="8" Padding="6,3"
-                                                BackgroundColor="#CC0f0e0c" StrokeThickness="1"
-                                                Stroke="#40e05252"
+                                                BackgroundColor="{DynamicResource CardColor}" StrokeThickness="1"
+                                                Stroke="#e05252"
                                                 IsVisible="{Binding Stock, Converter={StaticResource StockAcabadoConverter}}">
                                             <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
                                             <Label Text="Agotado" FontFamily="SyneBold" FontSize="10" TextColor="#e05252"/>

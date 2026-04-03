@@ -6,14 +6,8 @@
     xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
     xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
     x:DataType="vm:RegistroInvitacionViewModel"
-    Shell.NavBarIsVisible="False">
-
-    <ContentPage.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0F0E0C" Offset="0"/>
-            <GradientStop Color="#0F1A10" Offset="1"/>
-        </LinearGradientBrush>
-    </ContentPage.Background>
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{DynamicResource BgColor}">
 
     <ScrollView>
         <VerticalStackLayout Padding="32,60,32,40" Spacing="0">
@@ -62,11 +56,7 @@
 
             <!-- Invite badge -->
             <Border Padding="14,12" Margin="0,0,0,24"
-                    BackgroundColor="#0D2B18"
-                    StrokeThickness="1">
-                <Border.Stroke>
-                    <SolidColorBrush Color="#1E5E30"/>
-                </Border.Stroke>
+                    BackgroundColor="#1a4caf82" StrokeThickness="1" Stroke="#4caf82">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="14"/>
                 </Border.StrokeShape>
