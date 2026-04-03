@@ -10,6 +10,8 @@ public partial class ConfirmacionPedidoPage : ContentPage
     private readonly ApiService _api;
     private string _paymentIntentId = string.Empty;
     private CancellationTokenSource? _pollCts;
+    // FIX-BK: permitir volver cuando el polling haya terminado (éxito o timeout)
+    private bool _pagoCompletado;
 
     public ConfirmacionPedidoPage(ApiService api)
     {
@@ -46,9 +48,11 @@ public partial class ConfirmacionPedidoPage : ContentPage
         {
             var numeroStr = _paymentIntentId["gratuito-".Length..];
             NumeroPedidoLabel.Text = int.TryParse(numeroStr, out var num) ? $"#{num:D3}" : numeroStr;
+            _pagoCompletado = true;
             return;
         }
 
+        _pagoCompletado = false;
         _pollCts = new CancellationTokenSource();
         _ = PollNumeroPedidoAsync(_pollCts.Token);
     }
@@ -74,7 +78,10 @@ public partial class ConfirmacionPedidoPage : ContentPage
             if (pedido is not null)
             {
                 MainThread.BeginInvokeOnMainThread(() =>
-                    NumeroPedidoLabel.Text = $"#{pedido.NumeroPedido:D3}");
+                {
+                    NumeroPedidoLabel.Text = $"#{pedido.NumeroPedido:D3}";
+                    _pagoCompletado = true;
+                });
                 return;
             }
         }
@@ -82,15 +89,18 @@ public partial class ConfirmacionPedidoPage : ContentPage
         // Informar al usuario en lugar de dejar "…" indefinidamente.
         if (!ct.IsCancellationRequested)
             MainThread.BeginInvokeOnMainThread(() =>
-                NumeroPedidoLabel.Text = "Revisa tu\nhistorial");
+            {
+                NumeroPedidoLabel.Text = "Revisa tu\nhistorial";
+                _pagoCompletado = true;
+            });
     }
 
     protected override bool OnBackButtonPressed()
     {
-        // Pedido gratuito ya confirmado — permitir volver al historial
-        if (_paymentIntentId.StartsWith("gratuito-", StringComparison.OrdinalIgnoreCase))
+        // Permitir volver cuando el pago ya ha concluido (éxito o timeout de polling)
+        if (_pagoCompletado)
             return base.OnBackButtonPressed();
-        // Pago Stripe en curso — bloquear para no volver a la pasarela
+        // Pago Stripe aún en curso — bloquear para no volver a la pasarela
         return true;
     }
 

@@ -6,7 +6,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="CafeIES.MAUI.Views.AdminInvitacionesPage"
              x:DataType="vm:AdminInvitacionesViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
@@ -15,7 +15,7 @@
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}" Padding="16,14"
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}" Padding="16,14"
               ColumnDefinitions="Auto,*,Auto">
             <Button Grid.Column="0"
                     Text="←"
@@ -23,7 +23,7 @@
                     HeightRequest="38" WidthRequest="44" Padding="0"
                     Command="{Binding VolverCommand}"/>
             <Label Grid.Column="1" Text="Invitaciones" FontFamily="SyneBold" FontSize="20"
-                   TextColor="{StaticResource TextColor}" VerticalOptions="Center" Margin="12,0,0,0"/>
+                   TextColor="{DynamicResource TextColor}" VerticalOptions="Center" Margin="12,0,0,0"/>
             <Button Grid.Column="2"
                     Text="+ Nueva"
                     Style="{StaticResource SecondaryButton}"
@@ -76,7 +76,7 @@
                                         <!-- Token (primeros 12 chars) -->
                                         <Label Grid.Column="1"
                                                FontFamily="DMSansMedium" FontSize="13"
-                                               TextColor="{StaticResource TextColor}"
+                                               TextColor="{DynamicResource TextColor}"
                                                VerticalOptions="Center">
                                             <Label.FormattedText>
                                                 <FormattedString>

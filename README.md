@@ -592,6 +592,19 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 ## Changelog
 
+### v0.20.0 — Auditoría completa + correcciones de bugs y tema claro (2026-04-03)
+
+#### Correcciones de bugs
+- `PedidosPage` — skeleton de carga ahora se suscribe a `CargarCommand.PropertyChanged` en lugar de `ViewModel.PropertyChanged`: `AsyncRelayCommand.IsRunning` notifica en el propio comando, no en el VM, por lo que la animación pulsante ahora termina correctamente
+- `ConfirmacionPedidoPage` — botón "atrás" permanentemente bloqueado tras un pago con Stripe: se añade flag `_pagoCompletado` que se activa cuando el polling encuentra el pedido o agota el timeout (60 s); el usuario ya puede volver al historial sin quedar atrapado
+
+#### Mejoras de tema claro
+- `AppShell` — colores de la barra de tabs eran hardcoded oscuros en XAML; ahora se aplican desde código en `ApplyTabBarTheme()` con `RequestedThemeChanged`, adaptándose al tema del sistema
+- `DetallePedidoViewModel` — color "dim" de los pasos del pedido cambiado de `#2E2B26` (invisible en fondo claro) a `#7A7468` (gris neutro legible en ambos temas)
+- 20 archivos XAML: `StaticResource` en estilos de colores cambiados a `DynamicResource` para que el cambio de tema sea instantáneo sin reiniciar la app
+
+---
+
 ### v0.19.0 — Deuda técnica, bugs/robustez y UX 2ª ronda (2026-04-02)
 
 #### Deuda técnica (T-01..T-06)

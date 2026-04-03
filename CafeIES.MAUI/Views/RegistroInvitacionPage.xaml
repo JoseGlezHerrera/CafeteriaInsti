@@ -37,9 +37,9 @@
             <VerticalStackLayout IsVisible="{Binding TokenVerificado, Converter={StaticResource InvertBoolConverter}}"
                                  Margin="0,0,0,20" Spacing="10">
                 <Label Text="CÓDIGO DE INVITACIÓN" FontFamily="SyneBold" FontSize="11"
-                       TextColor="{StaticResource MutedColor}" CharacterSpacing="1.5"/>
-                <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                        BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                       TextColor="{DynamicResource MutedColor}" CharacterSpacing="1.5"/>
+                <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                        BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Entry Style="{StaticResource InputEntry}"
                            Placeholder="Pega aquí tu código"
@@ -76,13 +76,13 @@
                         <Label Text="Invitación válida"
                                FontFamily="SyneBold" FontSize="13"
                                TextColor="{StaticResource GreenColor}"/>
-                        <Label FontSize="11" TextColor="{StaticResource MutedColor}">
+                        <Label FontSize="11" TextColor="{DynamicResource MutedColor}">
                             <Label.FormattedText>
                                 <FormattedString>
                                     <Span Text="Rol asignado: "/>
                                     <Span Text="{Binding RolTexto}"
                                           FontFamily="SyneBold"
-                                          TextColor="{StaticResource TextColor}"/>
+                                          TextColor="{DynamicResource TextColor}"/>
                                     <Span Text=" · Sin restricción horaria"/>
                                 </FormattedString>
                             </Label.FormattedText>
@@ -143,8 +143,8 @@
                         ItemDisplayBinding="{Binding Nombre, x:DataType=dto:InstitutoDto}"
                         SelectedItem="{Binding InstitutoSeleccionado}"
                         Title="Selecciona tu instituto"
-                        TextColor="{StaticResource TextColor}"
-                        TitleColor="{StaticResource MutedColor}"
+                        TextColor="{DynamicResource TextColor}"
+                        TitleColor="{DynamicResource MutedColor}"
                         FontFamily="DMSans" FontSize="15"
                         HorizontalOptions="FillAndExpand"/>
             </Border>

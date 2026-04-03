@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CafeIES.MAUI.Views.ConfirmacionPedidoPage"
-             BackgroundColor="{StaticResource BgColor}"
+             BackgroundColor="{DynamicResource BgColor}"
              Shell.NavBarIsVisible="False">
 
     <VerticalStackLayout VerticalOptions="Center" Padding="40" Spacing="0">
@@ -17,25 +17,25 @@
         </Border>
 
         <Label Text="¡Pedido realizado!" FontFamily="SyneBold" FontSize="30"
-               TextColor="{StaticResource TextColor}" HorizontalOptions="Center"
+               TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"
                Margin="0,0,0,8"/>
         <Label Text="Recoge en el mostrador cuando esté listo"
                Style="{StaticResource SubtitleLabel}" HorizontalOptions="Center"
                HorizontalTextAlignment="Center" Margin="0,0,0,40"/>
 
         <!-- Número de pedido grande -->
-        <Border BackgroundColor="{StaticResource Surface2Color}"
-                StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+        <Border BackgroundColor="{DynamicResource Surface2Color}"
+                StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                 Padding="32,24" HorizontalOptions="FillAndExpand" Margin="0,0,0,40">
             <Border.StrokeShape><RoundRectangle CornerRadius="20"/></Border.StrokeShape>
             <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
                 <Label Text="TU NÚMERO" FontFamily="SyneBold" FontSize="11"
-                       TextColor="{StaticResource MutedColor}" CharacterSpacing="2"
+                       TextColor="{DynamicResource MutedColor}" CharacterSpacing="2"
                        HorizontalOptions="Center"/>
                 <Label x:Name="NumeroPedidoLabel" FontFamily="SyneBold" FontSize="64"
                        TextColor="{StaticResource AccentColor}" HorizontalOptions="Center"/>
                 <Label x:Name="TotalLabel" FontFamily="DMSans" FontSize="16"
-                       TextColor="{StaticResource MutedColor}" HorizontalOptions="Center"/>
+                       TextColor="{DynamicResource MutedColor}" HorizontalOptions="Center"/>
             </VerticalStackLayout>
             <!-- El número aparece en cuanto el servidor confirma el pedido (~2s) -->
         </Border>

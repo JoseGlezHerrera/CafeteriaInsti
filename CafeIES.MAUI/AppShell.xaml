@@ -5,9 +5,7 @@
        x:Class="CafeIES.MAUI.AppShell"
        Shell.FlyoutBehavior="Disabled"
        Shell.NavBarIsVisible="False"
-       Shell.TabBarBackgroundColor="#1a1916"
        Shell.TabBarForegroundColor="#f5a623"
-       Shell.TabBarUnselectedColor="#7a7468"
        Shell.TabBarTitleColor="#f5a623">
 
     <!-- Ruta de auth (sin tab bar) -->

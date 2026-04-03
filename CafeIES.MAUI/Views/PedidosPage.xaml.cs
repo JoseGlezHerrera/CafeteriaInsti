@@ -35,7 +35,8 @@ public partial class PedidosPage : ContentPage
         }
 
         _vm.Resubscribe();
-        _vm.PropertyChanged += OnVmPropertyChanged;
+        // FIX-SK: AsyncRelayCommand.IsRunning notifica en el propio comando, no en el ViewModel.
+        _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
         if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
     }
 
@@ -43,14 +44,14 @@ public partial class PedidosPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        _vm.PropertyChanged -= OnVmPropertyChanged;
+        _vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         _vm.Cleanup();
         this.AbortAnimation("skeletonPedidos");
     }
 
-    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnCargarCommandPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == "IsRunning") // CargarCommand.IsRunning notifica como "IsRunning"
+        if (e.PropertyName == nameof(CommunityToolkit.Mvvm.Input.IAsyncRelayCommand.IsRunning))
         {
             if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
             else this.AbortAnimation("skeletonPedidos");

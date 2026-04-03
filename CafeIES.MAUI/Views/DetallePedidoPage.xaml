@@ -99,8 +99,8 @@
                                 <VerticalStackLayout Grid.Column="0">
                                     <Label Text="{Binding ProductoNombre}"
                                            FontFamily="SyneBold" FontSize="14"
-                                           TextColor="{StaticResource TextColor}"/>
-                                    <Label FontSize="12" TextColor="{StaticResource MutedColor}">
+                                           TextColor="{DynamicResource TextColor}"/>
+                                    <Label FontSize="12" TextColor="{DynamicResource MutedColor}">
                                         <Label.FormattedText>
                                             <FormattedString>
                                                 <Span Text="{Binding Cantidad}"/>

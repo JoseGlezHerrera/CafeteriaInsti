@@ -74,7 +74,8 @@ public partial class DetallePedidoViewModel : ObservableObject
     };
 
     private static readonly Color _accentColor = Color.FromArgb("#f5a623");
-    private static readonly Color _dimColor    = Color.FromArgb("#2e2b26");
+    // Neutral warm-gray: reads as "inactive" on both dark (#1A1916) and light (#FFFFFF) backgrounds
+    private static readonly Color _dimColor    = Color.FromArgb("#7A7468");
 
     public Color Paso2Color => Estado >= EstadoPedido.EnPreparacion ? _accentColor : _dimColor;
     public Color Paso3Color => Estado >= EstadoPedido.Listo         ? _accentColor : _dimColor;

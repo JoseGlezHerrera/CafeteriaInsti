@@ -5,7 +5,7 @@
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
              x:Class="CafeIES.MAUI.Views.PerfilPage"
              x:DataType="vm:PerfilViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
@@ -16,18 +16,18 @@
 
             <!-- Header -->
             <Label Text="Perfil" FontFamily="SyneBold" FontSize="22"
-                   TextColor="{StaticResource TextColor}" Margin="0,16,0,28"/>
+                   TextColor="{DynamicResource TextColor}" Margin="0,16,0,28"/>
 
             <!-- Avatar + nombre -->
             <VerticalStackLayout HorizontalOptions="Center" Spacing="10" Margin="0,0,0,32">
-                <Border BackgroundColor="{StaticResource Surface2Color}"
+                <Border BackgroundColor="{DynamicResource Surface2Color}"
                         WidthRequest="80" HeightRequest="80" HorizontalOptions="Center">
                     <Border.StrokeShape><Ellipse/></Border.StrokeShape>
                     <Label Text="👤" FontSize="36"
                            HorizontalOptions="Center" VerticalOptions="Center"/>
                 </Border>
                 <Label Text="{Binding NombreCompleto}" FontFamily="SyneBold" FontSize="20"
-                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                       TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                 <Label Text="{Binding Email}" Style="{StaticResource SubtitleLabel}"
                        HorizontalOptions="Center"/>
 
@@ -39,19 +39,19 @@
                         <Label Text="{Binding RolTexto}" FontFamily="SyneBold" FontSize="12"
                                TextColor="{StaticResource AccentColor}"/>
                     </Border>
-                    <Border Padding="10,5" BackgroundColor="{StaticResource Surface2Color}"
-                            StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                    <Border Padding="10,5" BackgroundColor="{DynamicResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                             IsVisible="{Binding TieneTurno}">
                         <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
                         <Label Text="{Binding TurnoTexto}" FontFamily="SyneBold" FontSize="12"
-                               TextColor="{StaticResource MutedColor}"/>
+                               TextColor="{DynamicResource MutedColor}"/>
                     </Border>
                 </HorizontalStackLayout>
             </VerticalStackLayout>
 
             <!-- Info estado horario (solo para alumnos/profesores/personal) -->
-            <Border BackgroundColor="{StaticResource Surface2Color}"
-                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+            <Border BackgroundColor="{DynamicResource Surface2Color}"
+                    StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                     Padding="18,16" Margin="0,0,0,16"
                     IsVisible="{Binding EsEmpleadoCafeteria, Converter={StaticResource InvertBoolConverter}}">
                 <Border.StrokeShape><RoundRectangle CornerRadius="18"/></Border.StrokeShape>
@@ -59,7 +59,7 @@
                     <Label Grid.Column="0" Text="⏰" FontSize="22" VerticalOptions="Center"/>
                     <VerticalStackLayout Grid.Column="1" Spacing="2">
                         <Label Text="Horario de pedidos" FontFamily="SyneBold" FontSize="14"
-                               TextColor="{StaticResource TextColor}"/>
+                               TextColor="{DynamicResource TextColor}"/>
                         <Label Text="{Binding ResumenHorario}" Style="{StaticResource CaptionLabel}"
                                LineBreakMode="WordWrap"/>
                     </VerticalStackLayout>
@@ -69,8 +69,8 @@
             <!-- Estadísticas (solo para alumnos/profesores/personal) -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,16"
                   IsVisible="{Binding EsEmpleadoCafeteria, Converter={StaticResource InvertBoolConverter}}">
-                <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}" Padding="16">
+                <Border Grid.Column="0" BackgroundColor="{DynamicResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}" Padding="16">
                     <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
                     <VerticalStackLayout Spacing="4">
                         <Label Text="{Binding TotalPedidos}" FontFamily="SyneBold" FontSize="28"
@@ -78,8 +78,8 @@
                         <Label Text="Pedidos totales" Style="{StaticResource CaptionLabel}"/>
                     </VerticalStackLayout>
                 </Border>
-                <Border Grid.Column="1" BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}" Padding="16">
+                <Border Grid.Column="1" BackgroundColor="{DynamicResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}" Padding="16">
                     <Border.StrokeShape><RoundRectangle CornerRadius="16"/></Border.StrokeShape>
                     <VerticalStackLayout Spacing="4">
                         <Label FontFamily="SyneBold" FontSize="28" TextColor="{StaticResource AccentColor}">
@@ -100,14 +100,14 @@
                     Style="{StaticResource SecondaryButton}"
                     Command="{Binding ToggleCambioPasswordCommand}"/>
 
-            <Border BackgroundColor="{StaticResource Surface2Color}"
-                    StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+            <Border BackgroundColor="{DynamicResource Surface2Color}"
+                    StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                     Padding="18,16" Margin="0,10,0,0"
                     IsVisible="{Binding MostrarCambioPassword}">
                 <Border.StrokeShape><RoundRectangle CornerRadius="18"/></Border.StrokeShape>
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Cambiar contraseña" FontFamily="SyneBold" FontSize="14"
-                           TextColor="{StaticResource TextColor}"/>
+                           TextColor="{DynamicResource TextColor}"/>
                     <Entry Placeholder="Contraseña actual" IsPassword="True"
                            Style="{StaticResource InputEntry}"
                            Text="{Binding PasswordActual}"/>

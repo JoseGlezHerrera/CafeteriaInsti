@@ -5,18 +5,18 @@
              xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
              x:Class="CafeIES.MAUI.Views.RegistroPage"
              x:DataType="vm:RegistroViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ScrollView>
         <VerticalStackLayout Padding="32,24" Spacing="0">
 
             <!-- Header -->
             <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,28">
-                <Border Grid.Column="0" BackgroundColor="{StaticResource Surface2Color}"
-                        StrokeThickness="1" Stroke="{StaticResource BorderColor}"
+                <Border Grid.Column="0" BackgroundColor="{DynamicResource Surface2Color}"
+                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
                         WidthRequest="38" HeightRequest="38" Margin="0,0,12,0">
                     <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
-                    <Label Text="←" TextColor="{StaticResource TextColor}" FontSize="18"
+                    <Label Text="←" TextColor="{DynamicResource TextColor}" FontSize="18"
                            HorizontalOptions="Center" VerticalOptions="Center">
                         <Label.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding VolverCommand}"/>
@@ -25,16 +25,16 @@
                 </Border>
                 <VerticalStackLayout Grid.Column="1">
                     <Label Text="Crear cuenta" FontFamily="SyneBold" FontSize="26"
-                           TextColor="{StaticResource TextColor}"/>
+                           TextColor="{DynamicResource TextColor}"/>
                     <Label Text="Registro de alumno" Style="{StaticResource SubtitleLabel}"/>
                 </VerticalStackLayout>
             </Grid>
 
             <!-- Nombre -->
             <Label Text="NOMBRE COMPLETO" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
-            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                    BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                 <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                 <Entry Style="{StaticResource InputEntry}"
                        Text="{Binding NombreCompleto}" Placeholder="ej. Carlos García"/>
@@ -42,9 +42,9 @@
 
             <!-- Email -->
             <Label Text="CORREO DEL CENTRO" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
-            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                    BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                 <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                 <Entry Style="{StaticResource InputEntry}"
                        Text="{Binding Email}" Placeholder="usuario@ies.edu" Keyboard="Email"/>
@@ -52,24 +52,24 @@
 
             <!-- Password -->
             <Label Text="CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
-            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                    BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                 <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                 <Entry Style="{StaticResource InputEntry}"
                        Text="{Binding Password}" Placeholder="Mínimo 8 caracteres" IsPassword="True"/>
             </Border>
             <Label Text="La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo"
                    FontFamily="DMSans" FontSize="12"
-                   TextColor="{StaticResource MutedColor}"
+                   TextColor="{DynamicResource MutedColor}"
                    Margin="2,6,2,0"
                    LineBreakMode="WordWrap"/>
 
             <!-- Confirmar contraseña -->
             <Label Text="CONFIRMAR CONTRASEÑA" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
-            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                    BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                 <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                 <Entry Style="{StaticResource InputEntry}"
                        Text="{Binding ConfirmarPassword}" Placeholder="Repite la contraseña" IsPassword="True"/>
@@ -77,7 +77,7 @@
 
             <!-- Turno selector -->
             <Label Text="TURNO" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,12"/>
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,12"/>
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                 <!-- Mañana -->
@@ -126,16 +126,16 @@
 
             <!-- Instituto selector -->
             <Label Text="INSTITUTO" FontFamily="SyneBold" FontSize="11"
-                   TextColor="{StaticResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,8"/>
-            <Border StrokeThickness="1.5" Stroke="{StaticResource BorderColor}"
-                    BackgroundColor="{StaticResource Surface2Color}" Padding="4,0">
+                   TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,20,0,8"/>
+            <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
+                    BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
                 <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                 <Picker ItemsSource="{Binding Institutos}"
                         ItemDisplayBinding="{Binding Nombre, x:DataType=dto:InstitutoDto}"
                         SelectedItem="{Binding InstitutoSeleccionado}"
                         Title="Selecciona tu instituto"
-                        TextColor="{StaticResource TextColor}"
-                        TitleColor="{StaticResource MutedColor}"
+                        TextColor="{DynamicResource TextColor}"
+                        TitleColor="{DynamicResource MutedColor}"
                         FontFamily="DMSans" FontSize="15"
                         HorizontalOptions="FillAndExpand"/>
             </Border>

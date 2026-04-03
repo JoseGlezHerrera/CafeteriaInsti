@@ -6,7 +6,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="CafeIES.MAUI.Views.AdminEditProductoPage"
              x:DataType="vm:AdminEditProductoViewModel"
-             BackgroundColor="{StaticResource BgColor}">
+             BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Resources>
         <toolkit:BoolToObjectConverter x:Key="IsSavingToText"
@@ -21,7 +21,7 @@
     <Grid RowDefinitions="Auto,*">
 
         <!-- Header -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceColor}"
+        <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
               Padding="16,14" ColumnDefinitions="Auto,*">
             <Button Grid.Column="0"
                     Text="Volver"
@@ -31,7 +31,7 @@
             <Label Grid.Column="1"
                    Text="{Binding Titulo}"
                    FontFamily="SyneBold" FontSize="20"
-                   TextColor="{StaticResource TextColor}"
+                   TextColor="{DynamicResource TextColor}"
                    Margin="12,0,0,0" VerticalOptions="Center"/>
         </Grid>
 
@@ -42,9 +42,9 @@
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Nombre"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
-                    <Border BackgroundColor="{StaticResource Surface2Color}"
-                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                           TextColor="{DynamicResource MutedColor}"/>
+                    <Border BackgroundColor="{DynamicResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                         <Entry Style="{StaticResource InputEntry}"
                                Text="{Binding Nombre}"
@@ -57,9 +57,9 @@
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Descripcion (opcional)"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
-                    <Border BackgroundColor="{StaticResource Surface2Color}"
-                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                           TextColor="{DynamicResource MutedColor}"/>
+                    <Border BackgroundColor="{DynamicResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                         <Entry Style="{StaticResource InputEntry}"
                                Text="{Binding Descripcion}"
@@ -73,9 +73,9 @@
                     <VerticalStackLayout Grid.Column="0" Spacing="6">
                         <Label Text="Precio (EUR)"
                                FontFamily="SyneBold" FontSize="13"
-                               TextColor="{StaticResource MutedColor}"/>
-                        <Border BackgroundColor="{StaticResource Surface2Color}"
-                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                               TextColor="{DynamicResource MutedColor}"/>
+                        <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                             <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                             <Entry Style="{StaticResource InputEntry}"
                                    Text="{Binding Precio}"
@@ -86,9 +86,9 @@
                     <VerticalStackLayout Grid.Column="2" Spacing="6">
                         <Label Text="Stock (-1 = ilimitado)"
                                FontFamily="SyneBold" FontSize="13"
-                               TextColor="{StaticResource MutedColor}"/>
-                        <Border BackgroundColor="{StaticResource Surface2Color}"
-                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                               TextColor="{DynamicResource MutedColor}"/>
+                        <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                             <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                             <Entry Style="{StaticResource InputEntry}"
                                    Text="{Binding Stock}"
@@ -102,13 +102,13 @@
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Imagen del producto"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
+                           TextColor="{DynamicResource MutedColor}"/>
                     <Grid ColumnDefinitions="80,*" ColumnSpacing="14">
                         <!-- Preview -->
                         <Border Grid.Column="0"
                                 WidthRequest="72" HeightRequest="72"
-                                BackgroundColor="{StaticResource Surface2Color}"
-                                StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                                BackgroundColor="{DynamicResource Surface2Color}"
+                                StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                             <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                             <!-- Imagen cargada -->
                             <Image Source="{Binding ImagenUrl}"
@@ -135,7 +135,7 @@
                             </Grid>
                             <Label Text="JPG, PNG o WebP · máx. 5 MB"
                                    FontFamily="DMSans" FontSize="11"
-                                   TextColor="{StaticResource MutedColor}"/>
+                                   TextColor="{DynamicResource MutedColor}"/>
                         </VerticalStackLayout>
                     </Grid>
                 </VerticalStackLayout>
@@ -144,15 +144,15 @@
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Categoria"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
-                    <Border BackgroundColor="{StaticResource Surface2Color}"
-                            StrokeThickness="1" Stroke="{StaticResource BorderColor}">
+                           TextColor="{DynamicResource MutedColor}"/>
+                    <Border BackgroundColor="{DynamicResource Surface2Color}"
+                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}">
                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                         <Picker ItemsSource="{Binding Categorias}"
                                 SelectedItem="{Binding CategoriaSeleccionada}"
                                 ItemDisplayBinding="{Binding Nombre, x:DataType=dto:CategoriaDto}"
-                                TextColor="{StaticResource TextColor}"
-                                TitleColor="{StaticResource MutedColor}"
+                                TextColor="{DynamicResource TextColor}"
+                                TitleColor="{DynamicResource MutedColor}"
                                 Title="Seleccionar categoria"
                                 BackgroundColor="Transparent"
                                 Margin="8,4"/>
@@ -163,7 +163,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Desayuno gratuito 🍊"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
+                           TextColor="{DynamicResource MutedColor}"/>
                     <Grid ColumnDefinitions="*,8,*,8,*" RowDefinitions="Auto">
 
                         <!-- Ninguno -->
@@ -175,26 +175,26 @@
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Ninguno">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
                                     <Setter Property="Stroke" Value="{StaticResource AccentColor}"/>
                                 </DataTrigger>
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Zumo">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Bocata">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                             </Border.Triggers>
                             <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
                                 <Label Text="❌" FontSize="20" HorizontalOptions="Center"/>
                                 <Label Text="Ninguno" FontFamily="SyneBold" FontSize="11"
-                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                                       TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                             </VerticalStackLayout>
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
@@ -217,20 +217,20 @@
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Ninguno">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Bocata">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                             </Border.Triggers>
                             <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
                                 <Label Text="🥤" FontSize="20" HorizontalOptions="Center"/>
                                 <Label Text="Zumo" FontFamily="SyneBold" FontSize="11"
-                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                                       TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                             </VerticalStackLayout>
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
@@ -253,20 +253,20 @@
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Ninguno">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding ComponenteDesayuno}"
                                              Value="Zumo">
-                                    <Setter Property="BackgroundColor" Value="{StaticResource Surface2Color}"/>
-                                    <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource Surface2Color}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource BorderColor}"/>
                                 </DataTrigger>
                             </Border.Triggers>
                             <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
                                 <Label Text="🥪" FontSize="20" HorizontalOptions="Center"/>
                                 <Label Text="Bocata" FontFamily="SyneBold" FontSize="11"
-                                       TextColor="{StaticResource TextColor}" HorizontalOptions="Center"/>
+                                       TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                             </VerticalStackLayout>
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding SetComponenteDesayunoCommand}"
@@ -281,7 +281,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Alérgenos"
                            FontFamily="SyneBold" FontSize="13"
-                           TextColor="{StaticResource MutedColor}"/>
+                           TextColor="{DynamicResource MutedColor}"/>
                     <CollectionView ItemsSource="{Binding Alergenos}"
                                     SelectionMode="None">
                         <CollectionView.ItemsLayout>
@@ -294,7 +294,7 @@
                                     <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                                         <Label Text="{Binding Alergeno.Emoji}" FontSize="16" VerticalOptions="Center"/>
                                         <Label Text="{Binding Alergeno.Nombre}" FontFamily="DMSans" FontSize="13"
-                                               TextColor="{StaticResource TextColor}" VerticalOptions="Center"/>
+                                               TextColor="{DynamicResource TextColor}" VerticalOptions="Center"/>
                                     </HorizontalStackLayout>
                                 </HorizontalStackLayout>
                             </DataTemplate>
