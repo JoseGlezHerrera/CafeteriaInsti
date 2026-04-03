@@ -194,6 +194,57 @@
                     </p>
                 </div>
 
+                <!-- Ingredientes personalizables -->
+                @if (_ingredientes.Count > 0)
+                {
+                    <div class="form-group">
+                        <label>Ingredientes personalizables</label>
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+                            @foreach (var ing in _ingredientes.Where(i => i.Activo || _formIngredientes.Any(fi => fi.IngredienteId == i.Id)))
+                            {
+                                var asignado  = _formIngredientes.FirstOrDefault(fi => fi.IngredienteId == ing.Id);
+                                var asignando = asignado is not null;
+                                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:@(asignando ? "var(--accent-bg, #1a2a1a)" : "var(--surface2)")">
+                                    <input type="checkbox" checked="@asignando"
+                                           @onchange="e => ToggleIngrediente(ing.Id, (bool)e.Value!)"
+                                           style="accent-color:var(--accent)"/>
+                                    <span style="font-size:16px">@ing.Emoji</span>
+                                    <span style="flex:1;font-size:13px">@ing.Nombre</span>
+                                    @if (asignando)
+                                    {
+                                        <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap">
+                                            <input type="checkbox" checked="@asignado!.EsBase"
+                                                   @onchange="e => SetIngredienteEsBase(ing.Id, (bool)e.Value!)"
+                                                   style="accent-color:var(--accent)"/>
+                                            Base
+                                        </label>
+                                        <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap">
+                                            <input type="checkbox" checked="@asignado!.EsQuitable"
+                                                   @onchange="e => SetIngredienteEsQuitable(ing.Id, (bool)e.Value!)"
+                                                   style="accent-color:var(--accent)"/>
+                                            Quitable
+                                        </label>
+                                        <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap">
+                                            Orden:
+                                            <input type="number" min="0" max="99"
+                                                   value="@asignado!.Orden"
+                                                   @onchange="e => SetIngredienteOrden(ing.Id, e.Value?.ToString())"
+                                                   style="width:44px;padding:2px 4px;font-size:12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text)"/>
+                                        </label>
+                                    }
+                                    @if (ing.PrecioExtra > 0)
+                                    {
+                                        <span style="font-size:11px;color:var(--muted)">+@ing.PrecioExtra.ToString("F2")€</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <p style="color:var(--muted);font-size:11px;margin-top:4px">
+                            «Base» = incluido por defecto · «Quitable» = el cliente puede pedirlo sin ese ingrediente.
+                        </p>
+                    </div>
+                }
+
                 <!-- Alérgenos -->
                 @if (_alergenos.Count > 0)
                 {
@@ -277,9 +328,11 @@
 }
 
 @code {
-    private List<ProductoDto>  _productos  = new();
-    private List<CategoriaDto> _categorias = new();
-    private List<AlergenoDto>  _alergenos  = new();
+    private List<ProductoDto>           _productos        = new();
+    private List<CategoriaDto>          _categorias       = new();
+    private List<AlergenoDto>           _alergenos        = new();
+    private List<IngredienteDto>        _ingredientes     = new();
+    private List<AsignarIngredienteRequest> _formIngredientes = new();
     private bool               _cargando   = true;  // UX-014: spinner durante carga inicial
     private string  _busqueda        = string.Empty;
     private string  _categoriaFiltro = string.Empty;
@@ -308,24 +361,27 @@
     protected override async Task OnInitializedAsync()
     {
         // PERF-017: cargar en paralelo en lugar de 3 awaits secuenciales
-        var tCategorias = Api.GetCategoriasAsync();
-        var tProductos  = Api.GetProductosAsync();
-        var tAlergenos  = Api.GetAlergenosAsync();
-        await Task.WhenAll(tCategorias, tProductos, tAlergenos);
-        _categorias = tCategorias.Result;
-        _productos  = tProductos.Result;
-        _alergenos  = tAlergenos.Result;
-        _cargando   = false;
+        var tCategorias   = Api.GetCategoriasAsync();
+        var tProductos    = Api.GetProductosAsync();
+        var tAlergenos    = Api.GetAlergenosAsync();
+        var tIngredientes = Api.GetIngredientesAsync();
+        await Task.WhenAll(tCategorias, tProductos, tAlergenos, tIngredientes);
+        _categorias   = tCategorias.Result;
+        _productos    = tProductos.Result;
+        _alergenos    = tAlergenos.Result;
+        _ingredientes = tIngredientes.Result;
+        _cargando     = false;
     }
 
     private void AbrirNuevoProducto()
     {
-        _editandoId     = null;
-        _form           = new ProductoForm { CategoriaId = _categorias.FirstOrDefault()?.Id ?? 1 };
-        _errorModal     = string.Empty;
-        _imagenArchivo  = null;
-        _errorImagen    = string.Empty;
-        _mostrarModal   = true;
+        _editandoId       = null;
+        _form             = new ProductoForm { CategoriaId = _categorias.FirstOrDefault()?.Id ?? 1 };
+        _formIngredientes = new();
+        _errorModal       = string.Empty;
+        _imagenArchivo    = null;
+        _errorImagen      = string.Empty;
+        _mostrarModal     = true;
     }
 
     private void AbrirEditar(ProductoDto p)
@@ -342,6 +398,9 @@
             AlergenoIds        = p.Alergenos.Select(a => a.Id).ToList(),
             ComponenteDesayuno = p.ComponenteDesayuno
         };
+        _formIngredientes = p.Ingredientes?
+            .Select(i => new AsignarIngredienteRequest(i.IngredienteId, i.EsBase, i.EsQuitable, i.Orden))
+            .ToList() ?? new();
         _errorModal    = string.Empty;
         _imagenArchivo = null;
         _errorImagen   = string.Empty;
@@ -379,7 +438,8 @@
 
         var req = new CrearProductoRequest(_form.Nombre, _form.Descripcion,
             _form.Precio, _form.Stock, _form.CategoriaId, _form.ImagenUrl, _form.AlergenoIds,
-            _form.ComponenteDesayuno);
+            _form.ComponenteDesayuno,
+            _formIngredientes.Count > 0 ? _formIngredientes : null);
 
         bool ok = _editandoId.HasValue
             ? await Api.ActualizarProductoAsync(_editandoId.Value, req)
@@ -439,6 +499,41 @@
             return;
         await Api.EliminarProductoAsync(id);
         _productos = await Api.GetProductosAsync();
+    }
+
+    private void ToggleIngrediente(int ingId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_formIngredientes.Any(fi => fi.IngredienteId == ingId))
+                _formIngredientes.Add(new AsignarIngredienteRequest(ingId, EsBase: true, EsQuitable: true, Orden: 0));
+        }
+        else
+        {
+            _formIngredientes.RemoveAll(fi => fi.IngredienteId == ingId);
+        }
+    }
+
+    private void SetIngredienteEsBase(int ingId, bool value)
+    {
+        var idx = _formIngredientes.FindIndex(fi => fi.IngredienteId == ingId);
+        if (idx < 0) return;
+        _formIngredientes[idx] = _formIngredientes[idx] with { EsBase = value };
+    }
+
+    private void SetIngredienteEsQuitable(int ingId, bool value)
+    {
+        var idx = _formIngredientes.FindIndex(fi => fi.IngredienteId == ingId);
+        if (idx < 0) return;
+        _formIngredientes[idx] = _formIngredientes[idx] with { EsQuitable = value };
+    }
+
+    private void SetIngredienteOrden(int ingId, string? rawValue)
+    {
+        if (!int.TryParse(rawValue, out var orden) || orden < 0) return;
+        var idx = _formIngredientes.FindIndex(fi => fi.IngredienteId == ingId);
+        if (idx < 0) return;
+        _formIngredientes[idx] = _formIngredientes[idx] with { Orden = orden };
     }
 
     private void CerrarModal() => _mostrarModal = false;

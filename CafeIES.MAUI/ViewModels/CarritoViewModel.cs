@@ -35,13 +35,18 @@ public partial class CarritoViewModel : ObservableObject
         {
             var data = Items.Select(i => new CarritoItemData
             {
-                ProductoId         = i.ProductoId,
-                Nombre             = i.Nombre,
-                Precio             = i.Precio,
-                Cantidad           = i.Cantidad,
-                ImagenUrl          = i.ImagenUrl,
-                ComponenteDesayuno = (int)i.ComponenteDesayuno,
-                Notas              = string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas
+                ProductoId              = i.ProductoId,
+                Nombre                  = i.Nombre,
+                Precio                  = i.Precio,
+                PrecioExtra             = i.PrecioExtra,
+                Cantidad                = i.Cantidad,
+                ImagenUrl               = i.ImagenUrl,
+                ComponenteDesayuno      = (int)i.ComponenteDesayuno,
+                Notas                   = string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas,
+                IngredientesJson        = i.Ingredientes.Count > 0
+                                            ? JsonSerializer.Serialize(i.Ingredientes) : null,
+                IngredientesDescripcion = string.IsNullOrEmpty(i.IngredientesDescripcion)
+                                            ? null : i.IngredientesDescripcion
             }).ToList();
             Preferences.Default.Set(CarritoKey, JsonSerializer.Serialize(data));
         }
@@ -58,15 +63,22 @@ public partial class CarritoViewModel : ObservableObject
             if (data is null) return;
             foreach (var d in data)
             {
+                var ingredientes = !string.IsNullOrEmpty(d.IngredientesJson)
+                    ? JsonSerializer.Deserialize<List<IngredienteRequest>>(d.IngredientesJson) ?? new()
+                    : new List<IngredienteRequest>();
+
                 Items.Add(new ItemCarrito
                 {
-                    ProductoId         = d.ProductoId,
-                    Nombre             = d.Nombre,
-                    Precio             = d.Precio,
-                    Cantidad           = d.Cantidad,
-                    ImagenUrl          = d.ImagenUrl,
-                    ComponenteDesayuno = (ComponenteDesayuno)d.ComponenteDesayuno,
-                    Notas              = d.Notas ?? string.Empty
+                    ProductoId              = d.ProductoId,
+                    Nombre                  = d.Nombre,
+                    Precio                  = d.Precio,
+                    PrecioExtra             = d.PrecioExtra,
+                    Cantidad                = d.Cantidad,
+                    ImagenUrl               = d.ImagenUrl,
+                    ComponenteDesayuno      = (ComponenteDesayuno)d.ComponenteDesayuno,
+                    Notas                   = d.Notas ?? string.Empty,
+                    Ingredientes            = ingredientes,
+                    IngredientesDescripcion = d.IngredientesDescripcion ?? string.Empty
                 });
             }
             TotalItems = Items.Sum(i => i.Cantidad);
@@ -173,18 +185,18 @@ public partial class CarritoViewModel : ObservableObject
             {
                 if (!zumoAplicado && item.ComponenteDesayuno == ComponenteDesayuno.Zumo)
                 {
-                    // Solo la primera unidad es gratuita; el resto al precio normal
-                    total += item.Precio * (item.Cantidad - 1);
+                    // Primera unidad gratis (extras incluidos — decisión de negocio); resto al precio personalizado
+                    total += item.PrecioUnitario * (item.Cantidad - 1);
                     zumoAplicado = true;
                 }
                 else if (!bocataAplicado && item.ComponenteDesayuno == ComponenteDesayuno.Bocata)
                 {
-                    total += item.Precio * (item.Cantidad - 1);
+                    total += item.PrecioUnitario * (item.Cantidad - 1);
                     bocataAplicado = true;
                 }
                 else
                 {
-                    total += item.Precio * item.Cantidad;
+                    total += item.PrecioUnitario * item.Cantidad;
                 }
             }
             return total;
@@ -194,31 +206,52 @@ public partial class CarritoViewModel : ObservableObject
     // ── Gestión del carrito ───────────────────────────────────────────────────
 
     /// <returns>true si se añadió o incrementó; false si el producto ya está en el límite de 20 o hay un pago en curso.</returns>
-    public bool AnadirProducto(ProductoDto producto)
+    public bool AnadirProducto(ProductoDto producto,
+        List<IngredienteRequest>? ingredientes = null,
+        decimal precioExtra = 0,
+        string ingredientesDescripcion = "")
     {
-        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return false; // pago en curso
-        var existente = Items.FirstOrDefault(i => i.ProductoId == producto.Id);
-        if (existente is not null)
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) return false;
+
+        var tienePersonalizacion = ingredientes is { Count: > 0 };
+
+        if (!tienePersonalizacion)
         {
-            if (existente.Cantidad >= 20) return false;
-            existente.Cantidad++;
-        }
-        else
-        {
-            var imageUrl = string.IsNullOrEmpty(producto.ImagenUrl) ? null
-                         : producto.ImagenUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                           ? producto.ImagenUrl
-                           : _api.BuildImageUrl(producto.ImagenUrl);
-            Items.Add(new ItemCarrito
+            // Sin personalización: incrementar si ya existe el mismo producto sin personalizaciones
+            var existente = Items.FirstOrDefault(i => i.ProductoId == producto.Id && !i.TieneIngredientes);
+            if (existente is not null)
             {
-                ProductoId         = producto.Id,
-                Nombre             = producto.Nombre,
-                Precio             = producto.Precio,
-                Cantidad           = 1,
-                ImagenUrl          = imageUrl,
-                ComponenteDesayuno = producto.ComponenteDesayuno
-            });
+                if (existente.Cantidad >= 20) return false;
+                existente.Cantidad++;
+                TotalItems = Items.Sum(i => i.Cantidad);
+                OnPropertyChanged(nameof(Total));
+                OnPropertyChanged(nameof(TotalEfectivo));
+                OnPropertyChanged(nameof(Descuento));
+                OnPropertyChanged(nameof(HayDesayunoDisponible));
+                OnPropertyChanged(nameof(EsPedidoGratuito));
+                GuardarCarrito();
+                return true;
+            }
         }
+
+        var imageUrl = string.IsNullOrEmpty(producto.ImagenUrl) ? null
+                     : producto.ImagenUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                       ? producto.ImagenUrl
+                       : _api.BuildImageUrl(producto.ImagenUrl);
+
+        Items.Add(new ItemCarrito
+        {
+            ProductoId              = producto.Id,
+            Nombre                  = producto.Nombre,
+            Precio                  = producto.Precio,
+            PrecioExtra             = precioExtra,
+            Cantidad                = 1,
+            ImagenUrl               = imageUrl,
+            ComponenteDesayuno      = producto.ComponenteDesayuno,
+            Ingredientes            = ingredientes ?? new(),
+            IngredientesDescripcion = ingredientesDescripcion
+        });
+
         TotalItems = Items.Sum(i => i.Cantidad);
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalEfectivo));
@@ -293,8 +326,10 @@ public partial class CarritoViewModel : ObservableObject
         IsLoading    = true;
         EstadoPago   = "Iniciando pago…";
 
-        var lineas = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad,
-            string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas.Trim())).ToList();
+        var lineas = Items.Select(i => new LineaPedidoRequest(
+            i.ProductoId, i.Cantidad,
+            string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas.Trim(),
+            i.Ingredientes.Count > 0 ? i.Ingredientes : null)).ToList();
         var notas  = string.IsNullOrWhiteSpace(Notas) ? null : Notas;
 
         // ── Flujo gratuito: el pedido es completamente gratis ───────────────
@@ -488,25 +523,33 @@ public partial class CarritoViewModel : ObservableObject
 
 file sealed class CarritoItemData
 {
-    public int     ProductoId         { get; set; }
-    public string  Nombre             { get; set; } = string.Empty;
-    public decimal Precio             { get; set; }
-    public int     Cantidad           { get; set; }
-    public string? ImagenUrl          { get; set; }
-    public int     ComponenteDesayuno { get; set; }
-    public string? Notas              { get; set; }
+    public int     ProductoId              { get; set; }
+    public string  Nombre                  { get; set; } = string.Empty;
+    public decimal Precio                  { get; set; }
+    public decimal PrecioExtra             { get; set; }
+    public int     Cantidad                { get; set; }
+    public string? ImagenUrl               { get; set; }
+    public int     ComponenteDesayuno      { get; set; }
+    public string? Notas                   { get; set; }
+    public string? IngredientesJson        { get; set; }
+    public string? IngredientesDescripcion { get; set; }
 }
 
 // ── Modelo de item del carrito ────────────────────────────────────────────────
 
 public partial class ItemCarrito : ObservableObject
 {
-    public int                ProductoId         { get; set; }
-    public string             Nombre             { get; set; } = string.Empty;
-    public decimal            Precio             { get; set; }
-    public string?            ImagenUrl          { get; set; }
-    public ComponenteDesayuno ComponenteDesayuno { get; set; } = ComponenteDesayuno.Ninguno;
-    public bool               TieneImagen => !string.IsNullOrEmpty(ImagenUrl);
+    public int                ProductoId              { get; set; }
+    public string             Nombre                  { get; set; } = string.Empty;
+    public decimal            Precio                  { get; set; }
+    public decimal            PrecioExtra             { get; set; }
+    public string?            ImagenUrl               { get; set; }
+    public ComponenteDesayuno ComponenteDesayuno      { get; set; } = ComponenteDesayuno.Ninguno;
+    public List<IngredienteRequest> Ingredientes      { get; set; } = new();
+    public string             IngredientesDescripcion { get; set; } = string.Empty;
+    public bool               TieneImagen             => !string.IsNullOrEmpty(ImagenUrl);
+    public bool               TieneIngredientes       => Ingredientes.Count > 0;
+    public decimal            PrecioUnitario          => Precio + PrecioExtra;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtotal))]
@@ -515,5 +558,5 @@ public partial class ItemCarrito : ObservableObject
     [ObservableProperty]
     private string _notas = string.Empty;
 
-    public decimal Subtotal => Precio * Cantidad;
+    public decimal Subtotal => PrecioUnitario * Cantidad;
 }

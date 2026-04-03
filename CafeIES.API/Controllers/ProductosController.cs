@@ -33,6 +33,7 @@ public class ProductosController : ControllerBase
         var query = _db.Productos
             .Include(p => p.Categoria)
             .Include(p => p.Alergenos)
+            .Include(p => p.ProductoIngredientes).ThenInclude(pi => pi.Ingrediente)
             .AsQueryable();
 
         if (soloActivos == true)
@@ -58,6 +59,7 @@ public class ProductosController : ControllerBase
         var p = await _db.Productos
             .Include(p => p.Categoria)
             .Include(p => p.Alergenos)
+            .Include(p => p.ProductoIngredientes).ThenInclude(pi => pi.Ingrediente)
             .FirstOrDefaultAsync(p => p.Id == id);
         return p is null ? NotFound() : Ok(p.ToDto());
     }
@@ -96,12 +98,38 @@ public class ProductosController : ControllerBase
             foreach (var a in alergenos) producto.Alergenos.Add(a);
         }
 
+        // Vincular ingredientes personalizables
+        if (req.Ingredientes is { Count: > 0 })
+        {
+            var ingredienteIds = req.Ingredientes.Select(i => i.IngredienteId).ToHashSet();
+            var ingredientesExistentes = await _db.Ingredientes
+                .Where(i => ingredienteIds.Contains(i.Id) && i.Activo)
+                .Select(i => i.Id)
+                .ToHashSetAsync();
+
+            foreach (var ri in req.Ingredientes)
+            {
+                if (!ingredientesExistentes.Contains(ri.IngredienteId)) continue;
+                producto.ProductoIngredientes.Add(new ProductoIngrediente
+                {
+                    IngredienteId = ri.IngredienteId,
+                    EsBase        = ri.EsBase,
+                    EsQuitable    = ri.EsQuitable,
+                    Orden         = ri.Orden
+                });
+            }
+        }
+
         _db.Productos.Add(producto);
         await _db.SaveChangesAsync();
 
-        await _db.Entry(producto).Reference(p => p.Categoria).LoadAsync();
-        await _db.Entry(producto).Collection(p => p.Alergenos).LoadAsync();
-        return CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto.ToDto());
+        // Recargar con todas las relaciones para el DTO
+        var created = await _db.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.Alergenos)
+            .Include(p => p.ProductoIngredientes).ThenInclude(pi => pi.Ingrediente)
+            .FirstAsync(p => p.Id == producto.Id);
+        return CreatedAtAction(nameof(GetById), new { id = producto.Id }, created.ToDto());
     }
 
     // ── PUT /api/productos/{id}  (Admin) ──────────────────────────────────────
@@ -112,6 +140,7 @@ public class ProductosController : ControllerBase
         var producto = await _db.Productos
             .Include(p => p.Categoria)
             .Include(p => p.Alergenos)
+            .Include(p => p.ProductoIngredientes)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (producto is null) return NotFound();
 
@@ -141,8 +170,34 @@ public class ProductosController : ControllerBase
             foreach (var a in alergenos) producto.Alergenos.Add(a);
         }
 
+        // Reemplazar ingredientes personalizables
+        _db.ProductoIngredientes.RemoveRange(producto.ProductoIngredientes);
+        if (req.Ingredientes is { Count: > 0 })
+        {
+            var ingredienteIds = req.Ingredientes.Select(i => i.IngredienteId).ToHashSet();
+            var ingredientesExistentes = await _db.Ingredientes
+                .Where(i => ingredienteIds.Contains(i.Id) && i.Activo)
+                .Select(i => i.Id)
+                .ToHashSetAsync();
+
+            foreach (var ri in req.Ingredientes)
+            {
+                if (!ingredientesExistentes.Contains(ri.IngredienteId)) continue;
+                producto.ProductoIngredientes.Add(new ProductoIngrediente
+                {
+                    IngredienteId = ri.IngredienteId,
+                    EsBase        = ri.EsBase,
+                    EsQuitable    = ri.EsQuitable,
+                    Orden         = ri.Orden
+                });
+            }
+        }
+
         await _db.SaveChangesAsync();
-        // PERF-011: Categoria ya cargada por Include() — no hace falta LoadAsync adicional
+
+        // Recargar con ingredientes para el DTO
+        await _db.Entry(producto).Collection(p => p.ProductoIngredientes)
+            .Query().Include(pi => pi.Ingrediente).LoadAsync();
         return Ok(producto.ToDto());
     }
 

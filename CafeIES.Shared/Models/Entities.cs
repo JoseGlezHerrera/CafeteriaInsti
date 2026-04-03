@@ -262,8 +262,9 @@ public class Producto
     public Categoria Categoria { get; set; } = null!;
 
     // Navegación
-    public ICollection<LineaPedido> Lineas { get; set; } = new List<LineaPedido>();
-    public ICollection<Alergeno> Alergenos { get; set; } = new List<Alergeno>();
+    public ICollection<LineaPedido>         Lineas               { get; set; } = new List<LineaPedido>();
+    public ICollection<Alergeno>            Alergenos            { get; set; } = new List<Alergeno>();
+    public ICollection<ProductoIngrediente> ProductoIngredientes { get; set; } = new List<ProductoIngrediente>();
 
     /// <summary>Nivel de stock: "ok" / "bajo" / "agotado"</summary>
     [NotMapped]
@@ -334,8 +335,116 @@ public class LineaPedido
     [MaxLength(200)]
     public string? Notas { get; set; }
 
+    // Navegación
+    public ICollection<LineaPedidoIngrediente> Ingredientes { get; set; } = new List<LineaPedidoIngrediente>();
+
     [NotMapped]
     public decimal Subtotal => Cantidad * PrecioUnitario;
+}
+
+
+// ─────────────────────────────────────────────
+//  INGREDIENTES PERSONALIZABLES
+// ─────────────────────────────────────────────
+
+/// <summary>
+/// Ingrediente del catálogo de la cafetería.
+/// Puede ser un componente base de un producto (jamón, queso…) o un extra que
+/// el cliente puede añadir al pedido (doble jamón, picante, etc.).
+/// </summary>
+public class Ingrediente
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(80)]
+    public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>Emoji representativo (opcional).</summary>
+    [MaxLength(10)]
+    public string Emoji { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Suplemento de precio que se añade al total de la línea cuando el cliente
+    /// elige este ingrediente como extra. 0 para ingredientes sin coste adicional.
+    /// </summary>
+    [Column(TypeName = "decimal(6,2)")]
+    public decimal PrecioExtra { get; set; } = 0;
+
+    /// <summary>Unidades disponibles. -1 = sin control de stock.</summary>
+    [ConcurrencyCheck]
+    public int Stock { get; set; } = -1;
+
+    public bool Activo { get; set; } = true;
+
+    // Navegación
+    public ICollection<ProductoIngrediente>    ProductoIngredientes    { get; set; } = new List<ProductoIngrediente>();
+    public ICollection<LineaPedidoIngrediente> LineaPedidoIngredientes { get; set; } = new List<LineaPedidoIngrediente>();
+
+    /// <summary>Nivel de stock: "ok" / "bajo" / "agotado"</summary>
+    [NotMapped]
+    public string NivelStock => Stock switch
+    {
+        -1   => "ok",
+        0    => "agotado",
+        <= 5 => "bajo",
+        _    => "ok"
+    };
+}
+
+/// <summary>
+/// Asociación entre un producto y un ingrediente, con la configuración de cómo
+/// ese ingrediente aparece en la pantalla de personalización del cliente.
+/// </summary>
+public class ProductoIngrediente
+{
+    public int ProductoId { get; set; }
+    public Producto Producto { get; set; } = null!;
+
+    public int IngredienteId { get; set; }
+    public Ingrediente Ingrediente { get; set; } = null!;
+
+    /// <summary>
+    /// true  → el ingrediente viene incluido por defecto en el producto (ej. jamón en bocata de jamón).
+    /// false → es un extra opcional que el cliente puede añadir pagando el suplemento.
+    /// </summary>
+    public bool EsBase { get; set; }
+
+    /// <summary>
+    /// Solo aplica cuando EsBase=true.
+    /// true  → el cliente puede quitar este ingrediente sin coste (ej. sin tomate).
+    /// false → el ingrediente es parte indivisible del producto y no puede eliminarse (ej. el pan).
+    /// </summary>
+    public bool EsQuitable { get; set; }
+
+    /// <summary>Orden de visualización en la UI del cliente.</summary>
+    public int Orden { get; set; }
+}
+
+/// <summary>
+/// Modificación de ingrediente dentro de una línea de pedido concreta.
+/// Registra si el cliente añadió un extra o quitó un componente base,
+/// junto con el precio aplicado en el momento del pedido (snapshot inmutable).
+/// </summary>
+public class LineaPedidoIngrediente
+{
+    public int Id { get; set; }
+
+    public int LineaPedidoId { get; set; }
+    public LineaPedido LineaPedido { get; set; } = null!;
+
+    /// <summary>Nullable: se pone a null si el ingrediente del catálogo se elimina (SetNull).</summary>
+    public int? IngredienteId { get; set; }
+    public Ingrediente? Ingrediente { get; set; }
+
+    /// <summary>Quitar (0) = quita un ingrediente base sin coste. Añadir (1) = añade un extra con suplemento.</summary>
+    public AccionIngrediente Accion { get; set; }
+
+    /// <summary>
+    /// Precio del suplemento en el momento del pedido.
+    /// 0 para acciones Quitar. Igual a Ingrediente.PrecioExtra al crear el pedido.
+    /// </summary>
+    [Column(TypeName = "decimal(6,2)")]
+    public decimal PrecioAplicado { get; set; }
 }
 
 

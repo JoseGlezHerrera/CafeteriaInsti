@@ -138,8 +138,20 @@ public class PedidosController : ControllerBase
             // Cargar todos los productos del carrito en una sola query (evita N round-trips a SQL)
             var productoIds = req.Lineas.Select(l => l.ProductoId).ToHashSet();
             var productos = await _db.Productos
+                .Include(p => p.ProductoIngredientes)
                 .Where(p => productoIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id);
+
+            // Batch-cargar todos los ingredientes referenciados en el pedido
+            var todosIngredienteIds = req.Lineas
+                .Where(l => l.Ingredientes is { Count: > 0 })
+                .SelectMany(l => l.Ingredientes!.Select(i => i.IngredienteId))
+                .ToHashSet();
+            var ingredientesDict = todosIngredienteIds.Count > 0
+                ? await _db.Ingredientes
+                    .Where(i => todosIngredienteIds.Contains(i.Id) && i.Activo)
+                    .ToDictionaryAsync(i => i.Id)
+                : new Dictionary<int, Ingrediente>();
 
             foreach (var l in req.Lineas)
             {
@@ -152,24 +164,85 @@ public class PedidosController : ControllerBase
                 // Decrementar stock inmediatamente para evitar doble lectura
                 if (producto.Stock != -1) producto.Stock -= l.Cantidad;
 
+                // ── Ingredientes personalizables ───────────────────────────────
+                // Cada modificación es (IngredienteId, Accion, PrecioAplicado)
+                var modificaciones = new List<(int IngId, AccionIngrediente Accion, decimal Precio)>();
+                decimal extraPorUnidad = 0;
+
+                if (l.Ingredientes is { Count: > 0 })
+                {
+                    var permitidos = producto.ProductoIngredientes.ToDictionary(pi => pi.IngredienteId);
+
+                    foreach (var ir in l.Ingredientes)
+                    {
+                        if (!ingredientesDict.TryGetValue(ir.IngredienteId, out var ingrediente))
+                            return BadRequest(new { mensaje = $"Ingrediente #{ir.IngredienteId} no válido o no activo." });
+
+                        if (!permitidos.TryGetValue(ir.IngredienteId, out var cfg))
+                            return BadRequest(new { mensaje = $"El ingrediente '{ingrediente.Nombre}' no pertenece al producto '{producto.Nombre}'." });
+
+                        if (ir.Accion == AccionIngrediente.Quitar)
+                        {
+                            if (!cfg.EsBase || !cfg.EsQuitable)
+                                return BadRequest(new { mensaje = $"El ingrediente '{ingrediente.Nombre}' no se puede quitar de este producto." });
+                            modificaciones.Add((ir.IngredienteId, ir.Accion, 0m));
+                        }
+                        else // Añadir
+                        {
+                            if (ingrediente.Stock != -1 && ingrediente.Stock < l.Cantidad)
+                                return BadRequest(new { mensaje = $"Stock insuficiente del ingrediente '{ingrediente.Nombre}'." });
+
+                            // Decrementar stock del ingrediente (como se hace con el producto)
+                            if (ingrediente.Stock != -1) ingrediente.Stock -= l.Cantidad;
+
+                            extraPorUnidad += ingrediente.PrecioExtra;
+                            modificaciones.Add((ir.IngredienteId, ir.Accion, ingrediente.PrecioExtra));
+                        }
+                    }
+                }
+
                 // ── Desayuno gratuito: solo la primera unidad es gratis ───────
                 bool primeraUnidadGratis = consumoDesayuno is not null &&
                     DesayunoService.AplicarDescuentoPrimeraUnidad(producto.ComponenteDesayuno, consumoDesayuno);
 
                 if (primeraUnidadGratis)
                 {
-                    // 1 unidad gratis; el resto (si hay) al precio normal
-                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0, Notas = l.Notas?.Trim() });
+                    // Unidad gratuita: precio 0, extras también gratuitos (decisión de negocio)
+                    var lineaGratis = new LineaPedido
+                        { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0, Notas = l.Notas?.Trim() };
+                    foreach (var (ingId, accion, _) in modificaciones)
+                        lineaGratis.Ingredientes.Add(new LineaPedidoIngrediente
+                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = 0 });
+                    lineas.Add(lineaGratis);
+
                     if (l.Cantidad > 1)
                     {
-                        lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad - 1, PrecioUnitario = producto.Precio, Notas = l.Notas?.Trim() });
-                        total += producto.Precio * (l.Cantidad - 1);
+                        var lineaPagada = new LineaPedido
+                        {
+                            ProductoId = l.ProductoId, Cantidad = l.Cantidad - 1,
+                            PrecioUnitario = producto.Precio + extraPorUnidad,
+                            Notas = l.Notas?.Trim()
+                        };
+                        foreach (var (ingId, accion, precio) in modificaciones)
+                            lineaPagada.Ingredientes.Add(new LineaPedidoIngrediente
+                                { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio });
+                        lineas.Add(lineaPagada);
+                        total += (producto.Precio + extraPorUnidad) * (l.Cantidad - 1);
                     }
                 }
                 else
                 {
-                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad, PrecioUnitario = producto.Precio, Notas = l.Notas?.Trim() });
-                    total += producto.Precio * l.Cantidad;
+                    var linea = new LineaPedido
+                    {
+                        ProductoId = l.ProductoId, Cantidad = l.Cantidad,
+                        PrecioUnitario = producto.Precio + extraPorUnidad,
+                        Notas = l.Notas?.Trim()
+                    };
+                    foreach (var (ingId, accion, precio) in modificaciones)
+                        linea.Ingredientes.Add(new LineaPedidoIngrediente
+                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio });
+                    lineas.Add(linea);
+                    total += (producto.Precio + extraPorUnidad) * l.Cantidad;
                 }
             }
 
@@ -308,6 +381,7 @@ public class PedidosController : ControllerBase
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario) // Instituto omitido: no se muestra en historial propio
             .ToListAsync();
 
@@ -341,6 +415,7 @@ public class PedidosController : ControllerBase
         // BUG-008: una sola consulta con todos los includes necesarios para DTO y autorización
         var pedido = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
@@ -380,6 +455,7 @@ public class PedidosController : ControllerBase
     {
         var pedido = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (pedido is null) return NotFound();
@@ -407,6 +483,14 @@ public class PedidosController : ControllerBase
             {
                 if (linea.Producto is not null && linea.Producto.Stock != -1)
                     linea.Producto.Stock += linea.Cantidad;
+
+                // Restaurar stock de ingredientes añadidos
+                foreach (var modif in linea.Ingredientes)
+                {
+                    if (modif.Accion == AccionIngrediente.Añadir &&
+                        modif.Ingrediente is not null && modif.Ingrediente.Stock != -1)
+                        modif.Ingrediente.Stock += linea.Cantidad;
+                }
             }
         }
 
@@ -497,6 +581,7 @@ public class PedidosController : ControllerBase
             .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Take(200)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();
 
@@ -520,6 +605,7 @@ public class PedidosController : ControllerBase
             .Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion)
             .OrderBy(p => p.FechaCreacion).ThenBy(p => p.Id)
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .AsQueryable();
 
@@ -544,6 +630,7 @@ public class PedidosController : ControllerBase
 
         var pedido = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u!.Instituto)
             .FirstOrDefaultAsync(p => p.ReferenciasPago == paymentIntentId && p.UsuarioId == userId.Value);
 
@@ -555,6 +642,7 @@ public class PedidosController : ControllerBase
     {
         var p = await _db.Pedidos
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
 

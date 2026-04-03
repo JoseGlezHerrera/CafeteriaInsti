@@ -408,6 +408,34 @@ public class InvitacionEstadoConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+// ── Ingredientes personalizables ─────────────────────────────────────────────
+
+/// <summary>AccionIngrediente → prefijo de texto: "sin" para Quitar, "+" para Añadir.</summary>
+public class AccionIngredienteConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is AccionIngrediente a
+            ? a == AccionIngrediente.Quitar ? "sin" : "+"
+            : string.Empty;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>Devuelve true si la colección no es null y tiene al menos 1 elemento.</summary>
+public class ListNotEmptyConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is System.Collections.ICollection col) return col.Count > 0;
+        if (value is IEnumerable<object> seq) return seq.Any();
+        return false;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Alérgenos: IReadOnlyList<AlergenoDto> → string de emojis ─────────────────
 
 public class AlergenosToEmojiConverter : IValueConverter

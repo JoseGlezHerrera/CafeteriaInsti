@@ -77,6 +77,63 @@ public record CategoriaDto(int Id, string Nombre, string Emoji);
 
 public record AlergenoDto(int Id, string Nombre, string Emoji);
 
+// ── Ingredientes ──────────────────────────────────────────────────────────────
+
+/// <summary>Ingrediente del catálogo (vista pública y admin).</summary>
+public record IngredienteDto(
+    int     Id,
+    string  Nombre,
+    string  Emoji,
+    decimal PrecioExtra,
+    int     Stock,
+    string  NivelStock,
+    bool    Activo
+);
+
+/// <summary>Ingrediente asociado a un producto, con su configuración de personalización.</summary>
+public record ProductoIngredienteDto(
+    int     IngredienteId,
+    string  Nombre,
+    string  Emoji,
+    decimal PrecioExtra,
+    bool    EsBase,
+    bool    EsQuitable,
+    int     Orden
+);
+
+/// <summary>Modificación de ingrediente registrada en una línea de pedido.</summary>
+public record LineaPedidoIngredienteDto(
+    int               IngredienteId,
+    string            Nombre,
+    string            Emoji,
+    AccionIngrediente Accion,
+    decimal           PrecioAplicado
+);
+
+/// <summary>Selección de ingrediente que el cliente envía al crear un pedido.</summary>
+public record IngredienteRequest(
+    [Required] int               IngredienteId,
+    [Required] AccionIngrediente Accion
+);
+
+/// <summary>Request para crear o actualizar un ingrediente del catálogo (admin).</summary>
+public record CrearIngredienteRequest(
+    [Required, MinLength(2), MaxLength(80)] string  Nombre,
+    [MaxLength(10)]                          string  Emoji,
+    [Range(0, 9999.99)]                      decimal PrecioExtra,
+    [Range(-1, int.MaxValue)]                int     Stock
+);
+
+/// <summary>Request para asignar/actualizar un ingrediente en un producto (admin).</summary>
+public record AsignarIngredienteRequest(
+    [Required] int  IngredienteId,
+               bool EsBase     = true,
+               bool EsQuitable = true,
+               int  Orden      = 0
+);
+
+// ── Catálogo — Producto ───────────────────────────────────────────────────────
+
 public record ProductoDto(
     int      Id,
     string   Nombre,
@@ -89,8 +146,9 @@ public record ProductoDto(
     int      CategoriaId,
     string   CategoriaNombre,
     string   CategoriaEmoji,
-    IReadOnlyList<AlergenoDto> Alergenos,
-    ComponenteDesayuno ComponenteDesayuno = ComponenteDesayuno.Ninguno
+    IReadOnlyList<AlergenoDto>            Alergenos,
+    ComponenteDesayuno                    ComponenteDesayuno = ComponenteDesayuno.Ninguno,
+    IReadOnlyList<ProductoIngredienteDto>? Ingredientes       = null
 );
 
 public record CrearProductoRequest(
@@ -101,7 +159,8 @@ public record CrearProductoRequest(
     [Required]                 int     CategoriaId,
                                string? ImagenUrl,
                                List<int>? AlergenoIds = null,
-                               ComponenteDesayuno ComponenteDesayuno = ComponenteDesayuno.Ninguno
+                               ComponenteDesayuno ComponenteDesayuno = ComponenteDesayuno.Ninguno,
+                               List<AsignarIngredienteRequest>? Ingredientes = null
 );
 
 public record ActualizarStockRequest([Required] int NuevoStock);
@@ -118,7 +177,8 @@ public record CrearPedidoRequest(
 public record LineaPedidoRequest(
     [Required] int ProductoId,
     [Required, Range(1, 20)] int Cantidad,
-    [MaxLength(200)] string? Notas = null
+    [MaxLength(200)] string? Notas = null,
+    List<IngredienteRequest>? Ingredientes = null
 );
 
 public record PedidoDto(
@@ -141,7 +201,8 @@ public record LineaPedidoDto(
     int     Cantidad,
     decimal PrecioUnitario,
     decimal Subtotal,
-    string? Notas = null
+    string? Notas = null,
+    List<LineaPedidoIngredienteDto>? Ingredientes = null
 );
 
 public record CambiarEstadoRequest([Required] EstadoPedido NuevoEstado);

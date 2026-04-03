@@ -96,7 +96,7 @@
                             <Grid ColumnDefinitions="*,Auto"
                                   Padding="16,14"
                                   RowDefinitions="Auto">
-                                <VerticalStackLayout Grid.Column="0">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
                                     <Label Text="{Binding ProductoNombre}"
                                            FontFamily="SyneBold" FontSize="14"
                                            TextColor="{DynamicResource TextColor}"/>
@@ -109,6 +109,30 @@
                                             </FormattedString>
                                         </Label.FormattedText>
                                     </Label>
+                                    <!-- Modificaciones de ingredientes -->
+                                    <CollectionView ItemsSource="{Binding Ingredientes}"
+                                                    SelectionMode="None"
+                                                    IsVisible="{Binding Ingredientes,
+                                                        Converter={StaticResource ListNotEmptyConverter}}">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="dto:LineaPedidoIngredienteDto">
+                                                <Label FontFamily="DMSans" FontSize="11"
+                                                       TextColor="{DynamicResource MutedColor}"
+                                                       FontAttributes="Italic">
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="{Binding Accion,
+                                                                Converter={StaticResource AccionIngredienteConverter}}"/>
+                                                            <Span Text=" "/>
+                                                            <Span Text="{Binding Emoji}"/>
+                                                            <Span Text=" "/>
+                                                            <Span Text="{Binding Nombre}"/>
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
+                                                </Label>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
                                     <Label Text="{Binding Notas}"
                                            FontFamily="DMSans" FontSize="11"
                                            TextColor="{DynamicResource MutedColor}"
@@ -119,7 +143,7 @@
                                        Text="{Binding Subtotal, StringFormat='{0:0.00}€'}"
                                        FontFamily="SyneBold" FontSize="15"
                                        TextColor="{StaticResource AccentColor}"
-                                       VerticalOptions="Center"/>
+                                       VerticalOptions="Start" Margin="0,2,0,0"/>
                             </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>

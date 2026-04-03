@@ -78,3 +78,12 @@ public enum TipoInvitacion
     Personal = 2,
     Empleado = 3   // Empleado de cafetería — acceso a gestión de pedidos y productos
 }
+
+/// <summary>
+/// Acción que el cliente realiza sobre un ingrediente al personalizar su pedido.
+/// </summary>
+public enum AccionIngrediente
+{
+    Quitar = 0,  // Eliminar un ingrediente que viene por defecto (sin coste)
+    Añadir = 1   // Añadir un extra que no viene por defecto (puede tener coste)
+}

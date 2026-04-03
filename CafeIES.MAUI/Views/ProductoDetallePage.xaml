@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
              xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+             xmlns:conv="clr-namespace:CafeIES.MAUI.Converters"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="CafeIES.MAUI.Views.ProductoDetallePage"
              x:DataType="vm:ProductoDetalleViewModel"
@@ -66,13 +67,13 @@
                        HorizontalOptions="Center"
                        HorizontalTextAlignment="Center"/>
 
-                <!-- Precio -->
+                <!-- Precio (se actualiza con las personalizaciones) -->
                 <Label FontFamily="SyneBold" FontSize="32"
                        TextColor="{StaticResource AccentColor}"
                        HorizontalOptions="Center">
                     <Label.FormattedText>
                         <FormattedString>
-                            <Span Text="{Binding Producto.Precio, StringFormat='{0:F2}'}"/>
+                            <Span Text="{Binding PrecioConPersonalizacion, StringFormat='{0:F2}'}"/>
                             <Span Text="€"/>
                         </FormattedString>
                     </Label.FormattedText>
@@ -88,6 +89,50 @@
 
                 <!-- Separador -->
                 <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" Margin="0,4"/>
+
+                <!-- Ingredientes personalizables -->
+                <VerticalStackLayout Spacing="10"
+                                     IsVisible="{Binding TieneIngredientes}">
+                    <Label Text="Personalizar ingredientes"
+                           FontFamily="SyneBold" FontSize="14"
+                           TextColor="{DynamicResource MutedColor}"/>
+                    <CollectionView ItemsSource="{Binding IngredientesSeleccion}"
+                                    SelectionMode="None">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="4"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:IngredienteSeleccionVm">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                                      ColumnSpacing="10" Padding="0,4">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Config.Emoji}" FontSize="20"
+                                           VerticalOptions="Center"/>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                                        <Label Text="{Binding Config.Nombre}"
+                                               FontFamily="DMSans" FontSize="14"
+                                               TextColor="{DynamicResource TextColor}"/>
+                                        <Label Text="{Binding EtiquetaPrecio}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource AccentColor}"
+                                               IsVisible="{Binding EtiquetaPrecio,
+                                                   Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Text="base" FontSize="10"
+                                           TextColor="{DynamicResource MutedColor}"
+                                           VerticalOptions="Center"
+                                           IsVisible="{Binding Config.EsBase}"/>
+                                    <Switch Grid.Column="3"
+                                            IsToggled="{Binding Seleccionado}"
+                                            IsEnabled="{Binding PuedeModificar}"
+                                            OnColor="{StaticResource AccentColor}"
+                                            VerticalOptions="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" Margin="0,4"/>
+                </VerticalStackLayout>
 
                 <!-- Sección de alérgenos -->
                 <VerticalStackLayout Spacing="12"

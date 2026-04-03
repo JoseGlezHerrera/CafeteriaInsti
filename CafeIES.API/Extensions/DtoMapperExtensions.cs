@@ -17,12 +17,32 @@ public static class DtoMapperExtensions
 
     public static AlergenoDto ToDto(this Alergeno a) => new(a.Id, a.Nombre, a.Emoji);
 
+    public static IngredienteDto ToDto(this Ingrediente i) => new(
+        i.Id, i.Nombre, i.Emoji, i.PrecioExtra, i.Stock, i.NivelStock, i.Activo);
+
+    public static ProductoIngredienteDto ToDto(this ProductoIngrediente pi) => new(
+        pi.IngredienteId,
+        pi.Ingrediente?.Nombre ?? string.Empty,
+        pi.Ingrediente?.Emoji  ?? string.Empty,
+        pi.Ingrediente?.PrecioExtra ?? 0,
+        pi.EsBase, pi.EsQuitable, pi.Orden);
+
     public static ProductoDto ToDto(this Producto p) => new(
         p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
         p.ImagenUrl, p.Activo, p.NivelStock,
         p.CategoriaId, p.Categoria?.Nombre ?? string.Empty, p.Categoria?.Emoji ?? string.Empty,
         p.Alergenos.Select(a => a.ToDto()).ToList(),
-        p.ComponenteDesayuno);
+        p.ComponenteDesayuno,
+        p.ProductoIngredientes.Count > 0
+            ? p.ProductoIngredientes.OrderBy(pi => pi.Orden).Select(pi => pi.ToDto()).ToList()
+            : null);
+
+    public static LineaPedidoIngredienteDto ToDto(this LineaPedidoIngrediente li) => new(
+        li.IngredienteId ?? 0,
+        li.Ingrediente?.Nombre ?? "Ingrediente eliminado",
+        li.Ingrediente?.Emoji  ?? string.Empty,
+        li.Accion,
+        li.PrecioAplicado);
 
     public static PedidoDto ToDto(this Pedido p) => new(
         p.Id, p.NumeroPedido,
@@ -31,7 +51,10 @@ public static class DtoMapperExtensions
         p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
             l.ProductoId ?? 0, l.Producto?.Nombre ?? "Producto eliminado",
-            l.Cantidad, l.PrecioUnitario, l.Subtotal, l.Notas
+            l.Cantidad, l.PrecioUnitario, l.Subtotal, l.Notas,
+            l.Ingredientes.Count > 0
+                ? l.Ingredientes.Select(li => li.ToDto()).ToList()
+                : null
         )).ToList(),
         p.Usuario?.Instituto?.Nombre);
 }

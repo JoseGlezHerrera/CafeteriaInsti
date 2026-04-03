@@ -15,10 +15,13 @@ public class AppDbContext : DbContext
     public DbSet<Categoria>    Categorias    => Set<Categoria>();
     public DbSet<Producto>     Productos     => Set<Producto>();
     public DbSet<Pedido>       Pedidos       => Set<Pedido>();
-    public DbSet<LineaPedido>       LineasPedido      => Set<LineaPedido>();
-    public DbSet<DispositivoToken>  DispositivoTokens => Set<DispositivoToken>();
-    public DbSet<Alergeno>          Alergenos         => Set<Alergeno>();
-    public DbSet<ConsumoDesayuno>   ConsumoDesayunos  => Set<ConsumoDesayuno>();
+    public DbSet<LineaPedido>            LineasPedido            => Set<LineaPedido>();
+    public DbSet<DispositivoToken>       DispositivoTokens       => Set<DispositivoToken>();
+    public DbSet<Alergeno>               Alergenos               => Set<Alergeno>();
+    public DbSet<ConsumoDesayuno>        ConsumoDesayunos        => Set<ConsumoDesayuno>();
+    public DbSet<Ingrediente>            Ingredientes            => Set<Ingrediente>();
+    public DbSet<ProductoIngrediente>    ProductoIngredientes    => Set<ProductoIngrediente>();
+    public DbSet<LineaPedidoIngrediente> LineaPedidoIngredientes => Set<LineaPedidoIngrediente>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -140,6 +143,50 @@ public class AppDbContext : DbContext
 
             // Un solo registro por usuario y día (unicidad que evita doble consumo)
             e.HasIndex(c => new { c.UsuarioId, c.Fecha }).IsUnique();
+        });
+
+        // ── Ingrediente ───────────────────────────────────────────────────────
+        mb.Entity<Ingrediente>(e =>
+        {
+            // índice de búsqueda por nombre (admin search)
+            e.HasIndex(i => i.Nombre);
+        });
+
+        // ── ProductoIngrediente ───────────────────────────────────────────────
+        mb.Entity<ProductoIngrediente>(e =>
+        {
+            // Clave primaria compuesta — un ingrediente aparece una sola vez por producto
+            e.HasKey(pi => new { pi.ProductoId, pi.IngredienteId });
+
+            e.HasOne(pi => pi.Producto)
+             .WithMany(p => p.ProductoIngredientes)
+             .HasForeignKey(pi => pi.ProductoId)
+             .OnDelete(DeleteBehavior.Cascade);   // al borrar el producto, se eliminan sus relaciones
+
+            e.HasOne(pi => pi.Ingrediente)
+             .WithMany(i => i.ProductoIngredientes)
+             .HasForeignKey(pi => pi.IngredienteId)
+             .OnDelete(DeleteBehavior.Restrict);  // no borrar ingrediente mientras esté asignado a un producto
+        });
+
+        // ── LineaPedidoIngrediente ────────────────────────────────────────────
+        mb.Entity<LineaPedidoIngrediente>(e =>
+        {
+            e.HasOne(li => li.LineaPedido)
+             .WithMany(l => l.Ingredientes)
+             .HasForeignKey(li => li.LineaPedidoId)
+             .OnDelete(DeleteBehavior.Cascade);   // si se borra la línea, se borran sus modificaciones
+
+            e.HasOne(li => li.Ingrediente)
+             .WithMany(i => i.LineaPedidoIngredientes)
+             .HasForeignKey(li => li.IngredienteId)
+             .OnDelete(DeleteBehavior.SetNull)    // si se borra el ingrediente del catálogo, conservamos el registro histórico
+             .IsRequired(false);
+
+            e.Property(li => li.Accion).HasConversion<int>();
+
+            // índice para recuperar modificaciones de una línea rápido
+            e.HasIndex(li => li.LineaPedidoId);
         });
 
         // ── Seed: Institutos iniciales ────────────────────────────────────────

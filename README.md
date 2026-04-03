@@ -510,6 +510,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Carrito persistente entre sesiones (via `Preferences`) — se recupera al volver a la app
 - Control de cantidad y stock; productos agotados bloqueados visualmente
 - Validación horaria por turno antes de crear el pedido
+- **Ingredientes personalizables** — cada producto tiene ingredientes base configurables; el usuario activa/desactiva con switch; el precio se recalcula en tiempo real; notas de ingrediente visibles en detalle del pedido
 
 **Desayuno gratuito**
 - Spinner de carga del estado de desayuno — bloquea el botón de pago hasta tener el estado real
@@ -538,9 +539,10 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - "Cargar más" paginado en AdminPedidosPage cuando hay más de 20 pedidos (modo Todo)
 - Gestión de estado con máquina de estados (transiciones válidas)
 
-**Panel admin web (Blazor WASM) — 10 páginas**
+**Panel admin web (Blazor WASM) — 11 páginas**
 - Dashboard con métricas en tiempo real
-- Gestión de Productos con imagen y badges ComponenteDesayuno (🥤 Zumo / 🥪 Bocata / —)
+- Gestión de Productos con imagen, badges ComponenteDesayuno (🥤 Zumo / 🥪 Bocata / —) y asignación de ingredientes personalizables por producto
+- Gestión de Ingredientes — catálogo completo con emoji, precio extra, stock, toggle activo/inactivo
 - Gestión de Categorías
 - Gestión de Usuarios con toggle desayuno gratuito 🍊
 - Desayunos: beneficiarios (buscar/filtrar/toggle) + consumos del día
@@ -582,6 +584,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Seguridad pagos + deudas técnicas | ✅ Completada | Stripe pk server-side; transacción RepeatableRead desayuno; CerrarSesionAsync centralizado; tests robustos |
 | UX sprint — tema claro, skeleton y accesibilidad | ✅ Completada | Tema claro/oscuro reactivo; skeleton loading; SemanticProperties; animaciones de press; toasts; 108 tests |
 | Deuda técnica + Bugs + UX 2ª ronda | ✅ Completada | ApiService partial classes; PedidoCardView; errores servidor en toasts; skeleton en PedidosPage; entrada animada; timer horario |
+| Ingredientes personalizables | ✅ Completada | Catálogo de ingredientes; asignación por producto (Base/Quitable/Orden); personalización en MAUI con precio reactivo; snapshot en pedido con SetNull histórico |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -591,6 +594,32 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.21.0 — Ingredientes personalizables end-to-end (2026-04-04)
+
+#### Backend
+- **Nuevas entidades**: `Ingrediente` (catálogo), `ProductoIngrediente` (configuración por producto con `EsBase`/`EsQuitable`/`Orden`), `LineaPedidoIngrediente` (snapshot inmutable en el pedido)
+- **FK nullable**: `LineaPedidoIngrediente.IngredienteId` es `int?` — EF configura `ON DELETE SET NULL` para preservar el historial aunque se elimine un ingrediente del catálogo
+- **Restricción Conflict**: `ON DELETE NO ACTION` en `ProductoIngrediente → Ingrediente`; intentar eliminar un ingrediente asignado devuelve HTTP 409 con mensaje descriptivo
+- **`IngredientesController`** (nuevo): CRUD completo — GET (lista + detalle), POST, PUT, PATCH/stock, PATCH/toggle, DELETE con manejo de conflicto; todas las escrituras emiten `[AUDIT]`
+- **`ProductosController`**: PUT resincroniza `ProductoIngredientes` al actualizar
+- **`PedidosController`**: valida ingredientes contra la config del producto, calcula `extraPorUnidad = Σ PrecioExtra (solo Añadir)`, crea `LineaPedidoIngrediente` por línea; restaura stock de ingredientes al cancelar; desayuno gratuito aplica `PrecioUnitario = 0` incluyendo extras
+- **Migración** `20260403183926_AddIngredientesPersonalizables` aplicada
+
+#### MAUI
+- **`ProductoDetalleViewModel`**: nuevo `IngredienteSeleccionVm`; switches reactivos; `PrecioConPersonalizacion` se recalcula en tiempo real; `AnadirAlCarritoAsync` pasa las selecciones al carrito
+- **`CarritoViewModel`**: `ItemCarrito` con `PrecioExtra`, `Ingredientes`, `IngredientesDescripcion`; `PrecioUnitario = Precio + PrecioExtra`; items con personalización siempre crean nueva entrada; serialización a `Preferences` preserva ingredientes
+- **`ProductoDetallePage.xaml`**: sección de ingredientes con Switch por ingrediente, etiqueta de precio extra y recuento reactivo
+- **`CarritoPage.xaml`**: muestra `PrecioUnitario` y descripción de modificaciones en cursiva
+- **`DetallePedidoPage.xaml`**: `CollectionView` anidado muestra cada modificación (`sin 🥬 Lechuga` / `+ 🧀 Queso extra`) con `AccionIngredienteConverter`
+- **Nuevos converters**: `AccionIngredienteConverter` (enum → "sin" / "+") y `ListNotEmptyConverter` registrados en `App.xaml`
+
+#### Blazor Admin
+- **Nueva página `/ingredientes`**: tabla con emoji/nombre/precio extra/stock/estado; modal crear/editar; toggle activo/inactivo; eliminar con mensaje de conflicto
+- **`Productos.razor`**: sección de ingredientes personalizables en el modal — checkbox de asignación + controles Base/Quitable/Orden por ingrediente; carga en paralelo junto a categorías y alérgenos
+- **Sidebar**: enlace 🥬 Ingredientes añadido a la navegación
+
+---
 
 ### v0.20.0 — Auditoría completa + correcciones de bugs y tema claro (2026-04-03)
 

@@ -88,6 +88,38 @@ public class AdminApiService
     public async Task<bool> EliminarProductoAsync(int id)
         => await SendBoolAsync(() => _http.DeleteAsync($"api/productos/{id}"));
 
+    // ── Ingredientes ──────────────────────────────────────────────────────────
+    public async Task<List<IngredienteDto>> GetIngredientesAsync()
+        => await GetListAsync<IngredienteDto>("api/ingredientes");
+
+    public async Task<bool> CrearIngredienteAsync(CrearIngredienteRequest req)
+        => await SendBoolAsync(() => _http.PostAsJsonAsync("api/ingredientes", req));
+
+    public async Task<bool> ActualizarIngredienteAsync(int id, CrearIngredienteRequest req)
+        => await SendBoolAsync(() => _http.PutAsJsonAsync($"api/ingredientes/{id}", req));
+
+    public async Task<bool> ActualizarStockIngredienteAsync(int id, int nuevoStock)
+        => await SendBoolAsync(() => _http.PatchAsJsonAsync($"api/ingredientes/{id}/stock", new ActualizarStockRequest(nuevoStock)));
+
+    public async Task<bool> ToggleActivoIngredienteAsync(int id)
+        => await SendBoolAsync(() => _http.PatchAsync($"api/ingredientes/{id}/toggle", null));
+
+    public async Task<(bool ok, string? error)> EliminarIngredienteAsync(int id)
+    {
+        try
+        {
+            var resp = await SendAsync(() => _http.DeleteAsync($"api/ingredientes/{id}"));
+            if (resp.IsSuccessStatusCode) return (true, null);
+            if (resp.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                var err = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                return (false, err?.Mensaje ?? "No se puede eliminar: el ingrediente está asignado a productos.");
+            }
+            return (false, "Error al eliminar el ingrediente.");
+        }
+        catch { return (false, "Error de conexión."); }
+    }
+
     // ── Categorías ────────────────────────────────────────────────────────────
     public async Task<List<CategoriaDto>> GetCategoriasAsync()
         => await GetListAsync<CategoriaDto>("api/categorias");
@@ -303,3 +335,5 @@ public class AdminApiService
         catch { return null; }
     }
 }
+
+file record ErrorResponse(string Mensaje);

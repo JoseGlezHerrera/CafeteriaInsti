@@ -46,6 +46,8 @@
             <conv:BoolToChipStyleConverter x:Key="BoolToChipStyleConverter"/>
             <conv:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter"/>
             <conv:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
+            <conv:AccionIngredienteConverter x:Key="AccionIngredienteConverter"/>
+            <conv:ListNotEmptyConverter x:Key="ListNotEmptyConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

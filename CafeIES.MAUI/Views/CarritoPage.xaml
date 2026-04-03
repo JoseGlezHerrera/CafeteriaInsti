@@ -74,11 +74,17 @@
                                                 <Label FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource MutedColor}">
                                                     <Label.FormattedText>
                                                         <FormattedString>
-                                                            <Span Text="{Binding Precio, StringFormat='{0:F2}'}"/>
+                                                            <Span Text="{Binding PrecioUnitario, StringFormat='{0:F2}'}"/>
                                                             <Span Text="€ c/u"/>
                                                         </FormattedString>
                                                     </Label.FormattedText>
                                                 </Label>
+                                                <Label Text="{Binding IngredientesDescripcion}"
+                                                       FontFamily="DMSans" FontSize="11"
+                                                       FontAttributes="Italic"
+                                                       TextColor="{StaticResource AccentColor}"
+                                                       LineBreakMode="WordWrap"
+                                                       IsVisible="{Binding TieneIngredientes}"/>
                                             </VerticalStackLayout>
                                             <Border Grid.Column="2" BackgroundColor="{DynamicResource Surface2Color}"
                                                     StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
