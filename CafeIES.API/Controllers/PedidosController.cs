@@ -159,16 +159,16 @@ public class PedidosController : ControllerBase
                 if (primeraUnidadGratis)
                 {
                     // 1 unidad gratis; el resto (si hay) al precio normal
-                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0 });
+                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0, Notas = l.Notas?.Trim() });
                     if (l.Cantidad > 1)
                     {
-                        lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad - 1, PrecioUnitario = producto.Precio });
+                        lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad - 1, PrecioUnitario = producto.Precio, Notas = l.Notas?.Trim() });
                         total += producto.Precio * (l.Cantidad - 1);
                     }
                 }
                 else
                 {
-                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad, PrecioUnitario = producto.Precio });
+                    lineas.Add(new LineaPedido { ProductoId = l.ProductoId, Cantidad = l.Cantidad, PrecioUnitario = producto.Precio, Notas = l.Notas?.Trim() });
                     total += producto.Precio * l.Cantidad;
                 }
             }

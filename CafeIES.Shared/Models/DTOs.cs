@@ -117,7 +117,8 @@ public record CrearPedidoRequest(
 
 public record LineaPedidoRequest(
     [Required] int ProductoId,
-    [Required, Range(1, 20)] int Cantidad
+    [Required, Range(1, 20)] int Cantidad,
+    [MaxLength(200)] string? Notas = null
 );
 
 public record PedidoDto(
@@ -139,7 +140,8 @@ public record LineaPedidoDto(
     string  ProductoNombre,
     int     Cantidad,
     decimal PrecioUnitario,
-    decimal Subtotal
+    decimal Subtotal,
+    string? Notas = null
 );
 
 public record CambiarEstadoRequest([Required] EstadoPedido NuevoEstado);

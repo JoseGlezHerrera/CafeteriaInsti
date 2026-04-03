@@ -23,6 +23,15 @@ public class IntToBoolConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public class StringNotNullOrEmptyConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => !string.IsNullOrEmpty(value as string);
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Bool → Accent (para turno selector en RegistroPage) ──────────────────────
 
 public class BoolToAccentBorderConverter : IValueConverter

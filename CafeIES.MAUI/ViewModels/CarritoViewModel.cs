@@ -40,7 +40,8 @@ public partial class CarritoViewModel : ObservableObject
                 Precio             = i.Precio,
                 Cantidad           = i.Cantidad,
                 ImagenUrl          = i.ImagenUrl,
-                ComponenteDesayuno = (int)i.ComponenteDesayuno
+                ComponenteDesayuno = (int)i.ComponenteDesayuno,
+                Notas              = string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas
             }).ToList();
             Preferences.Default.Set(CarritoKey, JsonSerializer.Serialize(data));
         }
@@ -64,7 +65,8 @@ public partial class CarritoViewModel : ObservableObject
                     Precio             = d.Precio,
                     Cantidad           = d.Cantidad,
                     ImagenUrl          = d.ImagenUrl,
-                    ComponenteDesayuno = (ComponenteDesayuno)d.ComponenteDesayuno
+                    ComponenteDesayuno = (ComponenteDesayuno)d.ComponenteDesayuno,
+                    Notas              = d.Notas ?? string.Empty
                 });
             }
             TotalItems = Items.Sum(i => i.Cantidad);
@@ -291,7 +293,8 @@ public partial class CarritoViewModel : ObservableObject
         IsLoading    = true;
         EstadoPago   = "Iniciando pago…";
 
-        var lineas = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad)).ToList();
+        var lineas = Items.Select(i => new LineaPedidoRequest(i.ProductoId, i.Cantidad,
+            string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas.Trim())).ToList();
         var notas  = string.IsNullOrWhiteSpace(Notas) ? null : Notas;
 
         // ── Flujo gratuito: el pedido es completamente gratis ───────────────
@@ -491,6 +494,7 @@ file sealed class CarritoItemData
     public int     Cantidad           { get; set; }
     public string? ImagenUrl          { get; set; }
     public int     ComponenteDesayuno { get; set; }
+    public string? Notas              { get; set; }
 }
 
 // ── Modelo de item del carrito ────────────────────────────────────────────────
@@ -507,6 +511,9 @@ public partial class ItemCarrito : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtotal))]
     private int _cantidad;
+
+    [ObservableProperty]
+    private string _notas = string.Empty;
 
     public decimal Subtotal => Precio * Cantidad;
 }

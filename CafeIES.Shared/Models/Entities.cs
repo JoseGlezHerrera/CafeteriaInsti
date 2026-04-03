@@ -330,6 +330,10 @@ public class LineaPedido
     [Column(TypeName = "decimal(6,2)")]
     public decimal PrecioUnitario { get; set; }
 
+    /// <summary>Nota opcional del usuario para esta línea (ej. "sin queso", "extra picante").</summary>
+    [MaxLength(200)]
+    public string? Notas { get; set; }
+
     [NotMapped]
     public decimal Subtotal => Cantidad * PrecioUnitario;
 }

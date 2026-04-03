@@ -31,7 +31,7 @@ public static class DtoMapperExtensions
         p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
             l.ProductoId ?? 0, l.Producto?.Nombre ?? "Producto eliminado",
-            l.Cantidad, l.PrecioUnitario, l.Subtotal
+            l.Cantidad, l.PrecioUnitario, l.Subtotal, l.Notas
         )).ToList(),
         p.Usuario?.Instituto?.Nombre);
 }

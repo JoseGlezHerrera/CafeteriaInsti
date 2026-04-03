@@ -109,6 +109,11 @@
                                             </FormattedString>
                                         </Label.FormattedText>
                                     </Label>
+                                    <Label Text="{Binding Notas}"
+                                           FontFamily="DMSans" FontSize="11"
+                                           TextColor="{DynamicResource MutedColor}"
+                                           FontAttributes="Italic"
+                                           IsVisible="{Binding Notas, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
                                 </VerticalStackLayout>
                                 <Label Grid.Column="1"
                                        Text="{Binding Subtotal, StringFormat='{0:0.00}€'}"

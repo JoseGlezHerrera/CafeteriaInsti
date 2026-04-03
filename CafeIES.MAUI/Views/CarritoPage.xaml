@@ -55,58 +55,71 @@
                                     </SwipeItems>
                                 </SwipeView.RightItems>
                                 <Border Style="{StaticResource Card}">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                        <Border Grid.Column="0" BackgroundColor="{DynamicResource Surface2Color}"
-                                                WidthRequest="52" HeightRequest="52">
-                                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                            <Grid>
-                                                <Image Source="{Binding ImagenUrl}" Aspect="AspectFill"
-                                                       IsVisible="{Binding TieneImagen}"/>
-                                                <Label Text="🍽" FontSize="26"
-                                                       HorizontalOptions="Center" VerticalOptions="Center"
-                                                       IsVisible="{Binding TieneImagen, Converter={StaticResource InvertBoolConverter}}"/>
-                                            </Grid>
-                                        </Border>
-                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
-                                            <Label Text="{Binding Nombre}" FontFamily="SyneBold"
-                                                   FontSize="14" TextColor="{DynamicResource TextColor}"/>
-                                            <Label FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource MutedColor}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="{Binding Precio, StringFormat='{0:F2}'}"/>
-                                                        <Span Text="€ c/u"/>
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
-                                        </VerticalStackLayout>
-                                        <Border Grid.Column="2" BackgroundColor="{DynamicResource Surface2Color}"
-                                                StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                Padding="10,8" VerticalOptions="Center">
-                                            <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                            <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
-                                                <Label Grid.Column="0" Text="-" FontFamily="SyneBold" FontSize="20"
-                                                       TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                    <Label.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
-                                                            CommandParameter="{Binding .}"/>
-                                                    </Label.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                            <Border Grid.Column="0" BackgroundColor="{DynamicResource Surface2Color}"
+                                                    WidthRequest="52" HeightRequest="52">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                                                <Grid>
+                                                    <Image Source="{Binding ImagenUrl}" Aspect="AspectFill"
+                                                           IsVisible="{Binding TieneImagen}"/>
+                                                    <Label Text="🍽" FontSize="26"
+                                                           HorizontalOptions="Center" VerticalOptions="Center"
+                                                           IsVisible="{Binding TieneImagen, Converter={StaticResource InvertBoolConverter}}"/>
+                                                </Grid>
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                                <Label Text="{Binding Nombre}" FontFamily="SyneBold"
+                                                       FontSize="14" TextColor="{DynamicResource TextColor}"/>
+                                                <Label FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource MutedColor}">
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="{Binding Precio, StringFormat='{0:F2}'}"/>
+                                                            <Span Text="€ c/u"/>
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
                                                 </Label>
-                                                <Label Grid.Column="1" Text="{Binding Cantidad}" FontFamily="SyneBold"
-                                                       FontSize="15" TextColor="{DynamicResource TextColor}"
-                                                       VerticalOptions="Center" MinimumWidthRequest="24"
-                                                       HorizontalOptions="Center"/>
-                                                <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="20"
-                                                       TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                    <Label.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
-                                                            CommandParameter="{Binding .}"/>
-                                                    </Label.GestureRecognizers>
-                                                </Label>
-                                            </Grid>
+                                            </VerticalStackLayout>
+                                            <Border Grid.Column="2" BackgroundColor="{DynamicResource Surface2Color}"
+                                                    StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                    Padding="10,8" VerticalOptions="Center">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                                                <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                                                    <Label Grid.Column="0" Text="-" FontFamily="SyneBold" FontSize="20"
+                                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                                        <Label.GestureRecognizers>
+                                                            <TapGestureRecognizer
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                                                CommandParameter="{Binding .}"/>
+                                                        </Label.GestureRecognizers>
+                                                    </Label>
+                                                    <Label Grid.Column="1" Text="{Binding Cantidad}" FontFamily="SyneBold"
+                                                           FontSize="15" TextColor="{DynamicResource TextColor}"
+                                                           VerticalOptions="Center" MinimumWidthRequest="24"
+                                                           HorizontalOptions="Center"/>
+                                                    <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="20"
+                                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                                        <Label.GestureRecognizers>
+                                                            <TapGestureRecognizer
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                                                CommandParameter="{Binding .}"/>
+                                                        </Label.GestureRecognizers>
+                                                    </Label>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                        <!-- Nota por producto -->
+                                        <Border StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                BackgroundColor="{DynamicResource Surface2Color}" Padding="10,2">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="10"/></Border.StrokeShape>
+                                            <Entry Placeholder="Nota (ej: sin queso, extra picante…)"
+                                                   PlaceholderColor="{DynamicResource MutedColor}"
+                                                   TextColor="{DynamicResource TextColor}"
+                                                   BackgroundColor="Transparent"
+                                                   Text="{Binding Notas}"
+                                                   FontSize="12" MaxLength="200"/>
                                         </Border>
-                                    </Grid>
+                                    </VerticalStackLayout>
                                 </Border>
                             </SwipeView>
                         </DataTemplate>
