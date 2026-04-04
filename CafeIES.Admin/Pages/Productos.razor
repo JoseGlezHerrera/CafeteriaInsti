@@ -55,7 +55,7 @@
                     <td>
                         @if (!string.IsNullOrEmpty(prod.ImagenUrl))
                         {
-                            <img src="@prod.ImagenUrl" alt="@prod.Nombre"
+                            <img src="@Api.BuildImageUrl(prod.ImagenUrl)" alt="@prod.Nombre"
                                  style="width:48px;height:48px;object-fit:cover;border-radius:8px;"/>
                         }
                         else
@@ -283,7 +283,7 @@
                         <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
                             @if (!string.IsNullOrEmpty(_form.ImagenUrl))
                             {
-                                <img src="@_form.ImagenUrl" alt="Vista previa"
+                                <img src="@Api.BuildImageUrl(_form.ImagenUrl)" alt="Vista previa"
                                      style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--border)"/>
                             }
                             else

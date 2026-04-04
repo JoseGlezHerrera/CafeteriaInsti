@@ -20,6 +20,19 @@ public class AdminApiService
     /// <summary>FIX-18: Expone la URL base de la API para conexiones SignalR.</summary>
     public string GetApiBaseUrl() => (_http.BaseAddress?.ToString().TrimEnd('/') ?? "") + "/";
 
+    /// <summary>
+    /// Construye la URL absoluta de una imagen del producto.
+    /// Si ya es absoluta (Azure Blob Storage) la devuelve tal cual.
+    /// Si es relativa (/uploads/...) la prefija con la URL base de la API.
+    /// </summary>
+    public string BuildImageUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return string.Empty;
+        if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+        var base_ = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{base_}{url}";
+    }
+
     // ── Helper: ejecuta request con auto-refresh en 401 ──────────────────────
     private async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> action)
     {

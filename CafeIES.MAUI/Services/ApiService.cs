@@ -42,9 +42,17 @@ public partial class ApiService
     public string HubUrl => $"{_http.BaseAddress}hubs/cafeteria";
     public string ApiBaseUrl => _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
 
-    /// <summary>Construye la URL absoluta de una imagen relativa devuelta por la API.</summary>
-    public string BuildImageUrl(string relativePath)
-        => $"{_http.BaseAddress!.ToString().TrimEnd('/')}{relativePath}";
+    /// <summary>
+    /// Construye la URL absoluta de una imagen devuelta por la API.
+    /// Si ya es absoluta (Azure Blob Storage) la devuelve tal cual.
+    /// Si es relativa (/uploads/...) la prefija con la URL base de la API.
+    /// </summary>
+    public string BuildImageUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return string.Empty;
+        if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+        return $"{_http.BaseAddress!.ToString().TrimEnd('/')}{url}";
+    }
 
     // ── SignalR ───────────────────────────────────────────────────────────────
     private HubConnection? _hub;
@@ -90,16 +98,23 @@ public partial class ApiService
     {
         // Pre-leer el content a bytes para poder reconstruirlo en el retry.
         // Los streams de HttpContent se agotan al primer SendAsync y no son reutilizables.
+        // IMPORTANTE: preservamos el ContentType completo (incluyendo el parámetro "boundary"
+        // que necesita multipart/form-data). Usar solo MediaType lo perdería y el servidor
+        // no podría parsear la petición de subida de imagen.
         byte[]? bytes = null;
-        string mediaType = "application/json";
+        System.Net.Http.Headers.MediaTypeHeaderValue? contentType = null;
         if (content is not null)
         {
-            bytes     = await content.ReadAsByteArrayAsync();
-            mediaType = content.Headers.ContentType?.MediaType ?? "application/json";
+            bytes       = await content.ReadAsByteArrayAsync();
+            contentType = content.Headers.ContentType;
         }
-        HttpContent? Build() => bytes is null ? null
-            : new ByteArrayContent(bytes)
-              { Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType) } };
+        HttpContent? Build()
+        {
+            if (bytes is null) return null;
+            var bc = new ByteArrayContent(bytes);
+            bc.Headers.ContentType = contentType;
+            return bc;
+        }
 
         var request  = await CrearRequestAsync(method, url, Build());
         var response = await _http.SendAsync(request);
