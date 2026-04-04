@@ -234,4 +234,40 @@ app.MapControllers();
 app.MapHub<CafeteriaHub>("/hubs/cafeteria");
 app.MapHealthChecks("/health");
 
+// ── Endpoint de diagnóstico temporal (eliminar después de corregir la BD) ────
+app.MapGet("/diag/db", async (AppDbContext db) =>
+{
+    var results = new System.Text.StringBuilder();
+    try
+    {
+        var migrations = await db.Database.GetAppliedMigrationsAsync();
+        results.AppendLine("=== Migrations aplicadas ===");
+        foreach (var m in migrations) results.AppendLine(m);
+    }
+    catch (Exception ex) { results.AppendLine($"Error migrations: {ex.Message}"); }
+
+    try
+    {
+        var cols = await db.Database.SqlQueryRaw<string>(
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('ProductoIngredientes','LineaPedidoIngredientes') ORDER BY TABLE_NAME, COLUMN_NAME"
+        ).ToListAsync();
+        results.AppendLine("=== Columnas ===");
+        foreach (var c in cols) results.AppendLine(c);
+    }
+    catch (Exception ex) { results.AppendLine($"Error columnas: {ex.Message}"); }
+
+    try
+    {
+        await db.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.Alergenos)
+            .Include(p => p.ProductoIngredientes).ThenInclude(pi => pi.Ingrediente)
+            .Take(1).ToListAsync();
+        results.AppendLine("=== Query productos: OK ===");
+    }
+    catch (Exception ex) { results.AppendLine($"Error query productos: {ex}"); }
+
+    return Results.Text(results.ToString());
+}).AllowAnonymous();
+
 app.Run();
