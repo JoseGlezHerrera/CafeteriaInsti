@@ -361,32 +361,18 @@
                                                            VerticalOptions="Center"/>
                                                 </HorizontalStackLayout>
                                             </Grid>
-                                            <!-- Fila 2: Orden / CantidadMaxima -->
-                                            <HorizontalStackLayout Spacing="16">
-                                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                                    <Label Text="Orden" FontFamily="DMSans" FontSize="12"
-                                                           TextColor="{DynamicResource MutedColor}"
-                                                           VerticalOptions="Center"/>
-                                                    <Border BackgroundColor="{DynamicResource Surface2Color}"
-                                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                            WidthRequest="54">
-                                                        <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                                        <Entry Text="{Binding Orden}" Keyboard="Numeric"
-                                                               FontSize="13" Margin="4,0" HeightRequest="36"/>
-                                                    </Border>
-                                                </HorizontalStackLayout>
-                                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                                    <Label Text="Máx" FontFamily="DMSans" FontSize="12"
-                                                           TextColor="{DynamicResource MutedColor}"
-                                                           VerticalOptions="Center"/>
-                                                    <Border BackgroundColor="{DynamicResource Surface2Color}"
-                                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                            WidthRequest="54">
-                                                        <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                                        <Entry Text="{Binding CantidadMaxima}" Keyboard="Numeric"
-                                                               FontSize="13" Margin="4,0" HeightRequest="36"/>
-                                                    </Border>
-                                                </HorizontalStackLayout>
+                                            <!-- Fila 2: CantidadMaxima -->
+                                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                                <Label Text="Máx. unidades" FontFamily="DMSans" FontSize="12"
+                                                       TextColor="{DynamicResource MutedColor}"
+                                                       VerticalOptions="Center"/>
+                                                <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                        WidthRequest="54">
+                                                    <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                                    <Entry Text="{Binding CantidadMaxima}" Keyboard="Numeric"
+                                                           FontSize="13" Margin="4,0" HeightRequest="36"/>
+                                                </Border>
                                             </HorizontalStackLayout>
                                         </VerticalStackLayout>
 
@@ -395,7 +381,7 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Label Text="Base = incluido por defecto · Quitable = el cliente puede pedirlo sin él · Máx = unidades máximas (stepper si &gt; 1)."
+                    <Label Text="Base = incluido por defecto · Quitable = el cliente puede quitarlo · Máx. unidades = 1 switch, &gt;1 activa el stepper."
                            FontFamily="DMSans" FontSize="11"
                            TextColor="{DynamicResource MutedColor}"/>
                 </VerticalStackLayout>

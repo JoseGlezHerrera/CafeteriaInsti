@@ -36,6 +36,10 @@ public partial class AdminProductosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task IrIngredientesAsync()
+        => await Shell.Current.GoToAsync("AdminIngredientes");
+
+    [RelayCommand]
     private async Task NuevoProductoAsync()
         => await Shell.Current.GoToAsync("AdminEditProducto?productoId=0");
 

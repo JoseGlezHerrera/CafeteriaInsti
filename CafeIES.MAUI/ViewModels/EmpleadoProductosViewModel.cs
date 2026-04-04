@@ -34,6 +34,10 @@ public partial class EmpleadoProductosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task IrIngredientesAsync()
+        => await Shell.Current.GoToAsync("AdminIngredientes");
+
+    [RelayCommand]
     private async Task ToggleActivoAsync(ProductoDto producto)
     {
         await _api.ToggleActivoAsync(producto.Id);

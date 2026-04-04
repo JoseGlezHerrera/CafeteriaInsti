@@ -34,7 +34,7 @@ public static class DtoMapperExtensions
         p.Alergenos.Select(a => a.ToDto()).ToList(),
         p.ComponenteDesayuno,
         p.ProductoIngredientes.Count > 0
-            ? p.ProductoIngredientes.OrderBy(pi => pi.Orden).Select(pi => pi.ToDto()).ToList()
+            ? p.ProductoIngredientes.OrderBy(pi => pi.Ingrediente?.Nombre).Select(pi => pi.ToDto()).ToList()
             : null);
 
     public static LineaPedidoIngredienteDto ToDto(this LineaPedidoIngrediente li) => new(

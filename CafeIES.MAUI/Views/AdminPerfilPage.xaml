@@ -18,10 +18,10 @@
             <Label Text="Perfil" FontFamily="SyneBold" FontSize="22"
                    TextColor="{DynamicResource TextColor}" Margin="0,16,0,20"/>
 
-            <!-- Acceso rápido: Horarios, Invitaciones e Ingredientes -->
+            <!-- Acceso rápido: Horarios e Invitaciones -->
             <Label Text="ADMINISTRACIÓN" FontFamily="SyneBold" FontSize="11"
                    TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,10"/>
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" Margin="0,0,0,28">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,0,0,28">
                 <Border Grid.Column="0" Style="{StaticResource Card}" Padding="10,14">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding IrHorariosCommand}"/>
@@ -43,18 +43,6 @@
                         <Label Text="Invitaciones" FontFamily="SyneBold" FontSize="12"
                                TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                         <Label Text="Staff" FontFamily="DMSans" FontSize="10"
-                               TextColor="{DynamicResource MutedColor}" HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-                </Border>
-                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="10,14">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding IrIngredientesCommand}"/>
-                    </Border.GestureRecognizers>
-                    <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
-                        <Label Text="🥬" FontSize="24" HorizontalOptions="Center"/>
-                        <Label Text="Ingredientes" FontFamily="SyneBold" FontSize="12"
-                               TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
-                        <Label Text="Catálogo" FontFamily="DMSans" FontSize="10"
                                TextColor="{DynamicResource MutedColor}" HorizontalOptions="Center"/>
                     </VerticalStackLayout>
                 </Border>

@@ -48,9 +48,9 @@ public class IngredientesController : ControllerBase
         return i is null ? NotFound() : Ok(i.ToDto());
     }
 
-    // ── POST /api/ingredientes  (Admin) ───────────────────────────────────────
+    // ── POST /api/ingredientes  (Admin / Empleado) ────────────────────────────
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<IngredienteDto>> Crear([FromBody] CrearIngredienteRequest req)
     {
         var ingrediente = new Ingrediente
@@ -65,15 +65,15 @@ public class IngredientesController : ControllerBase
         _db.Ingredientes.Add(ingrediente);
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("[AUDIT] Admin {UserId} creó ingrediente '{Nombre}' (ID:{Id}).",
+        _logger.LogInformation("[AUDIT] Usuario {UserId} creó ingrediente '{Nombre}' (ID:{Id}).",
             User.GetUserId(), ingrediente.Nombre, ingrediente.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = ingrediente.Id }, ingrediente.ToDto());
     }
 
-    // ── PUT /api/ingredientes/{id}  (Admin) ───────────────────────────────────
+    // ── PUT /api/ingredientes/{id}  (Admin / Empleado) ───────────────────────
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<IngredienteDto>> Actualizar(int id, [FromBody] CrearIngredienteRequest req)
     {
         var ingrediente = await _db.Ingredientes.FindAsync(id);
@@ -86,7 +86,7 @@ public class IngredientesController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("[AUDIT] Admin {UserId} actualizó ingrediente '{Nombre}' (ID:{Id}).",
+        _logger.LogInformation("[AUDIT] Usuario {UserId} actualizó ingrediente '{Nombre}' (ID:{Id}).",
             User.GetUserId(), ingrediente.Nombre, ingrediente.Id);
 
         return Ok(ingrediente.ToDto());
@@ -108,9 +108,9 @@ public class IngredientesController : ControllerBase
         return NoContent();
     }
 
-    // ── PATCH /api/ingredientes/{id}/toggle  (Admin) ─────────────────────────
+    // ── PATCH /api/ingredientes/{id}/toggle  (Admin / Empleado) ─────────────
     [HttpPatch("{id}/toggle")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult> ToggleActivo(int id)
     {
         var ingrediente = await _db.Ingredientes.FindAsync(id);
@@ -119,15 +119,15 @@ public class IngredientesController : ControllerBase
         ingrediente.Activo = !ingrediente.Activo;
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("[AUDIT] Admin {UserId} {Accion} ingrediente '{Nombre}' (ID:{Id}).",
+        _logger.LogInformation("[AUDIT] Usuario {UserId} {Accion} ingrediente '{Nombre}' (ID:{Id}).",
             User.GetUserId(), ingrediente.Activo ? "activó" : "desactivó", ingrediente.Nombre, ingrediente.Id);
 
         return Ok(new { ingrediente.Id, ingrediente.Activo });
     }
 
-    // ── DELETE /api/ingredientes/{id}  (Admin) ────────────────────────────────
+    // ── DELETE /api/ingredientes/{id}  (Admin / Empleado) ────────────────────
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult> Eliminar(int id)
     {
         var ingrediente = await _db.Ingredientes.FindAsync(id);
@@ -145,7 +145,7 @@ public class IngredientesController : ControllerBase
             return Conflict(new { mensaje = "No se puede eliminar el ingrediente porque está asignado a uno o más productos. Desasígnalo primero." });
         }
 
-        _logger.LogInformation("[AUDIT] Admin {UserId} eliminó ingrediente '{Nombre}' (ID:{Id}).",
+        _logger.LogInformation("[AUDIT] Usuario {UserId} eliminó ingrediente '{Nombre}' (ID:{Id}).",
             User.GetUserId(), ingrediente.Nombre, id);
 
         return NoContent();

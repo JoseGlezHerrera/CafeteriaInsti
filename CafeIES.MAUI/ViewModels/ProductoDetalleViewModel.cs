@@ -74,7 +74,8 @@ public partial class ProductoDetalleViewModel : ObservableObject
             var vm = new IngredienteSeleccionVm
             {
                 Config       = ing,
-                Seleccionado = ing.EsBase   // base ingredients start checked
+                Seleccionado = ing.EsBase && ing.CantidadMaxima == 1,  // switch-base starts checked
+                Cantidad     = ing.EsBase ? 1 : 0                       // stepper-base=1, stepper-extra=0
             };
             vm.PropertyChanged += OnIngredienteChanged;
             IngredientesSeleccion.Add(vm);
@@ -88,11 +89,16 @@ public partial class ProductoDetalleViewModel : ObservableObject
                 var vm = IngredientesSeleccion.FirstOrDefault(v => v.Config.IngredienteId == ir.IngredienteId);
                 if (vm is null) continue;
                 if (ir.Accion == AccionIngrediente.Quitar)
-                    vm.Seleccionado = false;
-                else
+                {
+                    if (vm.UsaStepper) vm.Cantidad   = 0;     // base+stepper: 0 = quitado
+                    else               vm.Seleccionado = false;
+                }
+                else // Añadir
                 {
                     if (vm.UsaStepper)
-                        vm.Cantidad = Math.Max(1, ir.Cantidad);
+                        vm.Cantidad = vm.Config.EsBase
+                            ? 1 + ir.Cantidad   // base: 1 incluida + unidades extra guardadas
+                            : ir.Cantidad;       // extra: cantidad guardada directamente
                     else
                         vm.Seleccionado = true;
                 }
@@ -165,16 +171,29 @@ public partial class ProductoDetalleViewModel : ObservableObject
 
         // Construir la lista de modificaciones (solo las que difieren del estado por defecto)
         bool EsModificado(IngredienteSeleccionVm vm) =>
-            (vm.Config.EsBase && !vm.Seleccionado) ||
-            (!vm.Config.EsBase && (vm.UsaStepper ? vm.Cantidad > 0 : vm.Seleccionado));
+            (vm.Config.EsBase &&  vm.UsaStepper  && vm.Cantidad != 1) ||   // base+stepper: distinto de 1
+            (vm.Config.EsBase && !vm.UsaStepper  && !vm.Seleccionado)  ||  // base+switch:  desmarcado
+            (!vm.Config.EsBase && (vm.UsaStepper ? vm.Cantidad > 0 : vm.Seleccionado)); // extra: añadido
 
-        var ingredientesRequest = IngredientesSeleccion
-            .Where(EsModificado)
-            .Select(vm => new IngredienteRequest(
-                vm.Config.IngredienteId,
-                vm.Config.EsBase ? AccionIngrediente.Quitar : AccionIngrediente.Añadir,
-                vm.Config.EsBase ? 1 : (vm.UsaStepper ? vm.Cantidad : 1)))
-            .ToList();
+        var ingredientesRequest = new List<IngredienteRequest>();
+        foreach (var vm in IngredientesSeleccion.Where(EsModificado))
+        {
+            if (vm.Config.EsBase)
+            {
+                if (vm.UsaStepper)
+                    ingredientesRequest.Add(vm.Cantidad == 0
+                        ? new IngredienteRequest(vm.Config.IngredienteId, AccionIngrediente.Quitar, 1)
+                        : new IngredienteRequest(vm.Config.IngredienteId, AccionIngrediente.Añadir, vm.Cantidad - 1));
+                else
+                    ingredientesRequest.Add(new IngredienteRequest(vm.Config.IngredienteId, AccionIngrediente.Quitar, 1));
+            }
+            else
+            {
+                ingredientesRequest.Add(new IngredienteRequest(
+                    vm.Config.IngredienteId, AccionIngrediente.Añadir,
+                    vm.UsaStepper ? vm.Cantidad : 1));
+            }
+        }
 
         var precioExtra = IngredientesSeleccion.Sum(i => i.PrecioExtraActivo);
 
@@ -182,7 +201,12 @@ public partial class ProductoDetalleViewModel : ObservableObject
             .Where(EsModificado)
             .Select(vm =>
             {
-                if (vm.Config.EsBase) return $"sin {vm.Config.Nombre}";
+                if (vm.Config.EsBase)
+                {
+                    if (vm.UsaStepper)
+                        return vm.Cantidad == 0 ? $"sin {vm.Config.Nombre}" : $"×{vm.Cantidad} {vm.Config.Nombre}";
+                    return $"sin {vm.Config.Nombre}";
+                }
                 var cnt = vm.UsaStepper ? vm.Cantidad : 1;
                 return cnt > 1 ? $"×{cnt} {vm.Config.Nombre}" : $"+ {vm.Config.Nombre}";
             }));
@@ -242,18 +266,25 @@ public partial class IngredienteSeleccionVm : ObservableObject
     /// <summary>Máximo de unidades configurado en el producto (heredado de Config).</summary>
     public int CantidadMaxima => Config.CantidadMaxima;
 
-    /// <summary>true cuando este extra admite más de una unidad (muestra stepper en lugar de switch).</summary>
-    public bool UsaStepper => !Config.EsBase && Config.CantidadMaxima > 1;
+    /// <summary>true cuando el ingrediente admite más de una unidad (muestra stepper en lugar de switch).</summary>
+    public bool UsaStepper => Config.CantidadMaxima > 1;
 
     /// <summary>Se puede modificar si es base+quitable o si es un extra.</summary>
     public bool PuedeModificar =>
         (Config.EsBase && Config.EsQuitable) || !Config.EsBase;
 
-    /// <summary>Precio extra activo: para steppers multiplica por Cantidad; para switches, binario.</summary>
+    /// <summary>
+    /// Precio extra activo.
+    /// - Base + stepper: las unidades por encima de la primera son de pago.
+    /// - Extra + stepper: todas las unidades tienen precio.
+    /// - Switch binario: 0 si no seleccionado.
+    /// </summary>
     public decimal PrecioExtraActivo =>
-        Config.EsBase ? 0 :
-        UsaStepper ? Config.PrecioExtra * Cantidad :
-        Seleccionado ? Config.PrecioExtra : 0;
+        UsaStepper
+            ? Config.EsBase
+                ? Config.PrecioExtra * Math.Max(0, Cantidad - 1)   // 1ª unidad base gratis
+                : Config.PrecioExtra * Cantidad
+            : (!Config.EsBase && Seleccionado ? Config.PrecioExtra : 0);
 
     /// <summary>Texto de precio extra para mostrar en la UI.</summary>
     public string EtiquetaPrecio
@@ -261,7 +292,14 @@ public partial class IngredienteSeleccionVm : ObservableObject
         get
         {
             if (Config.PrecioExtra <= 0) return string.Empty;
-            if (UsaStepper && Cantidad > 1) return $"+{Config.PrecioExtra * Cantidad:F2}€ (×{Cantidad})";
+            if (UsaStepper)
+            {
+                int unidadesExtra = Config.EsBase ? Math.Max(0, Cantidad - 1) : Cantidad;
+                if (unidadesExtra == 0) return string.Empty;
+                return unidadesExtra > 1
+                    ? $"+{Config.PrecioExtra * unidadesExtra:F2}€ (×{unidadesExtra})"
+                    : $"+{Config.PrecioExtra:F2}€";
+            }
             return $"+{Config.PrecioExtra:F2}€";
         }
     }
@@ -275,6 +313,8 @@ public partial class IngredienteSeleccionVm : ObservableObject
     [RelayCommand]
     private void DecrementarCantidad()
     {
-        if (Cantidad > 0) Cantidad--;
+        // Base no quitable: mínimo 1 (siempre incluido). Quitable o extra: mínimo 0.
+        int minimo = Config.EsBase && !Config.EsQuitable ? 1 : 0;
+        if (Cantidad > minimo) Cantidad--;
     }
 }
