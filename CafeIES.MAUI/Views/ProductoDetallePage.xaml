@@ -122,11 +122,41 @@
                                            TextColor="{DynamicResource MutedColor}"
                                            VerticalOptions="Center"
                                            IsVisible="{Binding Config.EsBase}"/>
+                                    <!-- Switch (ingredientes base o extras binarios) -->
                                     <Switch Grid.Column="3"
                                             IsToggled="{Binding Seleccionado}"
                                             IsEnabled="{Binding PuedeModificar}"
                                             OnColor="{StaticResource AccentColor}"
-                                            VerticalOptions="Center"/>
+                                            VerticalOptions="Center"
+                                            IsVisible="{Binding UsaStepper,
+                                                Converter={StaticResource InvertBoolConverter}}"/>
+                                    <!-- Stepper (extras con CantidadMaxima > 1) -->
+                                    <Border Grid.Column="3"
+                                            BackgroundColor="{DynamicResource Surface2Color}"
+                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                            Padding="8,4" VerticalOptions="Center"
+                                            IsVisible="{Binding UsaStepper}">
+                                        <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                                            <Label Grid.Column="0" Text="−" FontFamily="SyneBold" FontSize="18"
+                                                   TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                                <Label.GestureRecognizers>
+                                                    <TapGestureRecognizer Command="{Binding DecrementarCantidadCommand}"/>
+                                                </Label.GestureRecognizers>
+                                            </Label>
+                                            <Label Grid.Column="1" Text="{Binding Cantidad}"
+                                                   FontFamily="SyneBold" FontSize="14"
+                                                   TextColor="{DynamicResource TextColor}"
+                                                   VerticalOptions="Center"
+                                                   MinimumWidthRequest="18" HorizontalOptions="Center"/>
+                                            <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="18"
+                                                   TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
+                                                <Label.GestureRecognizers>
+                                                    <TapGestureRecognizer Command="{Binding IncrementarCantidadCommand}"/>
+                                                </Label.GestureRecognizers>
+                                            </Label>
+                                        </Grid>
+                                    </Border>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -176,7 +206,7 @@
                 Padding="24,16"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertBoolConverter}}">
             <Border.StrokeShape><RoundRectangle CornerRadius="0"/></Border.StrokeShape>
-            <Button Text="Añadir al carrito"
+            <Button Text="{Binding TextoBotonCarrito}"
                     Style="{StaticResource PrimaryButton}"
                     Command="{Binding AnadirAlCarritoCommand}"
                     IsEnabled="{Binding PuedeAnadir}"/>

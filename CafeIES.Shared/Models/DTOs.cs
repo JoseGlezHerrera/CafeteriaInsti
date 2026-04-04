@@ -98,7 +98,8 @@ public record ProductoIngredienteDto(
     decimal PrecioExtra,
     bool    EsBase,
     bool    EsQuitable,
-    int     Orden
+    int     Orden,
+    int     CantidadMaxima = 1
 );
 
 /// <summary>Modificación de ingrediente registrada en una línea de pedido.</summary>
@@ -107,13 +108,15 @@ public record LineaPedidoIngredienteDto(
     string            Nombre,
     string            Emoji,
     AccionIngrediente Accion,
-    decimal           PrecioAplicado
+    decimal           PrecioAplicado,
+    int               Cantidad = 1
 );
 
 /// <summary>Selección de ingrediente que el cliente envía al crear un pedido.</summary>
 public record IngredienteRequest(
     [Required] int               IngredienteId,
-    [Required] AccionIngrediente Accion
+    [Required] AccionIngrediente Accion,
+               int               Cantidad = 1
 );
 
 /// <summary>Request para crear o actualizar un ingrediente del catálogo (admin).</summary>
@@ -127,9 +130,10 @@ public record CrearIngredienteRequest(
 /// <summary>Request para asignar/actualizar un ingrediente en un producto (admin).</summary>
 public record AsignarIngredienteRequest(
     [Required] int  IngredienteId,
-               bool EsBase     = true,
-               bool EsQuitable = true,
-               int  Orden      = 0
+               bool EsBase         = true,
+               bool EsQuitable     = true,
+               int  Orden          = 0,
+               int  CantidadMaxima = 1
 );
 
 // ── Catálogo — Producto ───────────────────────────────────────────────────────

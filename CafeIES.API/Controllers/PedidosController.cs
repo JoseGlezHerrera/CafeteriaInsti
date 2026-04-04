@@ -165,8 +165,8 @@ public class PedidosController : ControllerBase
                 if (producto.Stock != -1) producto.Stock -= l.Cantidad;
 
                 // ── Ingredientes personalizables ───────────────────────────────
-                // Cada modificación es (IngredienteId, Accion, PrecioAplicado)
-                var modificaciones = new List<(int IngId, AccionIngrediente Accion, decimal Precio)>();
+                // Cada modificación es (IngredienteId, Cantidad, Accion, PrecioUnitario)
+                var modificaciones = new List<(int IngId, int Cantidad, AccionIngrediente Accion, decimal Precio)>();
                 decimal extraPorUnidad = 0;
 
                 if (l.Ingredientes is { Count: > 0 })
@@ -181,22 +181,24 @@ public class PedidosController : ControllerBase
                         if (!permitidos.TryGetValue(ir.IngredienteId, out var cfg))
                             return BadRequest(new { mensaje = $"El ingrediente '{ingrediente.Nombre}' no pertenece al producto '{producto.Nombre}'." });
 
+                        var cantIngrediente = Math.Max(1, ir.Cantidad);
+
                         if (ir.Accion == AccionIngrediente.Quitar)
                         {
                             if (!cfg.EsBase || !cfg.EsQuitable)
                                 return BadRequest(new { mensaje = $"El ingrediente '{ingrediente.Nombre}' no se puede quitar de este producto." });
-                            modificaciones.Add((ir.IngredienteId, ir.Accion, 0m));
+                            modificaciones.Add((ir.IngredienteId, 1, ir.Accion, 0m));
                         }
                         else // Añadir
                         {
-                            if (ingrediente.Stock != -1 && ingrediente.Stock < l.Cantidad)
+                            var stockNecesario = l.Cantidad * cantIngrediente;
+                            if (ingrediente.Stock != -1 && ingrediente.Stock < stockNecesario)
                                 return BadRequest(new { mensaje = $"Stock insuficiente del ingrediente '{ingrediente.Nombre}'." });
 
-                            // Decrementar stock del ingrediente (como se hace con el producto)
-                            if (ingrediente.Stock != -1) ingrediente.Stock -= l.Cantidad;
+                            if (ingrediente.Stock != -1) ingrediente.Stock -= stockNecesario;
 
-                            extraPorUnidad += ingrediente.PrecioExtra;
-                            modificaciones.Add((ir.IngredienteId, ir.Accion, ingrediente.PrecioExtra));
+                            extraPorUnidad += ingrediente.PrecioExtra * cantIngrediente;
+                            modificaciones.Add((ir.IngredienteId, cantIngrediente, ir.Accion, ingrediente.PrecioExtra));
                         }
                     }
                 }
@@ -210,9 +212,9 @@ public class PedidosController : ControllerBase
                     // Unidad gratuita: precio 0, extras también gratuitos (decisión de negocio)
                     var lineaGratis = new LineaPedido
                         { ProductoId = l.ProductoId, Cantidad = 1, PrecioUnitario = 0, Notas = l.Notas?.Trim() };
-                    foreach (var (ingId, accion, _) in modificaciones)
+                    foreach (var (ingId, cant, accion, _) in modificaciones)
                         lineaGratis.Ingredientes.Add(new LineaPedidoIngrediente
-                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = 0 });
+                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = 0, Cantidad = cant });
                     lineas.Add(lineaGratis);
 
                     if (l.Cantidad > 1)
@@ -223,9 +225,9 @@ public class PedidosController : ControllerBase
                             PrecioUnitario = producto.Precio + extraPorUnidad,
                             Notas = l.Notas?.Trim()
                         };
-                        foreach (var (ingId, accion, precio) in modificaciones)
+                        foreach (var (ingId, cant, accion, precio) in modificaciones)
                             lineaPagada.Ingredientes.Add(new LineaPedidoIngrediente
-                                { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio });
+                                { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio, Cantidad = cant });
                         lineas.Add(lineaPagada);
                         total += (producto.Precio + extraPorUnidad) * (l.Cantidad - 1);
                     }
@@ -238,9 +240,9 @@ public class PedidosController : ControllerBase
                         PrecioUnitario = producto.Precio + extraPorUnidad,
                         Notas = l.Notas?.Trim()
                     };
-                    foreach (var (ingId, accion, precio) in modificaciones)
+                    foreach (var (ingId, cant, accion, precio) in modificaciones)
                         linea.Ingredientes.Add(new LineaPedidoIngrediente
-                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio });
+                            { IngredienteId = ingId, Accion = accion, PrecioAplicado = precio, Cantidad = cant });
                     lineas.Add(linea);
                     total += (producto.Precio + extraPorUnidad) * l.Cantidad;
                 }
@@ -489,7 +491,7 @@ public class PedidosController : ControllerBase
                 {
                     if (modif.Accion == AccionIngrediente.Añadir &&
                         modif.Ingrediente is not null && modif.Ingrediente.Stock != -1)
-                        modif.Ingrediente.Stock += linea.Cantidad;
+                        modif.Ingrediente.Stock += linea.Cantidad * modif.Cantidad;
                 }
             }
         }

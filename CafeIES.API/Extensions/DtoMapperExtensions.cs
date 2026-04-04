@@ -25,7 +25,7 @@ public static class DtoMapperExtensions
         pi.Ingrediente?.Nombre ?? string.Empty,
         pi.Ingrediente?.Emoji  ?? string.Empty,
         pi.Ingrediente?.PrecioExtra ?? 0,
-        pi.EsBase, pi.EsQuitable, pi.Orden);
+        pi.EsBase, pi.EsQuitable, pi.Orden, pi.CantidadMaxima);
 
     public static ProductoDto ToDto(this Producto p) => new(
         p.Id, p.Nombre, p.Descripcion, p.Precio, p.Stock,
@@ -42,7 +42,8 @@ public static class DtoMapperExtensions
         li.Ingrediente?.Nombre ?? "Ingrediente eliminado",
         li.Ingrediente?.Emoji  ?? string.Empty,
         li.Accion,
-        li.PrecioAplicado);
+        li.PrecioAplicado,
+        li.Cantidad);
 
     public static PedidoDto ToDto(this Pedido p) => new(
         p.Id, p.NumeroPedido,

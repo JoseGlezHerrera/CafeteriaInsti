@@ -418,6 +418,13 @@ public class ProductoIngrediente
 
     /// <summary>Orden de visualización en la UI del cliente.</summary>
     public int Orden { get; set; }
+
+    /// <summary>
+    /// Número máximo de unidades de este ingrediente que el cliente puede añadir.
+    /// 1 (defecto) → selector binario (switch). Mayor que 1 → muestra stepper 0..N.
+    /// Solo aplica a ingredientes extra (EsBase = false).
+    /// </summary>
+    public int CantidadMaxima { get; set; } = 1;
 }
 
 /// <summary>
@@ -440,11 +447,14 @@ public class LineaPedidoIngrediente
     public AccionIngrediente Accion { get; set; }
 
     /// <summary>
-    /// Precio del suplemento en el momento del pedido.
+    /// Precio unitario del suplemento en el momento del pedido.
     /// 0 para acciones Quitar. Igual a Ingrediente.PrecioExtra al crear el pedido.
     /// </summary>
     [Column(TypeName = "decimal(6,2)")]
     public decimal PrecioAplicado { get; set; }
+
+    /// <summary>Cantidad de este ingrediente seleccionada (1 por defecto; puede ser mayor si CantidadMaxima > 1).</summary>
+    public int Cantidad { get; set; } = 1;
 }
 
 

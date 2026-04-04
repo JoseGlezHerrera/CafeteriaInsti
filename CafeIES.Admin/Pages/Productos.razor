@@ -231,6 +231,13 @@
                                                    @onchange="e => SetIngredienteOrden(ing.Id, e.Value?.ToString())"
                                                    style="width:44px;padding:2px 4px;font-size:12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text)"/>
                                         </label>
+                                        <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap">
+                                            Máx:
+                                            <input type="number" min="1" max="10"
+                                                   value="@asignado!.CantidadMaxima"
+                                                   @onchange="e => SetIngredienteCantidadMaxima(ing.Id, e.Value?.ToString())"
+                                                   style="width:44px;padding:2px 4px;font-size:12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text)"/>
+                                        </label>
                                     }
                                     @if (ing.PrecioExtra > 0)
                                     {
@@ -240,7 +247,7 @@
                             }
                         </div>
                         <p style="color:var(--muted);font-size:11px;margin-top:4px">
-                            «Base» = incluido por defecto · «Quitable» = el cliente puede pedirlo sin ese ingrediente.
+                            «Base» = incluido por defecto · «Quitable» = se puede pedir sin él · «Máx» = unidades máximas (stepper si &gt; 1).
                         </p>
                     </div>
                 }
@@ -399,7 +406,7 @@
             ComponenteDesayuno = p.ComponenteDesayuno
         };
         _formIngredientes = p.Ingredientes?
-            .Select(i => new AsignarIngredienteRequest(i.IngredienteId, i.EsBase, i.EsQuitable, i.Orden))
+            .Select(i => new AsignarIngredienteRequest(i.IngredienteId, i.EsBase, i.EsQuitable, i.Orden, i.CantidadMaxima))
             .ToList() ?? new();
         _errorModal    = string.Empty;
         _imagenArchivo = null;
@@ -506,7 +513,7 @@
         if (isChecked)
         {
             if (!_formIngredientes.Any(fi => fi.IngredienteId == ingId))
-                _formIngredientes.Add(new AsignarIngredienteRequest(ingId, EsBase: true, EsQuitable: true, Orden: 0));
+                _formIngredientes.Add(new AsignarIngredienteRequest(ingId, EsBase: true, EsQuitable: true, Orden: 0, CantidadMaxima: 1));
         }
         else
         {
@@ -534,6 +541,14 @@
         var idx = _formIngredientes.FindIndex(fi => fi.IngredienteId == ingId);
         if (idx < 0) return;
         _formIngredientes[idx] = _formIngredientes[idx] with { Orden = orden };
+    }
+
+    private void SetIngredienteCantidadMaxima(int ingId, string? rawValue)
+    {
+        if (!int.TryParse(rawValue, out var cant) || cant < 1) return;
+        var idx = _formIngredientes.FindIndex(fi => fi.IngredienteId == ingId);
+        if (idx < 0) return;
+        _formIngredientes[idx] = _formIngredientes[idx] with { CantidadMaxima = cant };
     }
 
     private void CerrarModal() => _mostrarModal = false;

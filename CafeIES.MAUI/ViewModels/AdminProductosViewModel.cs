@@ -77,9 +77,10 @@ public partial class IngredienteSeleccionable : ObservableObject
 {
     public IngredienteDto Ingrediente { get; init; } = null!;
     [ObservableProperty] private bool _seleccionado;
-    [ObservableProperty] private bool _esBase     = true;
-    [ObservableProperty] private bool _esQuitable = true;
+    [ObservableProperty] private bool _esBase         = true;
+    [ObservableProperty] private bool _esQuitable     = true;
     [ObservableProperty] private int  _orden;
+    [ObservableProperty] private int  _cantidadMaxima = 1;
 
     public bool IngredienteConPrecio => Ingrediente.PrecioExtra > 0;
 }
@@ -180,11 +181,12 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
                         var cfg = prod.Ingredientes?.FirstOrDefault(pi => pi.IngredienteId == ing.Id);
                         Ingredientes.Add(new IngredienteSeleccionable
                         {
-                            Ingrediente  = ing,
-                            Seleccionado = cfg is not null,
-                            EsBase       = cfg?.EsBase     ?? true,
-                            EsQuitable   = cfg?.EsQuitable ?? true,
-                            Orden        = cfg?.Orden      ?? 0
+                            Ingrediente    = ing,
+                            Seleccionado   = cfg is not null,
+                            EsBase         = cfg?.EsBase         ?? true,
+                            EsQuitable     = cfg?.EsQuitable     ?? true,
+                            Orden          = cfg?.Orden          ?? 0,
+                            CantidadMaxima = cfg?.CantidadMaxima ?? 1
                         });
                     }
                 }
@@ -251,7 +253,9 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
 
         var ingredientesAsignados = Ingredientes
             .Where(i => i.Seleccionado)
-            .Select(i => new AsignarIngredienteRequest(i.Ingrediente.Id, i.EsBase, i.EsQuitable, i.Orden))
+            .Select(i => new AsignarIngredienteRequest(
+                i.Ingrediente.Id, i.EsBase, i.EsQuitable, i.Orden,
+                Math.Max(1, i.CantidadMaxima)))
             .ToList();
 
         var req = new CrearProductoRequest(

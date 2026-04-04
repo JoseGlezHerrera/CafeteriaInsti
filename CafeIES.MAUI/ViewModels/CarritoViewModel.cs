@@ -317,6 +317,54 @@ public partial class CarritoViewModel : ObservableObject
         GuardarCarrito();
     }
 
+    // ── Editar ingredientes de un item del carrito ────────────────────────────
+
+    /// <summary>Item que está siendo editado (seleccionado desde el carrito).</summary>
+    [ObservableProperty] private ItemCarrito? _itemCarritoEnEdicion;
+
+    [RelayCommand]
+    private async Task EditarIngredientesAsync(ItemCarrito item)
+    {
+        if (!string.IsNullOrEmpty(PendingPaymentIntentId)) { _ = MostrarToastPagoEnCurso(); return; }
+        ItemCarritoEnEdicion = item;
+        await Shell.Current.GoToAsync($"ProductoDetalle?productoId={item.ProductoId}");
+    }
+
+    /// <summary>Reemplaza un item del carrito con ingredientes actualizados (desde ProductoDetallePage en modo edición).</summary>
+    public void ReemplazarIngredientesItem(
+        ItemCarrito original,
+        List<IngredienteRequest> ingredientes,
+        decimal precioExtra,
+        string descripcion)
+    {
+        ItemCarritoEnEdicion = null;
+        var idx = Items.IndexOf(original);
+        if (idx < 0) return;
+
+        Items.RemoveAt(idx);
+        Items.Insert(idx, new ItemCarrito
+        {
+            ProductoId              = original.ProductoId,
+            Nombre                  = original.Nombre,
+            Precio                  = original.Precio,
+            PrecioExtra             = precioExtra,
+            Cantidad                = original.Cantidad,
+            ImagenUrl               = original.ImagenUrl,
+            ComponenteDesayuno      = original.ComponenteDesayuno,
+            Notas                   = original.Notas,
+            Ingredientes            = ingredientes,
+            IngredientesDescripcion = descripcion
+        });
+
+        TotalItems = Items.Sum(i => i.Cantidad);
+        OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(TotalEfectivo));
+        OnPropertyChanged(nameof(Descuento));
+        OnPropertyChanged(nameof(HayDesayunoDisponible));
+        OnPropertyChanged(nameof(EsPedidoGratuito));
+        GuardarCarrito();
+    }
+
     // ── Paso 1: crear intent y navegar al WebView de Stripe (o flujo gratuito) ─
     [RelayCommand(CanExecute = nameof(PuedeConfirmar))]
     private async Task ConfirmarPedidoAsync()

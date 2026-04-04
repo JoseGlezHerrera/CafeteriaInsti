@@ -112,10 +112,11 @@ public class ProductosController : ControllerBase
                 if (!ingredientesExistentes.Contains(ri.IngredienteId)) continue;
                 producto.ProductoIngredientes.Add(new ProductoIngrediente
                 {
-                    IngredienteId = ri.IngredienteId,
-                    EsBase        = ri.EsBase,
-                    EsQuitable    = ri.EsQuitable,
-                    Orden         = ri.Orden
+                    IngredienteId  = ri.IngredienteId,
+                    EsBase         = ri.EsBase,
+                    EsQuitable     = ri.EsQuitable,
+                    Orden          = ri.Orden,
+                    CantidadMaxima = Math.Max(1, ri.CantidadMaxima)
                 });
             }
         }
@@ -185,10 +186,11 @@ public class ProductosController : ControllerBase
                 if (!ingredientesExistentes.Contains(ri.IngredienteId)) continue;
                 producto.ProductoIngredientes.Add(new ProductoIngrediente
                 {
-                    IngredienteId = ri.IngredienteId,
-                    EsBase        = ri.EsBase,
-                    EsQuitable    = ri.EsQuitable,
-                    Orden         = ri.Orden
+                    IngredienteId  = ri.IngredienteId,
+                    EsBase         = ri.EsBase,
+                    EsQuitable     = ri.EsQuitable,
+                    Orden          = ri.Orden,
+                    CantidadMaxima = Math.Max(1, ri.CantidadMaxima)
                 });
             }
         }

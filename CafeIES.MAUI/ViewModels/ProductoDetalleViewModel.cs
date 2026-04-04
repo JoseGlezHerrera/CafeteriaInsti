@@ -21,7 +21,10 @@ public partial class ProductoDetalleViewModel : ObservableObject
         _carrito = carrito;
     }
 
-    [ObservableProperty] private int         _productoId;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ModoEdicion))]
+    [NotifyPropertyChangedFor(nameof(TextoBotonCarrito))]
+    private int _productoId;
     [ObservableProperty] private bool        _isLoading;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TieneProducto))]
@@ -70,11 +73,30 @@ public partial class ProductoDetalleViewModel : ObservableObject
         {
             var vm = new IngredienteSeleccionVm
             {
-                Config      = ing,
+                Config       = ing,
                 Seleccionado = ing.EsBase   // base ingredients start checked
             };
             vm.PropertyChanged += OnIngredienteChanged;
             IngredientesSeleccion.Add(vm);
+        }
+
+        // Pre-fill selections when arriving from the cart in edit mode
+        if (ModoEdicion && _carrito.ItemCarritoEnEdicion is not null)
+        {
+            foreach (var ir in _carrito.ItemCarritoEnEdicion.Ingredientes)
+            {
+                var vm = IngredientesSeleccion.FirstOrDefault(v => v.Config.IngredienteId == ir.IngredienteId);
+                if (vm is null) continue;
+                if (ir.Accion == AccionIngrediente.Quitar)
+                    vm.Seleccionado = false;
+                else
+                {
+                    if (vm.UsaStepper)
+                        vm.Cantidad = Math.Max(1, ir.Cantidad);
+                    else
+                        vm.Seleccionado = true;
+                }
+            }
         }
 
         OnPropertyChanged(nameof(TieneIngredientes));
@@ -84,12 +106,22 @@ public partial class ProductoDetalleViewModel : ObservableObject
 
     private void OnIngredienteChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(IngredienteSeleccionVm.Seleccionado))
+        if (e.PropertyName is nameof(IngredienteSeleccionVm.Seleccionado) or
+                              nameof(IngredienteSeleccionVm.Cantidad))
         {
             OnPropertyChanged(nameof(PrecioExtra));
             OnPropertyChanged(nameof(PrecioConPersonalizacion));
         }
     }
+
+    // ── Modo edición (cuando se llega desde el carrito) ───────────────────────
+
+    /// <summary>true cuando el usuario llega desde el carrito para editar ingredientes de un item existente.</summary>
+    public bool ModoEdicion =>
+        _carrito.ItemCarritoEnEdicion?.ProductoId == ProductoId && ProductoId > 0;
+
+    public string TextoBotonCarrito =>
+        ModoEdicion ? "Actualizar carrito" : "Añadir al carrito";
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -132,22 +164,37 @@ public partial class ProductoDetalleViewModel : ObservableObject
         }
 
         // Construir la lista de modificaciones (solo las que difieren del estado por defecto)
+        bool EsModificado(IngredienteSeleccionVm vm) =>
+            (vm.Config.EsBase && !vm.Seleccionado) ||
+            (!vm.Config.EsBase && (vm.UsaStepper ? vm.Cantidad > 0 : vm.Seleccionado));
+
         var ingredientesRequest = IngredientesSeleccion
-            .Where(vm => (vm.Config.EsBase && !vm.Seleccionado) ||
-                         (!vm.Config.EsBase && vm.Seleccionado))
+            .Where(EsModificado)
             .Select(vm => new IngredienteRequest(
                 vm.Config.IngredienteId,
-                vm.Config.EsBase ? AccionIngrediente.Quitar : AccionIngrediente.Añadir))
+                vm.Config.EsBase ? AccionIngrediente.Quitar : AccionIngrediente.Añadir,
+                vm.Config.EsBase ? 1 : (vm.UsaStepper ? vm.Cantidad : 1)))
             .ToList();
 
         var precioExtra = IngredientesSeleccion.Sum(i => i.PrecioExtraActivo);
 
         var descripcion = string.Join(", ", IngredientesSeleccion
-            .Where(vm => (vm.Config.EsBase && !vm.Seleccionado) ||
-                         (!vm.Config.EsBase && vm.Seleccionado))
-            .Select(vm => vm.Config.EsBase
-                ? $"sin {vm.Config.Nombre}"
-                : $"+ {vm.Config.Nombre}"));
+            .Where(EsModificado)
+            .Select(vm =>
+            {
+                if (vm.Config.EsBase) return $"sin {vm.Config.Nombre}";
+                var cnt = vm.UsaStepper ? vm.Cantidad : 1;
+                return cnt > 1 ? $"×{cnt} {vm.Config.Nombre}" : $"+ {vm.Config.Nombre}";
+            }));
+
+        // ── Modo edición: reemplazar item existente en el carrito ─────────────
+        if (ModoEdicion && _carrito.ItemCarritoEnEdicion is not null)
+        {
+            _carrito.ReemplazarIngredientesItem(
+                _carrito.ItemCarritoEnEdicion, ingredientesRequest, precioExtra, descripcion);
+            await Shell.Current.GoToAsync("..");
+            return;
+        }
 
         bool añadido = _carrito.AnadirProducto(Producto, ingredientesRequest, precioExtra, descripcion);
 
@@ -182,17 +229,52 @@ public partial class IngredienteSeleccionVm : ObservableObject
     public required ProductoIngredienteDto Config { get; init; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrecioExtraActivo))]
+    [NotifyPropertyChangedFor(nameof(EtiquetaPrecio))]
     private bool _seleccionado;
+
+    /// <summary>Cantidad seleccionada (solo relevante cuando UsaStepper=true).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrecioExtraActivo))]
+    [NotifyPropertyChangedFor(nameof(EtiquetaPrecio))]
+    private int _cantidad = 1;
+
+    /// <summary>Máximo de unidades configurado en el producto (heredado de Config).</summary>
+    public int CantidadMaxima => Config.CantidadMaxima;
+
+    /// <summary>true cuando este extra admite más de una unidad (muestra stepper en lugar de switch).</summary>
+    public bool UsaStepper => !Config.EsBase && Config.CantidadMaxima > 1;
 
     /// <summary>Se puede modificar si es base+quitable o si es un extra.</summary>
     public bool PuedeModificar =>
         (Config.EsBase && Config.EsQuitable) || !Config.EsBase;
 
-    /// <summary>Precio extra activo solo si es un extra seleccionado (Añadir).</summary>
+    /// <summary>Precio extra activo: para steppers multiplica por Cantidad; para switches, binario.</summary>
     public decimal PrecioExtraActivo =>
-        !Config.EsBase && Seleccionado ? Config.PrecioExtra : 0;
+        Config.EsBase ? 0 :
+        UsaStepper ? Config.PrecioExtra * Cantidad :
+        Seleccionado ? Config.PrecioExtra : 0;
 
-    /// <summary>Texto de precio extra, vacío si es 0.</summary>
-    public string EtiquetaPrecio =>
-        Config.PrecioExtra > 0 ? $"+{Config.PrecioExtra:F2}€" : string.Empty;
+    /// <summary>Texto de precio extra para mostrar en la UI.</summary>
+    public string EtiquetaPrecio
+    {
+        get
+        {
+            if (Config.PrecioExtra <= 0) return string.Empty;
+            if (UsaStepper && Cantidad > 1) return $"+{Config.PrecioExtra * Cantidad:F2}€ (×{Cantidad})";
+            return $"+{Config.PrecioExtra:F2}€";
+        }
+    }
+
+    [RelayCommand]
+    private void IncrementarCantidad()
+    {
+        if (Cantidad < CantidadMaxima) Cantidad++;
+    }
+
+    [RelayCommand]
+    private void DecrementarCantidad()
+    {
+        if (Cantidad > 0) Cantidad--;
+    }
 }

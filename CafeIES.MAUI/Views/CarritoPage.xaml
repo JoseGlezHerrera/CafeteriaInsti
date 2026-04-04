@@ -85,6 +85,16 @@
                                                        TextColor="{StaticResource AccentColor}"
                                                        LineBreakMode="WordWrap"
                                                        IsVisible="{Binding TieneIngredientes}"/>
+                                                <Label Text="✏️ Editar ingredientes"
+                                                       FontFamily="DMSans" FontSize="11"
+                                                       TextColor="{StaticResource AccentColor}"
+                                                       IsVisible="{Binding TieneIngredientes}">
+                                                    <Label.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=EditarIngredientesCommand}"
+                                                            CommandParameter="{Binding .}"/>
+                                                    </Label.GestureRecognizers>
+                                                </Label>
                                             </VerticalStackLayout>
                                             <Border Grid.Column="2" BackgroundColor="{DynamicResource Surface2Color}"
                                                     StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
