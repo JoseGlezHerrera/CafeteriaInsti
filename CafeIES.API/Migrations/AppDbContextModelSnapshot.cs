@@ -527,9 +527,7 @@ namespace CafeIES.API.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Cantidad")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasColumnType("int");
 
                     b.Property<int?>("IngredienteId")
                         .HasColumnType("int");
@@ -650,9 +648,7 @@ namespace CafeIES.API.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("CantidadMaxima")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasColumnType("int");
 
                     b.Property<bool>("EsBase")
                         .HasColumnType("bit");

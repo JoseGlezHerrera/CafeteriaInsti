@@ -343,47 +343,52 @@
                                         </Grid>
 
                                         <!-- Configuración (solo cuando está asignado) -->
-                                        <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6"
-                                              IsVisible="{Binding Seleccionado}">
-                                            <HorizontalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
-                                                <CheckBox IsChecked="{Binding EsBase}"
-                                                          Color="{StaticResource AccentColor}"/>
-                                                <Label Text="Base" FontFamily="DMSans" FontSize="12"
-                                                       TextColor="{DynamicResource TextColor}"
-                                                       VerticalOptions="Center"/>
+                                        <VerticalStackLayout IsVisible="{Binding Seleccionado}" Spacing="6">
+                                            <!-- Fila 1: checkboxes Base / Quitable -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <HorizontalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                                                    <CheckBox IsChecked="{Binding EsBase}"
+                                                              Color="{StaticResource AccentColor}"/>
+                                                    <Label Text="Base" FontFamily="DMSans" FontSize="12"
+                                                           TextColor="{DynamicResource TextColor}"
+                                                           VerticalOptions="Center"/>
+                                                </HorizontalStackLayout>
+                                                <HorizontalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                                    <CheckBox IsChecked="{Binding EsQuitable}"
+                                                              Color="{StaticResource AccentColor}"/>
+                                                    <Label Text="Quitable" FontFamily="DMSans" FontSize="12"
+                                                           TextColor="{DynamicResource TextColor}"
+                                                           VerticalOptions="Center"/>
+                                                </HorizontalStackLayout>
+                                            </Grid>
+                                            <!-- Fila 2: Orden / CantidadMaxima -->
+                                            <HorizontalStackLayout Spacing="16">
+                                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="Orden" FontFamily="DMSans" FontSize="12"
+                                                           TextColor="{DynamicResource MutedColor}"
+                                                           VerticalOptions="Center"/>
+                                                    <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                            WidthRequest="54">
+                                                        <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                                        <Entry Text="{Binding Orden}" Keyboard="Numeric"
+                                                               FontSize="13" Margin="4,0" HeightRequest="36"/>
+                                                    </Border>
+                                                </HorizontalStackLayout>
+                                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="Máx" FontFamily="DMSans" FontSize="12"
+                                                           TextColor="{DynamicResource MutedColor}"
+                                                           VerticalOptions="Center"/>
+                                                    <Border BackgroundColor="{DynamicResource Surface2Color}"
+                                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
+                                                            WidthRequest="54">
+                                                        <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
+                                                        <Entry Text="{Binding CantidadMaxima}" Keyboard="Numeric"
+                                                               FontSize="13" Margin="4,0" HeightRequest="36"/>
+                                                    </Border>
+                                                </HorizontalStackLayout>
                                             </HorizontalStackLayout>
-                                            <HorizontalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                                <CheckBox IsChecked="{Binding EsQuitable}"
-                                                          Color="{StaticResource AccentColor}"/>
-                                                <Label Text="Quitable" FontFamily="DMSans" FontSize="12"
-                                                       TextColor="{DynamicResource TextColor}"
-                                                       VerticalOptions="Center"/>
-                                            </HorizontalStackLayout>
-                                            <HorizontalStackLayout Grid.Column="2" Spacing="4" VerticalOptions="Center">
-                                                <Label Text="Orden" FontFamily="DMSans" FontSize="12"
-                                                       TextColor="{DynamicResource MutedColor}"
-                                                       VerticalOptions="Center"/>
-                                                <Border BackgroundColor="{DynamicResource Surface2Color}"
-                                                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                        WidthRequest="44">
-                                                    <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                                    <Entry Text="{Binding Orden}" Keyboard="Numeric"
-                                                           FontSize="13" Margin="4,0" HeightRequest="36"/>
-                                                </Border>
-                                            </HorizontalStackLayout>
-                                            <HorizontalStackLayout Grid.Column="3" Spacing="4" VerticalOptions="Center">
-                                                <Label Text="Máx" FontFamily="DMSans" FontSize="12"
-                                                       TextColor="{DynamicResource MutedColor}"
-                                                       VerticalOptions="Center"/>
-                                                <Border BackgroundColor="{DynamicResource Surface2Color}"
-                                                        StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                        WidthRequest="44">
-                                                    <Border.StrokeShape><RoundRectangle CornerRadius="8"/></Border.StrokeShape>
-                                                    <Entry Text="{Binding CantidadMaxima}" Keyboard="Numeric"
-                                                           FontSize="13" Margin="4,0" HeightRequest="36"/>
-                                                </Border>
-                                            </HorizontalStackLayout>
-                                        </Grid>
+                                        </VerticalStackLayout>
 
                                     </VerticalStackLayout>
                                 </Border>
