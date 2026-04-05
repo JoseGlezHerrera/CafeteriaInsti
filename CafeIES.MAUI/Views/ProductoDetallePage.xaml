@@ -130,33 +130,47 @@
                                             VerticalOptions="Center"
                                             IsVisible="{Binding UsaStepper,
                                                 Converter={StaticResource InvertBoolConverter}}"/>
-                                    <!-- Stepper (extras con CantidadMaxima > 1) -->
-                                    <Border Grid.Column="3"
-                                            BackgroundColor="{DynamicResource Surface2Color}"
-                                            StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                            Padding="8,4" VerticalOptions="Center"
-                                            IsVisible="{Binding UsaStepper}">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
-                                        <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
-                                            <Label Grid.Column="0" Text="−" FontFamily="SyneBold" FontSize="18"
-                                                   TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                <Label.GestureRecognizers>
-                                                    <TapGestureRecognizer Command="{Binding DecrementarCantidadCommand}"/>
-                                                </Label.GestureRecognizers>
-                                            </Label>
-                                            <Label Grid.Column="1" Text="{Binding Cantidad}"
-                                                   FontFamily="SyneBold" FontSize="14"
-                                                   TextColor="{DynamicResource TextColor}"
+                                    <!-- Stepper: botones circulares 36×36 para toque cómodo -->
+                                    <Grid Grid.Column="3"
+                                          ColumnDefinitions="36,26,36" ColumnSpacing="0"
+                                          VerticalOptions="Center"
+                                          IsVisible="{Binding UsaStepper}">
+                                        <Border Grid.Column="0"
+                                                WidthRequest="36" HeightRequest="36"
+                                                BackgroundColor="{DynamicResource Surface2Color}"
+                                                StrokeThickness="1.5"
+                                                Stroke="{DynamicResource BorderColor}">
+                                            <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                                            <Label Text="−" FontFamily="SyneBold" FontSize="18"
+                                                   TextColor="{StaticResource AccentColor}"
+                                                   HorizontalOptions="Center"
                                                    VerticalOptions="Center"
-                                                   MinimumWidthRequest="18" HorizontalOptions="Center"/>
-                                            <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="18"
-                                                   TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                <Label.GestureRecognizers>
-                                                    <TapGestureRecognizer Command="{Binding IncrementarCantidadCommand}"/>
-                                                </Label.GestureRecognizers>
-                                            </Label>
-                                        </Grid>
-                                    </Border>
+                                                   Margin="0,0,0,1"/>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding DecrementarCantidadCommand}"/>
+                                            </Border.GestureRecognizers>
+                                        </Border>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Cantidad}"
+                                               FontFamily="SyneBold" FontSize="14"
+                                               TextColor="{DynamicResource TextColor}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                        <Border Grid.Column="2"
+                                                WidthRequest="36" HeightRequest="36"
+                                                BackgroundColor="{StaticResource AccentColor}"
+                                                StrokeThickness="0">
+                                            <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                                            <Label Text="+" FontFamily="SyneBold" FontSize="18"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   Margin="0,0,0,1"/>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding IncrementarCantidadCommand}"/>
+                                            </Border.GestureRecognizers>
+                                        </Border>
+                                    </Grid>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

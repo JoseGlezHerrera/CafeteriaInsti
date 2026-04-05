@@ -105,8 +105,16 @@ public partial class ConfirmacionPedidoPage : ContentPage
     }
 
     private async void OnVerPedidosClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("//Main/Pedidos");
+    {
+        // Primero sacar esta página del stack del tab Carrito,
+        // así al volver al carrito el usuario ve el carrito vacío (no esta pantalla de nuevo).
+        await Shell.Current.GoToAsync("..");
+        await Shell.Current.GoToAsync("//Main/Pedidos");
+    }
 
     private async void OnSeguirPidiendoClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("//Main/Inicio");
+    {
+        await Shell.Current.GoToAsync("..");
+        await Shell.Current.GoToAsync("//Main/Inicio");
+    }
 }
