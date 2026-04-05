@@ -55,7 +55,7 @@ public partial class PedidosViewModel : ObservableObject
     // CollectionView recibe un objeto completamente nuevo y renderiza desde cero,
     // evitando el bug de MAUI donde Clear+Add en ObservableCollection deja
     // artefactos visuales (ítems duplicados) al navegar entre tabs.
-    [ObservableProperty] private List<PedidoDto> _pedidos = new();
+    [ObservableProperty] private List<PedidoDto>? _pedidos;
 
     [RelayCommand]
     public async Task CargarAsync()
@@ -117,7 +117,7 @@ public partial class PedidosViewModel : ObservableObject
     public void LimpiarPedidos()
     {
         _todos.Clear();
-        Pedidos = new List<PedidoDto>();
+        Pedidos = null;
         HayMas = false;
         _hayMasServidor = false;
         _paginaActual = 1;

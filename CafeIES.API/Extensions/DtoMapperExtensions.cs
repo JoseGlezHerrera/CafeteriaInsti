@@ -49,7 +49,7 @@ public static class DtoMapperExtensions
         p.Id, p.NumeroPedido,
         p.Usuario?.NombreCompleto ?? "Desconocido",
         p.Usuario?.Email          ?? "",
-        p.FechaCreacion, p.Estado, p.MetodoPago, p.Total, p.Notas,
+        DateTime.SpecifyKind(p.FechaCreacion, DateTimeKind.Utc), p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
             l.ProductoId ?? 0, l.Producto?.Nombre ?? "Producto eliminado",
             l.Cantidad, l.PrecioUnitario, l.Subtotal, l.Notas,

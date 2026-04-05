@@ -17,8 +17,6 @@ public partial class PedidosPage : ContentPage
 
     protected override void OnAppearing()
     {
-        base.OnAppearing();
-
         // FIX-PI: Si la app se cerró durante un pago (entre la confirmación de Stripe y la
         // creación del pedido en BD), el webhook habrá creado el pedido. Al volver a la app,
         // redirigimos a ConfirmacionPedidoPage para que el usuario vea el resultado.
@@ -26,6 +24,7 @@ public partial class PedidosPage : ContentPage
         if (!string.IsNullOrEmpty(pendingPi))
         {
             Preferences.Default.Remove(PendingPiKey);
+            base.OnAppearing();
             Dispatcher.Dispatch(async () =>
             {
                 if (Shell.Current is null) return;
@@ -34,6 +33,14 @@ public partial class PedidosPage : ContentPage
             });
             return;
         }
+
+        // FIX-DUP-3: Nulificar Pedidos ANTES de que base.OnAppearing dispare el
+        // EventToCommandBehavior. Con la vista ya visible, CollectionView procesa
+        // el null en el siguiente frame y destruye el recycler de celdas.
+        // CargarAsync es async: cuando retorna los datos (tras el await de red),
+        // CollectionView reconstruye desde cero → sin duplicados.
+        _vm.LimpiarPedidos();
+        base.OnAppearing();
 
         _vm.Resubscribe();
         // FIX-SK: AsyncRelayCommand.IsRunning notifica en el propio comando, no en el ViewModel.
