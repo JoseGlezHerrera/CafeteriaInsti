@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Requerido por MediaPicker.CapturePhotoAsync() -->
+	<key>NSCameraUsageDescription</key>
+	<string>CaféIES necesita acceso a la cámara para fotografiar los productos del catálogo.</string>
+
+	<!-- Requerido por MediaPicker.PickPhotoAsync() -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CaféIES necesita acceso a la galería para seleccionar imágenes de los productos del catálogo.</string>
+</dict>
+</plist>

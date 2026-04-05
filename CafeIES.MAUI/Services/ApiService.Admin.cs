@@ -130,18 +130,21 @@ public partial class ApiService
         }
     }
 
-    public async Task<bool> CrearProductoAsync(CrearProductoRequest req)
+    /// <summary>Crea un producto y devuelve su nuevo Id, o null si falla.</summary>
+    public async Task<int?> CrearProductoAsync(CrearProductoRequest req)
     {
         try
         {
             var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/productos",
                 JsonContent.Create(req));
-            return resp.IsSuccessStatusCode;
+            if (!resp.IsSuccessStatusCode) return null;
+            var dto = await resp.Content.ReadFromJsonAsync<ProductoDto>();
+            return dto?.Id;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error al crear el producto.");
-            return false;
+            return null;
         }
     }
 

@@ -92,6 +92,7 @@ public partial class IngredienteSeleccionable : ObservableObject
 public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttributable
 {
     private readonly ApiService _api;
+    private FileResult? _fotoPendiente;  // foto seleccionada para producto nuevo (se sube al guardar)
 
     public AdminEditProductoViewModel(ApiService api) => _api = api;
 
@@ -250,74 +251,114 @@ public partial class AdminEditProductoViewModel : ObservableObject, IQueryAttrib
         IsSaving = true;
         Error    = string.Empty;
 
-        var alergenoIds = Alergenos
-            .Where(a => a.Seleccionado)
-            .Select(a => a.Alergeno.Id)
-            .ToList();
+        try
+        {
+            var alergenoIds = Alergenos
+                .Where(a => a.Seleccionado)
+                .Select(a => a.Alergeno.Id)
+                .ToList();
 
-        var ingredientesAsignados = Ingredientes
-            .Where(i => i.Seleccionado)
-            .Select(i => new AsignarIngredienteRequest(
-                i.Ingrediente.Id, i.EsBase, i.EsQuitable, i.Orden,
-                Math.Max(1, i.CantidadMaxima)))
-            .ToList();
+            var ingredientesAsignados = Ingredientes
+                .Where(i => i.Seleccionado)
+                .Select(i => new AsignarIngredienteRequest(
+                    i.Ingrediente.Id, i.EsBase, i.EsQuitable, i.Orden,
+                    Math.Max(1, i.CantidadMaxima)))
+                .ToList();
 
-        var req = new CrearProductoRequest(
-            Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds,
-            ComponenteDesayuno,
-            ingredientesAsignados.Count > 0 ? ingredientesAsignados : null);
+            var req = new CrearProductoRequest(
+                Nombre.Trim(), Descripcion.Trim(), Precio, Stock, CategoriaSeleccionada.Id, null, alergenoIds,
+                ComponenteDesayuno,
+                ingredientesAsignados.Count > 0 ? ingredientesAsignados : null);
 
-        bool ok = ProductoId > 0
-            ? await _api.ActualizarProductoAsync(ProductoId, req)
-            : await _api.CrearProductoAsync(req);
+            if (ProductoId > 0)
+            {
+                if (!await _api.ActualizarProductoAsync(ProductoId, req))
+                {
+                    Error = "Error al guardar. Inténtalo de nuevo.";
+                    return;
+                }
+            }
+            else
+            {
+                var nuevoId = await _api.CrearProductoAsync(req);
+                if (nuevoId is null)
+                {
+                    Error = "Error al guardar. Inténtalo de nuevo.";
+                    return;
+                }
+                ProductoId = nuevoId.Value;
 
-        IsSaving = false;
-
-        if (!ok) { Error = "Error al guardar. Inténtalo de nuevo."; return; }
+                // Subir foto pendiente tras obtener el Id real del producto
+                if (_fotoPendiente is not null)
+                    await SubirFotoPendienteAsync(_fotoPendiente, ProductoId);
+            }
+        }
+        finally
+        {
+            IsSaving = false;
+        }
 
         await Shell.Current.GoToAsync("..");
+    }
+
+    private async Task SubirFotoPendienteAsync(FileResult foto, int id)
+    {
+        IsSubiendoImagen = true;
+        try
+        {
+            using var stream    = await foto.OpenReadAsync();
+            var ext             = Path.GetExtension(foto.FileName).ToLowerInvariant();
+            var contentType     = ext is ".png" ? "image/png"
+                                : ext is ".webp" ? "image/webp"
+                                : "image/jpeg";
+            var url = await _api.SubirImagenProductoAsync(id, stream, foto.FileName, contentType);
+            if (url is not null)
+                ImagenUrl = _api.BuildImageUrl(url);
+        }
+        finally
+        {
+            IsSubiendoImagen = false;
+            _fotoPendiente   = null;
+        }
     }
 
     [RelayCommand]
     private async Task SeleccionarImagenAsync()
     {
-        if (ProductoId <= 0)
-        {
-            Error = "Guarda el producto primero antes de subir una imagen.";
-            return;
-        }
+        // Ofrecer cámara o galería
+        var opcion = await Shell.Current.DisplayActionSheet(
+            "Imagen del producto", "Cancelar", null,
+            "📷 Hacer foto", "🖼️ Elegir de galería");
 
+        if (opcion is null || opcion == "Cancelar") return;
+
+        Error = string.Empty;
         try
         {
-            var foto = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-            {
-                Title = "Seleccionar imagen del producto"
-            });
+            FileResult? foto = opcion == "📷 Hacer foto"
+                ? await MediaPicker.Default.CapturePhotoAsync()
+                : await MediaPicker.Default.PickPhotoAsync(
+                    new MediaPickerOptions { Title = "Seleccionar imagen del producto" });
+
             if (foto is null) return;
 
-            IsSubiendoImagen = true;
-            Error = string.Empty;
-
-            using var stream = await foto.OpenReadAsync();
-            var ext          = Path.GetExtension(foto.FileName).ToLowerInvariant();
-            var contentType  = ext is ".png" ? "image/png"
-                             : ext is ".webp" ? "image/webp"
-                             : "image/jpeg";
-
-            var url = await _api.SubirImagenProductoAsync(ProductoId, stream, foto.FileName, contentType);
-
-            if (url is null)
-                Error = "Error al subir la imagen. Comprueba el formato y el tamaño (máx. 5 MB).";
+            if (ProductoId <= 0)
+            {
+                // Producto nuevo: guardar foto para subir al guardar y mostrar preview local por ruta
+                _fotoPendiente = foto;
+                ImagenUrl      = foto.FullPath;  // ruta local → Image control la muestra como preview
+            }
             else
-                ImagenUrl = _api.BuildImageUrl(url);
+            {
+                // Producto existente: subir de inmediato
+                await SubirFotoPendienteAsync(foto, ProductoId);
+                if (ImagenUrl is null)
+                    Error = "Error al subir la imagen. Comprueba el formato y el tamaño (máx. 5 MB).";
+            }
         }
         catch (Exception ex) when (ex is PermissionException || ex is FeatureNotSupportedException)
         {
-            Error = "No se pudo acceder a la galería. Comprueba los permisos de la app.";
-        }
-        finally
-        {
-            IsSubiendoImagen = false;
+            Error = "No se pudo acceder a la cámara/galería. Comprueba los permisos de la app.";
         }
     }
 
