@@ -110,6 +110,19 @@ public partial class PedidosViewModel : ObservableObject
     /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
     public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 
+    /// <summary>
+    /// Vacía los datos locales para que el CollectionView empiece desde cero
+    /// cuando el usuario vuelva a la pestaña (evita duplicados visuales por caché de MAUI).
+    /// </summary>
+    public void LimpiarPedidos()
+    {
+        _todos.Clear();
+        Pedidos = new List<PedidoDto>();
+        HayMas = false;
+        _hayMasServidor = false;
+        _paginaActual = 1;
+    }
+
     /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
     public void Resubscribe()
     {

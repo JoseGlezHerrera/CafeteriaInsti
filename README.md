@@ -602,6 +602,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 #### MAUI
 - **`PedidosViewModel`**: reemplaza `ObservableCollection<PedidoDto>` por `List<PedidoDto>` como propiedad observable (`[ObservableProperty]`). `AplicarFiltro` reasigna la referencia completa en lugar de `Clear()` + `Add()`. Al recibir un nuevo objeto como `ItemsSource`, `CollectionView` descarta todo lo renderizado y reconstruye desde cero, eliminando la duplicación visual que ocurría al navegar entre tabs sin refrescar manualmente.
+- **`PedidosViewModel.LimpiarPedidos()`**: nuevo método que vacía `_todos`, reasigna `Pedidos = new List<>()` y resetea los flags de paginación. Segunda capa de defensa: se llama desde `OnDisappearing` para que si MAUI mantiene la página en caché, los datos nunca se acumulen entre visitas.
+- **`PedidosPage.OnDisappearing`**: llama a `_vm.LimpiarPedidos()` tras `Cleanup()`, garantizando que el estado quede limpio incluso si el mecanismo de `List` reasignada no fuera suficiente por sí solo.
 
 ---
 

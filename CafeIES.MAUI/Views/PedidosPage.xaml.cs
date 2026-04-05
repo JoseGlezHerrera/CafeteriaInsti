@@ -47,6 +47,9 @@ public partial class PedidosPage : ContentPage
         _vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         _vm.Cleanup();
         this.AbortAnimation("skeletonPedidos");
+        // FIX-DUP: vaciar datos para que CollectionView empiece limpio al volver;
+        // sin esto, MAUI mantiene los ítems en caché visual y los duplica al recargar.
+        _vm.LimpiarPedidos();
     }
 
     private void OnCargarCommandPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
