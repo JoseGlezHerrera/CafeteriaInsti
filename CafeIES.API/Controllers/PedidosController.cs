@@ -181,7 +181,7 @@ public class PedidosController : ControllerBase
                         if (!permitidos.TryGetValue(ir.IngredienteId, out var cfg))
                             return BadRequest(new { mensaje = $"El ingrediente '{ingrediente.Nombre}' no pertenece al producto '{producto.Nombre}'." });
 
-                        var cantIngrediente = Math.Max(1, ir.Cantidad);
+                        var cantIngrediente = ir.Cantidad;
 
                         if (ir.Accion == AccionIngrediente.Quitar)
                         {

@@ -33,7 +33,8 @@ public class MainActivity : MauiAppCompatActivity
 
             // Iconos de la barra de estado en claro (adecuado para fondo oscuro de CaféIES)
             var insetsController = WindowCompat.GetInsetsController(Window, Window.DecorView);
-            insetsController.AppearanceLightStatusBars = false;
+            if (insetsController is not null)
+                insetsController.AppearanceLightStatusBars = false;
         }
     }
 

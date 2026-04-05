@@ -116,7 +116,7 @@ public record LineaPedidoIngredienteDto(
 public record IngredienteRequest(
     [Required] int               IngredienteId,
     [Required] AccionIngrediente Accion,
-               int               Cantidad = 1
+    [Range(1, 100)] int          Cantidad = 1
 );
 
 /// <summary>Request para crear o actualizar un ingrediente del catálogo (admin).</summary>
