@@ -510,7 +510,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Carrito persistente entre sesiones (via `Preferences`) — se recupera al volver a la app
 - Control de cantidad y stock; productos agotados bloqueados visualmente
 - Validación horaria por turno antes de crear el pedido
-- **Ingredientes personalizables** — cada producto tiene ingredientes base configurables; el usuario activa/desactiva con switch; el precio se recalcula en tiempo real; notas de ingrediente visibles en detalle del pedido
+- **Ingredientes personalizables** — switch para extras (on/off) y stepper para cantidades múltiples en base y extras (ej. ×3 jamón); precio recalculado en tiempo real; edición desde el carrito; acceso a la gestión de ingredientes desde la pantalla de Productos (admin y empleados); empleados pueden crear y gestionar ingredientes
 
 **Desayuno gratuito**
 - Spinner de carga del estado de desayuno — bloquea el botón de pago hasta tener el estado real
@@ -554,7 +554,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 **Infraestructura**
 - Multi-instituto — selector en registro, filtros por instituto en admin, claim en JWT
-- Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod)
+- Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod); fix: boundary multipart y URLs absolutas corregidas
 - Infraestructura Azure operativa — App Service + SQL + Blob Storage + Static Web Apps
 - CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min)
 - 108 tests unitarios — HorarioService, AuthService, dominio, validaciones, DesayunoService
@@ -585,6 +585,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | UX sprint — tema claro, skeleton y accesibilidad | ✅ Completada | Tema claro/oscuro reactivo; skeleton loading; SemanticProperties; animaciones de press; toasts; 108 tests |
 | Deuda técnica + Bugs + UX 2ª ronda | ✅ Completada | ApiService partial classes; PedidoCardView; errores servidor en toasts; skeleton en PedidosPage; entrada animada; timer horario |
 | Ingredientes personalizables | ✅ Completada | Catálogo de ingredientes; asignación por producto (Base/Quitable/Orden); personalización en MAUI con precio reactivo; snapshot en pedido con SetNull histórico |
+| Stepper ingredientes + imágenes | ✅ Completada | Stepper para cantidades múltiples (base y extras); empleados gestionan ingredientes; fix subida de imágenes (multipart boundary); BuildImageUrl soporta Azure Blob |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -594,6 +595,32 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.22.0 — Stepper ingredientes, UX productos y fix imágenes (2026-04-05)
+
+#### Backend
+- **`IngredientesController`**: POST, PUT, PATCH/toggle y DELETE ahora permiten rol `Empleado` además de `Admin` — los empleados pueden crear y gestionar ingredientes del catálogo
+- **`DtoMapperExtensions`**: `ProductoIngredientes` ordenados alfabéticamente por nombre en lugar del campo `Orden` (que resultaba confuso para los usuarios)
+- **Migración `20260404153947_AddCantidadIngredientes`** regenerada con `.Designer.cs` correcto — la versión anterior carecía del atributo `[Migration(...)]` y EF Core 9 nunca la aplicaba; la columna `CantidadMaxima` no existía en producción provocando HTTP 500 en todos los endpoints de productos
+
+#### MAUI
+- **`ProductoDetalleViewModel` — stepper base+extras**: `UsaStepper` ahora se activa para ingredientes base Y extras (`CantidadMaxima > 1`); antes solo funcionaba para extras
+  - Ingredientes base con stepper arrancan en `Cantidad=1` (1ª unidad gratis); extras con stepper arrancan en `Cantidad=0`
+  - `PrecioExtraActivo` correcto: la 1ª unidad base es gratuita, las adicionales tienen precio extra
+  - `EsModificado` y construcción del request `IngredienteRequest` corregidos para los 4 casos (base+switch, base+stepper, extra+switch, extra+stepper)
+  - Modo edición desde el carrito: `Quitar` en base+stepper → `Cantidad=0`; `Añadir` → `Cantidad = 1 + ir.Cantidad`
+- **`ApiService.EnviarConRefreshAsync`**: preserva el `ContentType` completo al convertir a `ByteArrayContent`, incluyendo el parámetro `boundary` de `multipart/form-data`. Sin él, el servidor devolvía 400 y la subida de imagen siempre fallaba
+- **`ApiService.BuildImageUrl`**: soporta URLs absolutas (Azure Blob Storage devuelve `https://...` completa) sin prefijárseles dos veces la URL base
+- **`AdminEditProductoPage.xaml`**: campo "Orden" eliminado del configurador de ingredientes — solo queda "Máx. unidades"; leyenda actualizada
+- **`AdminPerfilPage.xaml`**: tarjeta Ingredientes eliminada del perfil (grid 3→2 columnas); los ingredientes pertenecen a la gestión de productos, no al perfil
+- **`AdminProductosPage.xaml` + `AdminProductosViewModel`**: botón "Ingredientes" en cabecera → navega a `AdminIngredientes`
+- **`EmpleadoProductosPage.xaml` + `EmpleadoProductosViewModel`**: botón "Ingredientes" en cabecera → misma ruta
+
+#### Blazor Admin
+- **`AdminApiService.BuildImageUrl`**: nuevo helper que soporta URLs relativas y absolutas
+- **`Productos.razor`**: miniaturas de producto y vista previa del formulario usaban `prod.ImagenUrl` directamente como `src` — la URL relativa `/uploads/...` se resolvía contra el origen del Blazor (no de la API), roto; corregido con `Api.BuildImageUrl()`
+
+---
 
 ### v0.21.0 — Ingredientes personalizables end-to-end (2026-04-04)
 
