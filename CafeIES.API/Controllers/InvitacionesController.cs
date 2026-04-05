@@ -1,4 +1,5 @@
 using CafeIES.API.Data;
+using CafeIES.API.Extensions;
 using CafeIES.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,12 +50,17 @@ public class InvitacionesController : ControllerBase
             .ToListAsync();
         anteriores.ForEach(i => i.Activa = false);
 
+        // Si el admin pertenece a un instituto concreto, la invitación queda restringida a él.
+        // Un super-admin (InstitutoId=null) deja libre la elección al registrante.
+        var adminInstitutoId = User.GetInstitutoId();
+
         var invitacion = new Invitacion
         {
             Tipo             = req.Tipo,
             Activa           = true,
             FechaExpiracion  = DateTime.UtcNow.AddDays(req.DiasValidez),
-            UsosMaximos      = req.UsosMaximos
+            UsosMaximos      = req.UsosMaximos,
+            InstitutoId      = adminInstitutoId
         };
 
         _db.Invitaciones.Add(invitacion);
@@ -114,9 +120,10 @@ public class InvitacionesController : ControllerBase
 
         return Ok(new
         {
-            valida = true,
-            tipo   = inv.Tipo.ToString(),
-            token  = inv.Token
+            valida      = true,
+            tipo        = inv.Tipo.ToString(),
+            token       = inv.Token,
+            institutoId = inv.InstitutoId  // null si super-admin, valor concreto si admin de instituto
         });
     }
 
@@ -127,6 +134,6 @@ public class InvitacionesController : ControllerBase
         return new InvitacionDto(
             i.Id, i.Token, i.Tipo, i.Activa,
             i.FechaExpiracion, i.UsosMaximos, i.UsosActuales,
-            urlCompleta, i.EsValida);
+            urlCompleta, i.EsValida, i.InstitutoId);
     }
 }

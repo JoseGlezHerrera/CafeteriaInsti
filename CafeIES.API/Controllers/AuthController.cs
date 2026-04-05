@@ -147,7 +147,10 @@ public class AuthController : ControllerBase
         if (await _db.Usuarios.AnyAsync(u => u.Email == req.Email.ToLower()))
             return Conflict(new { mensaje = "Ya existe una cuenta con ese email." });
 
-        var instituto = await _db.Institutos.FindAsync(req.InstitutoId);
+        // Si la invitación está ligada a un instituto (admin de instituto la creó),
+        // ese valor tiene prioridad sobre lo que envíe el cliente.
+        var institutoEfectivoId = invitacion.InstitutoId ?? req.InstitutoId;
+        var instituto = await _db.Institutos.FindAsync(institutoEfectivoId);
         if (instituto is null || !instituto.Activo)
             return BadRequest(new { mensaje = "El instituto seleccionado no es válido." });
 
@@ -172,7 +175,7 @@ public class AuthController : ControllerBase
             Turno              = null,  // Sin restricción horaria
             Estado             = EstadoCuenta.Activa,
             FechaValidacion    = DateTime.UtcNow,
-            InstitutoId        = req.InstitutoId,
+            InstitutoId        = institutoEfectivoId,
             Instituto          = instituto,
             RefreshToken       = refreshToken,
             RefreshTokenExpiry = DateTime.UtcNow.AddDays(30)

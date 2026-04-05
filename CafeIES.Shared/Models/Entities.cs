@@ -185,6 +185,13 @@ public class Invitacion
                          && (UsosMaximos == null || UsosActuales < UsosMaximos);
 
     /// <summary>
+    /// Instituto al que queda restringida la invitación.
+    /// Si es null (super-admin), el registrante puede elegir cualquier instituto activo.
+    /// Si tiene valor, el registro siempre asigna este instituto independientemente de lo que envíe el cliente.
+    /// </summary>
+    public int? InstitutoId { get; set; }
+
+    /// <summary>
     /// Ruta relativa del enlace de invitación — el cliente debe anteponer la BaseUrl de la API.
     /// Ejemplo completo: https://cafeies-api.azurewebsites.net/registro/invitacion/{Token}
     /// </summary>

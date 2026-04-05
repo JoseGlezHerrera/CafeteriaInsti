@@ -234,7 +234,8 @@ public record InvitacionDto(
     int?            UsosMaximos,
     int             UsosActuales,
     string          UrlInvitacion,
-    bool            EsValida
+    bool            EsValida,
+    int?            InstitutoId = null
 );
 
 // ── Desayuno gratuito ─────────────────────────────────────────────────────────
