@@ -586,6 +586,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Deuda técnica + Bugs + UX 2ª ronda | ✅ Completada | ApiService partial classes; PedidoCardView; errores servidor en toasts; skeleton en PedidosPage; entrada animada; timer horario |
 | Ingredientes personalizables | ✅ Completada | Catálogo de ingredientes; asignación por producto (Base/Quitable/Orden); personalización en MAUI con precio reactivo; snapshot en pedido con SetNull histórico |
 | Stepper ingredientes + imágenes | ✅ Completada | Stepper para cantidades múltiples (base y extras); empleados gestionan ingredientes; fix subida de imágenes (multipart boundary); BuildImageUrl soporta Azure Blob |
+| UX carrito | ✅ Completada | Fix duplicación visual items; "Editar ingredientes" visible en todos los productos configurables; botones ±  circulares 44×44dp |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -595,6 +596,22 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.24.0 — Stepper carrito rediseñado (2026-04-05)
+
+#### MAUI
+- **`CarritoPage.xaml`**: controles de cantidad rediseñados como botones circulares de 44×44dp (mínimo recomendado por Apple HIG y Material Design) — botón **−** con borde en AccentColor, botón **+** relleno en AccentColor con icono blanco; cantidad centrada en columna fija de 40dp entre ambos. Elimina el problema de tap impreciso en móvil.
+
+---
+
+### v0.23.0 — Fix duplicación carrito + Editar ingredientes siempre visible (2026-04-05)
+
+#### MAUI
+- **`CarritoPage.xaml.cs`**: workaround para bug de MAUI donde `BindableLayout` duplicaba visualmente los items al navegar a la pestaña del carrito. `OnAppearing` reasigna `ItemsSource = null → colección` para forzar un repintado limpio sin afectar los datos del `ObservableCollection`.
+- **`ItemCarrito`**: nueva propiedad `TieneConfiguracionIngredientes` — indica si el producto tiene ingredientes configurables, independientemente de si el usuario aplicó alguna modificación. Se propaga desde `producto.Ingredientes?.Count > 0` en `AnadirProducto`, se persiste en `Preferences` y se restaura correctamente.
+- **`CarritoPage.xaml`**: el botón "✏️ Editar ingredientes" ahora usa `TieneConfiguracionIngredientes` en lugar de `TieneIngredientes`. Antes solo aparecía si había modificaciones aplicadas; ahora aparece en todos los productos con ingredientes configurables, aunque ninguno se haya modificado.
+
+---
 
 ### v0.22.0 — Stepper ingredientes, UX productos y fix imágenes (2026-04-05)
 
