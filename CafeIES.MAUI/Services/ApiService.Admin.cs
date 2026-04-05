@@ -81,19 +81,22 @@ public partial class ApiService
         }
     }
 
-    public async Task<(bool Ok, string? Error)> EliminarUsuarioAsync(int id)
+    public async Task<(bool Ok, string? Error, bool TienePedidos)> EliminarUsuarioAsync(int id, bool forzar = false)
     {
         try
         {
-            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/admin/usuarios/{id}");
-            if (resp.IsSuccessStatusCode) return (true, null);
-            var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-            return (false, body?.GetValueOrDefault("mensaje") ?? "Error al eliminar el usuario.");
+            var url  = forzar ? $"api/admin/usuarios/{id}?forzar=true" : $"api/admin/usuarios/{id}";
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, url);
+            if (resp.IsSuccessStatusCode) return (true, null, false);
+            var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+            var msg  = body?.GetValueOrDefault("mensaje")?.ToString() ?? "Error al eliminar el usuario.";
+            var tienePedidos = body?.ContainsKey("tienePedidos") == true;
+            return (false, msg, tienePedidos);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error al eliminar al usuario {Id}.", id);
-            return (false, "Error de conexión.");
+            return (false, "Error de conexión.", false);
         }
     }
 
@@ -226,6 +229,38 @@ public partial class ApiService
         {
             _logger.LogWarning(ex, "Error al subir la imagen del producto {Id}.", id);
             return null;
+        }
+    }
+
+    // ── Categorías (admin) ────────────────────────────────────────────────────
+
+    public async Task<bool> CrearCategoriaAsync(string nombre, string emoji)
+    {
+        try
+        {
+            var req  = new CategoriaDto(0, nombre, emoji);
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/categorias",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear la categoría '{Nombre}'.", nombre);
+            return false;
+        }
+    }
+
+    public async Task<bool> EliminarCategoriaAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/categorias/{id}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar la categoría {Id}.", id);
+            return false;
         }
     }
 

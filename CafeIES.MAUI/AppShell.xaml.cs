@@ -24,6 +24,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("AdminHorarios",         typeof(AdminHorariosPage));
         Routing.RegisterRoute("AdminInvitaciones",     typeof(AdminInvitacionesPage));
         Routing.RegisterRoute("AdminIngredientes",     typeof(AdminIngredientesPage));
+        Routing.RegisterRoute("AdminCategorias",       typeof(AdminCategoriasPage));
         Routing.RegisterRoute("PagamentoWeb",          typeof(PagamentoWebPage));
     }
 

@@ -191,10 +191,30 @@ public partial class AdminUsuariosViewModel : ObservableObject
             "Eliminar", "Cancelar");
         if (!ok) return;
 
-        var (exito, error) = await _api.EliminarUsuarioAsync(usuario.Id);
+        var (exito, error, tienePedidos) = await _api.EliminarUsuarioAsync(usuario.Id);
         if (exito)
+        {
             await CargarAsync();
+            return;
+        }
+
+        if (tienePedidos)
+        {
+            var forzar = await Shell.Current.DisplayAlert(
+                "Usuario con pedidos",
+                $"{usuario.NombreCompleto} tiene pedidos registrados. Si lo eliminas, sus pedidos quedarán sin usuario asignado (se conservan para auditoría).\n\n¿Eliminar igualmente?",
+                "Sí, eliminar", "Cancelar");
+            if (!forzar) return;
+
+            var (exitoForzado, errorForzado, _) = await _api.EliminarUsuarioAsync(usuario.Id, forzar: true);
+            if (exitoForzado)
+                await CargarAsync();
+            else
+                await Shell.Current.DisplayAlert("Error", errorForzado ?? "No se pudo eliminar el usuario.", "OK");
+        }
         else
+        {
             await Shell.Current.DisplayAlert("Error", error ?? "No se pudo eliminar el usuario.", "OK");
+        }
     }
 }

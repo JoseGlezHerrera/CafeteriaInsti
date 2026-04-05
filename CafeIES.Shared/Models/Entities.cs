@@ -297,8 +297,9 @@ public class Pedido
     /// <summary>Número de pedido visible para el usuario y la cafetería (ej: #042).</summary>
     public int NumeroPedido { get; set; }
 
-    public int UsuarioId { get; set; }
-    public Usuario Usuario { get; set; } = null!;
+    /// <summary>Null si el usuario fue eliminado con forzar=true (pedido huérfano conservado para auditoría).</summary>
+    public int? UsuarioId { get; set; }
+    public Usuario? Usuario { get; set; }
 
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 

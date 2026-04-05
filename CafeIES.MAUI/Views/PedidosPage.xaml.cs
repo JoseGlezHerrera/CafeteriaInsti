@@ -1,4 +1,5 @@
 using CafeIES.MAUI.ViewModels;
+using CafeIES.Shared.Models;
 
 namespace CafeIES.MAUI.Views;
 
@@ -34,10 +35,21 @@ public partial class PedidosPage : ContentPage
             return;
         }
 
+        // FIX-DUP-2: Nulificar el ItemsSource directamente fuerza a CollectionView a destruir
+        // su árbol de celdas y renderizar desde cero, eliminando los duplicados visuales
+        // persistentes en el caché de MAUI al navegar entre tabs.
+        PedidosList.ItemsSource = null;
+
         _vm.Resubscribe();
         // FIX-SK: AsyncRelayCommand.IsRunning notifica en el propio comando, no en el ViewModel.
         _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
         if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
+    }
+
+    private async void OnPedidoTapped(object sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is PedidoDto pedido)
+            await _vm.VerDetallePedidoCommand.ExecuteAsync(pedido);
     }
 
     // FIX-11: Desuscribir mensajes al desaparecer la página

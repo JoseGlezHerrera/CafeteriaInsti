@@ -81,7 +81,7 @@
         <RefreshView Grid.Row="2" Command="{Binding CargarCommand}"
                      IsRefreshing="{Binding CargarCommand.IsRunning}"
                      RefreshColor="{StaticResource AccentColor}">
-            <CollectionView ItemsSource="{Binding Pedidos}" Margin="24,16">
+            <CollectionView x:Name="PedidosList" ItemsSource="{Binding Pedidos}" Margin="24,16">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
                                          Spacing="12" Margin="0,80"
@@ -97,9 +97,7 @@
                     <DataTemplate x:DataType="dto:PedidoDto">
                         <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
                             <Border.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PedidosViewModel}}, Path=VerDetallePedidoCommand}"
-                                    CommandParameter="{Binding .}"/>
+                                <TapGestureRecognizer Tapped="OnPedidoTapped"/>
                             </Border.GestureRecognizers>
                             <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
 

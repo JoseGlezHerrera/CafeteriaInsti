@@ -85,7 +85,8 @@ public class AppDbContext : DbContext
             e.HasOne(p => p.Usuario)
              .WithMany(u => u.Pedidos)
              .HasForeignKey(p => p.UsuarioId)
-             .OnDelete(DeleteBehavior.Restrict);
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.SetNull);
 
             e.Property(p => p.Estado).HasConversion<int>();
             e.Property(p => p.MetodoPago).HasConversion<int>();

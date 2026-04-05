@@ -53,77 +53,74 @@
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="dto:IngredienteDto">
-                        <SwipeView>
-                            <SwipeView.RightItems>
-                                <SwipeItems>
-                                    <SwipeItem Text="Eliminar"
-                                               BackgroundColor="#e05252"
-                                               CommandParameter="{Binding .}"
-                                               Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AdminIngredientesViewModel}}, Path=EliminarCommand}"/>
-                                </SwipeItems>
-                            </SwipeView.RightItems>
+                        <Border Style="{StaticResource Card}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
 
-                            <Border Style="{StaticResource Card}">
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <!-- Emoji -->
+                                <Label Grid.Column="0"
+                                       Text="{Binding Emoji}"
+                                       FontSize="28" VerticalOptions="Center"/>
 
-                                    <!-- Emoji -->
-                                    <Label Grid.Column="0"
-                                           Text="{Binding Emoji}"
-                                           FontSize="28" VerticalOptions="Center"/>
+                                <!-- Info -->
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding Nombre}"
+                                           FontFamily="SyneBold" FontSize="15"
+                                           TextColor="{DynamicResource TextColor}"/>
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label FontFamily="DMSans" FontSize="12"
+                                               TextColor="{DynamicResource MutedColor}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="Stock: "/>
+                                                    <Span Text="{Binding Stock, StringFormat='{0} uds'}"
+                                                          FontFamily="SyneBold"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <Label FontFamily="DMSans" FontSize="12"
+                                               TextColor="{StaticResource AccentColor}"
+                                               IsVisible="{Binding PrecioExtra, Converter={StaticResource DecimalPositivoConverter}}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="+"/>
+                                                    <Span Text="{Binding PrecioExtra, StringFormat='{0:F2}'}"/>
+                                                    <Span Text="€"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
 
-                                    <!-- Info -->
-                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
-                                        <Label Text="{Binding Nombre}"
-                                               FontFamily="SyneBold" FontSize="15"
-                                               TextColor="{DynamicResource TextColor}"/>
-                                        <HorizontalStackLayout Spacing="10">
-                                            <Label FontFamily="DMSans" FontSize="12"
-                                                   TextColor="{DynamicResource MutedColor}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="Stock: "/>
-                                                        <Span Text="{Binding Stock, StringFormat='{0} uds'}"
-                                                              FontFamily="SyneBold"/>
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
-                                            <Label FontFamily="DMSans" FontSize="12"
-                                                   TextColor="{StaticResource AccentColor}"
-                                                   IsVisible="{Binding PrecioExtra, Converter={StaticResource DecimalPositivoConverter}}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="+"/>
-                                                        <Span Text="{Binding PrecioExtra, StringFormat='{0:F2}'}"/>
-                                                        <Span Text="€"/>
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
-                                        </HorizontalStackLayout>
-                                    </VerticalStackLayout>
+                                <!-- Botones -->
+                                <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                                    <Button Text="Editar"
+                                            FontFamily="SyneBold" FontSize="11"
+                                            BackgroundColor="{DynamicResource Surface2Color}"
+                                            TextColor="{DynamicResource TextColor}"
+                                            CornerRadius="10" HeightRequest="34" Padding="14,0"
+                                            WidthRequest="78"
+                                            CommandParameter="{Binding .}"
+                                            Clicked="OnEditarClicked"/>
+                                    <Button Text="{Binding Activo, Converter={StaticResource ActivoTextoConverter}}"
+                                            FontFamily="SyneBold" FontSize="11"
+                                            BackgroundColor="{Binding Activo, Converter={StaticResource ActivoBgConverter}}"
+                                            TextColor="{Binding Activo, Converter={StaticResource ActivoTextColorConverter}}"
+                                            CornerRadius="10" HeightRequest="34" Padding="14,0"
+                                            WidthRequest="78"
+                                            CommandParameter="{Binding .}"
+                                            Clicked="OnToggleActivoClicked"/>
+                                    <Button Text="🗑️"
+                                            FontFamily="SyneBold" FontSize="14"
+                                            BackgroundColor="#e05252"
+                                            TextColor="White"
+                                            CornerRadius="10" HeightRequest="34" Padding="0"
+                                            WidthRequest="78"
+                                            CommandParameter="{Binding .}"
+                                            Clicked="OnEliminarClicked"/>
+                                </VerticalStackLayout>
 
-                                    <!-- Botones -->
-                                    <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
-                                        <Button Text="Editar"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="{DynamicResource Surface2Color}"
-                                                TextColor="{DynamicResource TextColor}"
-                                                CornerRadius="10" HeightRequest="34" Padding="14,0"
-                                                WidthRequest="78"
-                                                CommandParameter="{Binding .}"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AdminIngredientesViewModel}}, Path=EditarCommand}"/>
-                                        <Button Text="{Binding Activo, Converter={StaticResource ActivoTextoConverter}}"
-                                                FontFamily="SyneBold" FontSize="11"
-                                                BackgroundColor="{Binding Activo, Converter={StaticResource ActivoBgConverter}}"
-                                                TextColor="{Binding Activo, Converter={StaticResource ActivoTextColorConverter}}"
-                                                CornerRadius="10" HeightRequest="34" Padding="14,0"
-                                                WidthRequest="78"
-                                                CommandParameter="{Binding .}"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AdminIngredientesViewModel}}, Path=ToggleActivoCommand}"/>
-                                    </VerticalStackLayout>
-
-                                </Grid>
-                            </Border>
-                        </SwipeView>
+                            </Grid>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

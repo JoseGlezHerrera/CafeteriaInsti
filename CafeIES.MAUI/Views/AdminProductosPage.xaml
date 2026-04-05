@@ -14,19 +14,23 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- Header con boton nuevo e ingredientes -->
+        <!-- Header con boton nuevo, ingredientes y categorías -->
         <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
-              Padding="20,16" ColumnDefinitions="*,Auto,8,Auto">
+              Padding="16,16" ColumnDefinitions="*,Auto,6,Auto,6,Auto">
             <Label Grid.Column="0" Text="Productos"
-                   FontFamily="SyneBold" FontSize="22"
+                   FontFamily="SyneBold" FontSize="20"
                    TextColor="{DynamicResource TextColor}"/>
-            <Button Grid.Column="1" Text="Ingredientes"
+            <Button Grid.Column="1" Text="Categ."
                     Style="{StaticResource SecondaryButton}"
-                    HeightRequest="38" FontSize="13" Padding="12,0"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
+                    Command="{Binding IrCategoriasCommand}"/>
+            <Button Grid.Column="3" Text="Ingred."
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
                     Command="{Binding IrIngredientesCommand}"/>
-            <Button Grid.Column="3" Text="+ Nuevo"
+            <Button Grid.Column="5" Text="+ Nuevo"
                     Style="{StaticResource PrimaryButton}"
-                    HeightRequest="38" FontSize="13" Padding="16,0"
+                    HeightRequest="38" FontSize="12" Padding="12,0"
                     Command="{Binding NuevoProductoCommand}"/>
         </Grid>
 

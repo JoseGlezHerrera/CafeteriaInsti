@@ -359,9 +359,9 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // ── DELETE /api/admin/usuarios/{id} ───────────────────────────────────────
+    // ── DELETE /api/admin/usuarios/{id}?forzar=true ───────────────────────────
     [HttpDelete("usuarios/{id}")]
-    public async Task<ActionResult> EliminarUsuario(int id)
+    public async Task<ActionResult> EliminarUsuario(int id, [FromQuery] bool forzar = false)
     {
         var user = await _db.Usuarios.FindAsync(id);
         if (user is null) return NotFound();
@@ -373,10 +373,21 @@ public class AdminController : ControllerBase
             return BadRequest(new { mensaje = "No se puede eliminar la cuenta de administrador." });
 
         var tienePedidos = await _db.Pedidos.AnyAsync(p => p.UsuarioId == id);
-        if (tienePedidos)
-            return BadRequest(new { mensaje = "No se puede eliminar un usuario con pedidos. Suspéndelo en su lugar." });
+        if (tienePedidos && !forzar)
+            return BadRequest(new { mensaje = "Este usuario tiene pedidos registrados. Usa eliminar con forzar=true para borrarlo y desvincular sus pedidos.", tienePedidos = true });
 
         var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+
+        // Con forzar=true: desvincular pedidos (UsuarioId → null) antes de eliminar
+        if (forzar && tienePedidos)
+        {
+            await _db.Pedidos
+                .Where(p => p.UsuarioId == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.UsuarioId, (int?)null));
+            _logger.LogWarning("[AUDIT] {Admin} desvinculó pedidos del usuario {UserId} ({Email}) antes de eliminar (forzar=true)",
+                adminEmail, id, user.Email);
+        }
+
         var emailEliminado = user.Email;
         _db.Usuarios.Remove(user);
         await _db.SaveChangesAsync();
