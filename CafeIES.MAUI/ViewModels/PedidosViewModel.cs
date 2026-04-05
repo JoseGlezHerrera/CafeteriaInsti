@@ -51,14 +51,15 @@ public partial class PedidosViewModel : ObservableObject
 
     [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
 
-    public ObservableCollection<PedidoDto> Pedidos { get; } = new();
+    // Lista plana en lugar de ObservableCollection: al reasignar la referencia,
+    // CollectionView recibe un objeto completamente nuevo y renderiza desde cero,
+    // evitando el bug de MAUI donde Clear+Add en ObservableCollection deja
+    // artefactos visuales (ítems duplicados) al navegar entre tabs.
+    [ObservableProperty] private List<PedidoDto> _pedidos = new();
 
     [RelayCommand]
     public async Task CargarAsync()
     {
-        // AsyncRelayCommand (AllowConcurrentExecutions=false por defecto) evita re-entradas.
-        // IsRefreshing del RefreshView se bindea a CargarCommand.IsRunning para que el
-        // framework gestione el ciclo vida del spinner sin conflictos con Appearing.
         _todos.Clear();
         _paginaActual = 1;
         try
@@ -90,13 +91,13 @@ public partial class PedidosViewModel : ObservableObject
 
     private void AplicarFiltro()
     {
-        Pedidos.Clear();
         var hoy = DateTime.Now.Date;
         var query = FiltroFecha == "Hoy"
             ? _todos.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy)
             : _todos.AsEnumerable();
-        foreach (var p in query) Pedidos.Add(p);
-        // "Cargar más" solo disponible en modo "Todo" (en "Hoy" caben en página 1)
+        // Reasignar la propiedad (no mutar) para que CollectionView renderice
+        // desde cero y no acumule ítems duplicados entre navegaciones.
+        Pedidos = query.ToList();
         HayMas = FiltroFecha != "Hoy" && _hayMasServidor;
     }
 
