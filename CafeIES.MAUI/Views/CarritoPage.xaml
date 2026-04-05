@@ -100,33 +100,53 @@
                                                     </Label.GestureRecognizers>
                                                 </Label>
                                             </VerticalStackLayout>
-                                            <Border Grid.Column="2" BackgroundColor="{DynamicResource Surface2Color}"
-                                                    StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
-                                                    Padding="10,8" VerticalOptions="Center">
-                                                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                                <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
-                                                    <Label Grid.Column="0" Text="-" FontFamily="SyneBold" FontSize="20"
-                                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                        <Label.GestureRecognizers>
-                                                            <TapGestureRecognizer
-                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
-                                                                CommandParameter="{Binding .}"/>
-                                                        </Label.GestureRecognizers>
-                                                    </Label>
-                                                    <Label Grid.Column="1" Text="{Binding Cantidad}" FontFamily="SyneBold"
-                                                           FontSize="15" TextColor="{DynamicResource TextColor}"
-                                                           VerticalOptions="Center" MinimumWidthRequest="24"
-                                                           HorizontalOptions="Center"/>
-                                                    <Label Grid.Column="2" Text="+" FontFamily="SyneBold" FontSize="20"
-                                                           TextColor="{StaticResource AccentColor}" VerticalOptions="Center">
-                                                        <Label.GestureRecognizers>
-                                                            <TapGestureRecognizer
-                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
-                                                                CommandParameter="{Binding .}"/>
-                                                        </Label.GestureRecognizers>
-                                                    </Label>
-                                                </Grid>
-                                            </Border>
+                                            <!-- Stepper: botones circulares 44×44 para toque cómodo en móvil -->
+                                            <Grid Grid.Column="2"
+                                                  ColumnDefinitions="44,40,44" ColumnSpacing="0"
+                                                  VerticalOptions="Center">
+                                                <!-- Botón − -->
+                                                <Border Grid.Column="0"
+                                                        WidthRequest="44" HeightRequest="44"
+                                                        BackgroundColor="{DynamicResource Surface2Color}"
+                                                        StrokeThickness="1.5"
+                                                        Stroke="{DynamicResource BorderColor}">
+                                                    <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                                                    <Label Text="−" FontFamily="SyneBold" FontSize="22"
+                                                           TextColor="{StaticResource AccentColor}"
+                                                           HorizontalOptions="Center"
+                                                           VerticalOptions="Center"
+                                                           Margin="0,0,0,1"/>
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=DecrementarCantidadCommand}"
+                                                            CommandParameter="{Binding .}"/>
+                                                    </Border.GestureRecognizers>
+                                                </Border>
+                                                <!-- Cantidad -->
+                                                <Label Grid.Column="1"
+                                                       Text="{Binding Cantidad}"
+                                                       FontFamily="SyneBold" FontSize="17"
+                                                       TextColor="{DynamicResource TextColor}"
+                                                       HorizontalOptions="Center"
+                                                       VerticalOptions="Center"/>
+                                                <!-- Botón + -->
+                                                <Border Grid.Column="2"
+                                                        WidthRequest="44" HeightRequest="44"
+                                                        BackgroundColor="{StaticResource AccentColor}"
+                                                        StrokeThickness="0">
+                                                    <Border.StrokeShape><Ellipse/></Border.StrokeShape>
+                                                    <Label Text="+" FontFamily="SyneBold" FontSize="22"
+                                                           TextColor="White"
+                                                           HorizontalOptions="Center"
+                                                           VerticalOptions="Center"
+                                                           Margin="0,0,0,1"/>
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=IncrementarCantidadCommand}"
+                                                            CommandParameter="{Binding .}"/>
+                                                    </Border.GestureRecognizers>
+                                                </Border>
+                                            </Grid>
                                         </Grid>
                                         <!-- Nota por producto -->
                                         <Border StrokeThickness="1" Stroke="{DynamicResource BorderColor}"
