@@ -131,7 +131,7 @@ CafeIES/
 │   └── Program.cs                      DI, middleware, rate limiting (4 políticas), CORS, Swagger
 │
 ├── CafeIES.MAUI/                       ← App móvil Android/iOS
-│   ├── Views/                          18 páginas XAML
+│   ├── Views/                          23 páginas XAML
 │   │   ├── LoginPage                   Auto-login transparente; fade-in solo si no hay sesión
 │   │   ├── RegistroPage                Registro alumno con instituto y turno
 │   │   ├── RegistroInvitacionPage      Registro por enlace/QR de invitación
@@ -140,16 +140,21 @@ CafeIES/
 │   │   ├── CarritoPage                 Resumen, spinner desayuno, banner 🍊, descuento, TotalEfectivo
 │   │   ├── PagamentoWebPage            WebView con Stripe.js
 │   │   ├── ConfirmacionPedidoPage      Polling cada 2s; token "gratuito-{num}" sin polling
-│   │   ├── PedidosPage                 Historial con chips Hoy/Todo y paginación
-│   │   ├── DetallePedidoPage           Detalle en tiempo real vía SignalR
+│   │   ├── PedidosPage                 Historial con chips Hoy/Todo y paginación; tap → detalle
+│   │   ├── DetallePedidoPage           Detalle en tiempo real vía SignalR con ingredientes y modificaciones
 │   │   ├── PerfilPage                  Datos personales, cambio de contraseña
 │   │   ├── AdminPedidosPage            Todos los pedidos: filtro por instituto, fecha y estado; Cargar más paginado
-│   │   ├── AdminProductosPage          Gestión de productos con imagen
-│   │   ├── AdminEditProductoPage       Crear/editar producto con selector ComponenteDesayuno
-│   │   ├── AdminUsuariosPage           Panel contextual animado con acciones contextuales
+│   │   ├── AdminProductosPage          Gestión de productos con imagen; accesos rápidos a Categorías e Ingredientes
+│   │   ├── AdminEditProductoPage       Crear/editar producto con selector ComponenteDesayuno e imagen desde cámara/galería
+│   │   ├── AdminUsuariosPage           Panel contextual animado; forzar borrado de usuario con pedidos asociados
+│   │   ├── AdminIngredientesPage       Gestión de ingredientes con toggle activo/inactivo y botón eliminar visible
+│   │   ├── AdminCategoriasPage         CRUD categorías (crear con emoji + nombre, eliminar)
+│   │   ├── AdminAlergenosPage          CRUD alérgenos (crear con emoji + nombre, eliminar)
 │   │   ├── AdminInvitacionesPage       Crear/listar invitaciones con QR descargable
 │   │   ├── AdminHorariosPage           Gestión de franjas horarias por instituto
-│   │   └── EmpleadoPedidosPage         Historial del día: activos (Pendiente/EnPrep) + cerrados (Listo/Entregado/Cancelado)
+│   │   ├── AdminPerfilPage             Perfil del administrador
+│   │   ├── EmpleadoPedidosPage         Historial del día: activos (Pendiente/EnPrep) + cerrados (Listo/Entregado/Cancelado)
+│   │   └── EmpleadoProductosPage       Catálogo con control de stock y toggle de disponibilidad
 │   ├── ViewModels/                     MVVM con CommunityToolkit.Mvvm
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR; warmup a /health
@@ -538,6 +543,15 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Historial completo del día para empleados: chips Listo, Entregado y Cancelado además de los activos
 - "Cargar más" paginado en AdminPedidosPage cuando hay más de 20 pedidos (modo Todo)
 - Gestión de estado con máquina de estados (transiciones válidas)
+- Tap en un pedido del historial → navega a DetallePedidoPage con desglose completo (ingredientes, modificaciones, total)
+
+**Panel admin MAUI — 10 páginas**
+- Imagen de producto desde cámara o galería (MediaPicker): productos nuevos guardan la foto al crear; edición sube inmediatamente
+- Gestión de Categorías — crear con nombre + emoji, eliminar con confirmación
+- Gestión de Alérgenos — crear con nombre + emoji, eliminar con confirmación
+- Gestión de Ingredientes — botón eliminar visible (sustituyó al SwipeView oculto); toggle activo/inactivo; acceso directo a Alérgenos desde la cabecera
+- Forzar borrado de usuario — si el usuario tiene pedidos asociados, se ofrece confirmar el borrado forzoso (los pedidos quedan con `UsuarioId = null`, historial preservado)
+- Accesos rápidos desde AdminProductosPage a Categorías e Ingredientes en la cabecera
 
 **Panel admin web (Blazor WASM) — 11 páginas**
 - Dashboard con métricas en tiempo real
@@ -588,6 +602,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Stepper ingredientes + imágenes | ✅ Completada | Stepper para cantidades múltiples (base y extras); empleados gestionan ingredientes; fix subida de imágenes (multipart boundary); BuildImageUrl soporta Azure Blob |
 | UX carrito | ✅ Completada | Fix duplicación visual items; "Editar ingredientes" visible en todos los productos configurables; botones ±  circulares 44×44dp |
 | Bugs navegación + UX stepper | ✅ Completada | Fix duplicación PedidosPage (List vs ObservableCollection); ConfirmacionPedidoPage se saca del stack; stepper ingredientes 36×36dp |
+| Gestión completa MAUI admin | ✅ Completada | Imagen desde cámara/galería; CRUD categorías y alérgenos; eliminar ingrediente visible; forzar borrado usuario con pedidos; detalle pedido desde historial |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -597,6 +612,45 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.29.0 — Gestión de alérgenos desde MAUI (2026-04-06)
+
+#### MAUI
+- **`AdminAlergenosPage` + `AdminAlergenosViewModel`** (nuevos): lista de alérgenos con emoji y nombre; `DisplayPromptAsync` para crear (nombre + emoji separados); confirmación antes de eliminar; `[AUDIT]` en API
+- **`AdminIngredientesPage`**: botón "Alérgenos" en cabecera → navega directamente a `AdminAlergenosPage`
+- **`AppShell`**: ruta `AdminAlergenos` registrada; `AdminAlergenosViewModel` + `AdminAlergenosPage` registrados en DI
+
+#### Backend
+- **`AdminController`**: `POST /api/admin/alergenos` y `DELETE /api/admin/alergenos/{id}` con audit logging
+
+---
+
+### v0.28.0 — Detalle pedido, categorías, borrar ingredientes, forzar borrar usuario (2026-04-06)
+
+#### MAUI
+- **`PedidosPage`**: tap en un pedido navega a `DetallePedidoPage` — manejador `OnPedidoTapped` en code-behind (evita error XC0045 de compiled bindings con `AncestorType`); `ItemsSource = null` en `OnAppearing` como fix definitivo de duplicación visual
+- **`AdminCategoriasPage` + `AdminCategoriasViewModel`** (nuevos): lista con emoji + nombre; crear via `DisplayPromptAsync`; eliminar con confirmación; ruta `AdminCategorias` registrada
+- **`AdminIngredientesPage`**: reemplaza `SwipeView` oculto por botón 🗑️ rojo visible; todos los botones del `DataTemplate` usan code-behind (`OnEditarClicked`, `OnToggleActivoClicked`, `OnEliminarClicked`)
+- **`AdminUsuariosPage`**: `EliminarAsync` con flujo en dos pasos — si el usuario tiene pedidos, ofrece forzar borrado; segundo intento con `forzar: true`
+- **`AdminProductosPage`**: botones "Categ." e "Ingred." en cabecera para acceso rápido
+
+#### Backend
+- **`Pedido.UsuarioId`** → `int?` (nullable); relación EF configurada con `DeleteBehavior.SetNull`
+- **`AdminController.EliminarUsuario`**: parámetro `[FromQuery] bool forzar`; cuando `forzar=true` actualiza en bulk `UsuarioId = null` en todos sus pedidos antes de borrar
+- **Migración `20260405223715_NullableUsuarioIdEnPedidos`**: altera columna + re-crea FK con `ON DELETE SET NULL`
+- **`CategoriasController`**: `DELETE /api/categorias/{id}` añadido con comprobación de productos asignados
+
+---
+
+### v0.27.0 — Imagen de producto desde cámara o galería (2026-04-06)
+
+#### MAUI
+- **`AdminEditProductoViewModel.SeleccionarImagenAsync`**: action sheet con opciones 📷 Cámara y 🖼️ Galería usando `MediaPicker`; para productos nuevos almacena el `FileResult` y muestra preview local; para productos existentes sube inmediatamente
+- **`AdminEditProductoViewModel.GuardarAsync`**: tras crear un producto nuevo, sube la foto pendiente con el id recién devuelto por la API (`CrearProductoAsync` ahora devuelve `int?`)
+- **`ApiService.CrearProductoAsync`**: cambia de `Task<bool>` a `Task<int?>` — devuelve el id del producto recién creado para poder subirle la imagen
+- **`Platforms/iOS/Info.plist`**: `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription` añadidos (obligatorio para iOS)
+
+---
 
 ### v0.26.0 — Fix duplicación definitivo en PedidosPage (2026-04-05)
 
