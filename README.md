@@ -587,6 +587,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Ingredientes personalizables | ✅ Completada | Catálogo de ingredientes; asignación por producto (Base/Quitable/Orden); personalización en MAUI con precio reactivo; snapshot en pedido con SetNull histórico |
 | Stepper ingredientes + imágenes | ✅ Completada | Stepper para cantidades múltiples (base y extras); empleados gestionan ingredientes; fix subida de imágenes (multipart boundary); BuildImageUrl soporta Azure Blob |
 | UX carrito | ✅ Completada | Fix duplicación visual items; "Editar ingredientes" visible en todos los productos configurables; botones ±  circulares 44×44dp |
+| Bugs navegación + UX stepper | ✅ Completada | Fix duplicación PedidosPage (List vs ObservableCollection); ConfirmacionPedidoPage se saca del stack; stepper ingredientes 36×36dp |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -596,6 +597,21 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.26.0 — Fix duplicación definitivo en PedidosPage (2026-04-05)
+
+#### MAUI
+- **`PedidosViewModel`**: reemplaza `ObservableCollection<PedidoDto>` por `List<PedidoDto>` como propiedad observable (`[ObservableProperty]`). `AplicarFiltro` reasigna la referencia completa en lugar de `Clear()` + `Add()`. Al recibir un nuevo objeto como `ItemsSource`, `CollectionView` descarta todo lo renderizado y reconstruye desde cero, eliminando la duplicación visual que ocurría al navegar entre tabs sin refrescar manualmente.
+
+---
+
+### v0.25.0 — Fix persistencia confirmación + stepper ingredientes (2026-04-05)
+
+#### MAUI
+- **`ConfirmacionPedidoPage.xaml.cs`**: los botones "Ver mis pedidos" y "Seguir pidiendo" ahora hacen `GoToAsync("..")` antes de cambiar de tab. Esto saca la página del stack de navegación del tab Carrito, de forma que al volver al carrito el usuario ve el carrito vacío en lugar de la pantalla de confirmación otra vez (que permitía pulsar los botones de nuevo generando la sensación de pedido duplicado).
+- **`ProductoDetallePage.xaml`**: stepper de personalización de ingredientes rediseñado con botones circulares de 36×36dp — mismo estilo que el carrito, mucho más fáciles de pulsar en móvil.
+
+---
 
 ### v0.24.0 — Stepper carrito rediseñado (2026-04-05)
 
