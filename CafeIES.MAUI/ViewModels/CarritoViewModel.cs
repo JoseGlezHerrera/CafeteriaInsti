@@ -35,18 +35,19 @@ public partial class CarritoViewModel : ObservableObject
         {
             var data = Items.Select(i => new CarritoItemData
             {
-                ProductoId              = i.ProductoId,
-                Nombre                  = i.Nombre,
-                Precio                  = i.Precio,
-                PrecioExtra             = i.PrecioExtra,
-                Cantidad                = i.Cantidad,
-                ImagenUrl               = i.ImagenUrl,
-                ComponenteDesayuno      = (int)i.ComponenteDesayuno,
-                Notas                   = string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas,
-                IngredientesJson        = i.Ingredientes.Count > 0
-                                            ? JsonSerializer.Serialize(i.Ingredientes) : null,
-                IngredientesDescripcion = string.IsNullOrEmpty(i.IngredientesDescripcion)
-                                            ? null : i.IngredientesDescripcion
+                ProductoId                     = i.ProductoId,
+                Nombre                         = i.Nombre,
+                Precio                         = i.Precio,
+                PrecioExtra                    = i.PrecioExtra,
+                Cantidad                       = i.Cantidad,
+                ImagenUrl                      = i.ImagenUrl,
+                ComponenteDesayuno             = (int)i.ComponenteDesayuno,
+                Notas                          = string.IsNullOrWhiteSpace(i.Notas) ? null : i.Notas,
+                IngredientesJson               = i.Ingredientes.Count > 0
+                                                   ? JsonSerializer.Serialize(i.Ingredientes) : null,
+                IngredientesDescripcion        = string.IsNullOrEmpty(i.IngredientesDescripcion)
+                                                   ? null : i.IngredientesDescripcion,
+                TieneConfiguracionIngredientes = i.TieneConfiguracionIngredientes
             }).ToList();
             Preferences.Default.Set(CarritoKey, JsonSerializer.Serialize(data));
         }
@@ -69,16 +70,17 @@ public partial class CarritoViewModel : ObservableObject
 
                 Items.Add(new ItemCarrito
                 {
-                    ProductoId              = d.ProductoId,
-                    Nombre                  = d.Nombre,
-                    Precio                  = d.Precio,
-                    PrecioExtra             = d.PrecioExtra,
-                    Cantidad                = d.Cantidad,
-                    ImagenUrl               = d.ImagenUrl,
-                    ComponenteDesayuno      = (ComponenteDesayuno)d.ComponenteDesayuno,
-                    Notas                   = d.Notas ?? string.Empty,
-                    Ingredientes            = ingredientes,
-                    IngredientesDescripcion = d.IngredientesDescripcion ?? string.Empty
+                    ProductoId                     = d.ProductoId,
+                    Nombre                         = d.Nombre,
+                    Precio                         = d.Precio,
+                    PrecioExtra                    = d.PrecioExtra,
+                    Cantidad                       = d.Cantidad,
+                    ImagenUrl                      = d.ImagenUrl,
+                    ComponenteDesayuno             = (ComponenteDesayuno)d.ComponenteDesayuno,
+                    Notas                          = d.Notas ?? string.Empty,
+                    Ingredientes                   = ingredientes,
+                    IngredientesDescripcion        = d.IngredientesDescripcion ?? string.Empty,
+                    TieneConfiguracionIngredientes = d.TieneConfiguracionIngredientes
                 });
             }
             TotalItems = Items.Sum(i => i.Cantidad);
@@ -241,15 +243,16 @@ public partial class CarritoViewModel : ObservableObject
 
         Items.Add(new ItemCarrito
         {
-            ProductoId              = producto.Id,
-            Nombre                  = producto.Nombre,
-            Precio                  = producto.Precio,
-            PrecioExtra             = precioExtra,
-            Cantidad                = 1,
-            ImagenUrl               = imageUrl,
-            ComponenteDesayuno      = producto.ComponenteDesayuno,
-            Ingredientes            = ingredientes ?? new(),
-            IngredientesDescripcion = ingredientesDescripcion
+            ProductoId                     = producto.Id,
+            Nombre                         = producto.Nombre,
+            Precio                         = producto.Precio,
+            PrecioExtra                    = precioExtra,
+            Cantidad                       = 1,
+            ImagenUrl                      = imageUrl,
+            ComponenteDesayuno             = producto.ComponenteDesayuno,
+            Ingredientes                   = ingredientes ?? new(),
+            IngredientesDescripcion        = ingredientesDescripcion,
+            TieneConfiguracionIngredientes = producto.Ingredientes?.Count > 0
         });
 
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -344,16 +347,17 @@ public partial class CarritoViewModel : ObservableObject
         Items.RemoveAt(idx);
         Items.Insert(idx, new ItemCarrito
         {
-            ProductoId              = original.ProductoId,
-            Nombre                  = original.Nombre,
-            Precio                  = original.Precio,
-            PrecioExtra             = precioExtra,
-            Cantidad                = original.Cantidad,
-            ImagenUrl               = original.ImagenUrl,
-            ComponenteDesayuno      = original.ComponenteDesayuno,
-            Notas                   = original.Notas,
-            Ingredientes            = ingredientes,
-            IngredientesDescripcion = descripcion
+            ProductoId                     = original.ProductoId,
+            Nombre                         = original.Nombre,
+            Precio                         = original.Precio,
+            PrecioExtra                    = precioExtra,
+            Cantidad                       = original.Cantidad,
+            ImagenUrl                      = original.ImagenUrl,
+            ComponenteDesayuno             = original.ComponenteDesayuno,
+            Notas                          = original.Notas,
+            Ingredientes                   = ingredientes,
+            IngredientesDescripcion        = descripcion,
+            TieneConfiguracionIngredientes = original.TieneConfiguracionIngredientes
         });
 
         TotalItems = Items.Sum(i => i.Cantidad);
@@ -571,16 +575,17 @@ public partial class CarritoViewModel : ObservableObject
 
 file sealed class CarritoItemData
 {
-    public int     ProductoId              { get; set; }
-    public string  Nombre                  { get; set; } = string.Empty;
-    public decimal Precio                  { get; set; }
-    public decimal PrecioExtra             { get; set; }
-    public int     Cantidad                { get; set; }
-    public string? ImagenUrl               { get; set; }
-    public int     ComponenteDesayuno      { get; set; }
-    public string? Notas                   { get; set; }
-    public string? IngredientesJson        { get; set; }
-    public string? IngredientesDescripcion { get; set; }
+    public int     ProductoId                     { get; set; }
+    public string  Nombre                         { get; set; } = string.Empty;
+    public decimal Precio                         { get; set; }
+    public decimal PrecioExtra                    { get; set; }
+    public int     Cantidad                       { get; set; }
+    public string? ImagenUrl                      { get; set; }
+    public int     ComponenteDesayuno             { get; set; }
+    public string? Notas                          { get; set; }
+    public string? IngredientesJson               { get; set; }
+    public string? IngredientesDescripcion        { get; set; }
+    public bool    TieneConfiguracionIngredientes { get; set; }
 }
 
 // ── Modelo de item del carrito ────────────────────────────────────────────────
@@ -595,8 +600,9 @@ public partial class ItemCarrito : ObservableObject
     public ComponenteDesayuno ComponenteDesayuno      { get; set; } = ComponenteDesayuno.Ninguno;
     public List<IngredienteRequest> Ingredientes      { get; set; } = new();
     public string             IngredientesDescripcion { get; set; } = string.Empty;
-    public bool               TieneImagen             => !string.IsNullOrEmpty(ImagenUrl);
-    public bool               TieneIngredientes       => Ingredientes.Count > 0;
+    public bool               TieneImagen                    => !string.IsNullOrEmpty(ImagenUrl);
+    public bool               TieneIngredientes              => Ingredientes.Count > 0;
+    public bool               TieneConfiguracionIngredientes { get; set; }
     public decimal            PrecioUnitario          => Precio + PrecioExtra;
 
     [ObservableProperty]

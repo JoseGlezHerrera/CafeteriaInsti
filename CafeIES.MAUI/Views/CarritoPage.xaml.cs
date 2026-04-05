@@ -15,6 +15,13 @@ public partial class CarritoPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+
+        // Workaround para bug de MAUI: BindableLayout puede duplicar visualmente los items
+        // cuando se navega a la página desde otra tab. Reasignar null + colección fuerza
+        // un repintado limpio sin afectar los datos del ObservableCollection.
+        BindableLayout.SetItemsSource(ItemsList, null);
+        BindableLayout.SetItemsSource(ItemsList, Vm.Items);
+
         // Recargar estado de desayuno cada vez que se abre el carrito
         // para reflejar si ya se consumió el desayuno en un pedido anterior del día
         _ = Vm.CargarDesayunoStatusAsync();

@@ -35,8 +35,12 @@
                     InputTransparent="{Binding IsLoading}">
             <VerticalStackLayout Spacing="0">
 
-                <!-- Lista de items -->
-                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}" Margin="0,12,0,8">
+                <!-- Lista de items
+                     x:Name permite el workaround de null+reassign en OnAppearing
+                     para evitar el bug de duplicación visual de BindableLayout en MAUI -->
+                <VerticalStackLayout x:Name="ItemsList"
+                                     BindableLayout.ItemsSource="{Binding Items}"
+                                     Margin="0,12,0,8">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="vm:ItemCarrito">
                             <SwipeView Margin="16,0,16,10">
@@ -88,7 +92,7 @@
                                                 <Label Text="✏️ Editar ingredientes"
                                                        FontFamily="DMSans" FontSize="11"
                                                        TextColor="{StaticResource AccentColor}"
-                                                       IsVisible="{Binding TieneIngredientes}">
+                                                       IsVisible="{Binding TieneConfiguracionIngredientes}">
                                                     <Label.GestureRecognizers>
                                                         <TapGestureRecognizer
                                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CarritoViewModel}}, Path=EditarIngredientesCommand}"
