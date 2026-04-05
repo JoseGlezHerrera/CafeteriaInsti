@@ -30,4 +30,7 @@ public partial class AdminIngredientesPage : ContentPage
         if ((sender as Button)?.CommandParameter is IngredienteDto ing)
             await _vm.EliminarCommand.ExecuteAsync(ing);
     }
+
+    private async void OnIrAlergenosClicked(object sender, EventArgs e)
+        => await Shell.Current.GoToAsync("AdminAlergenos");
 }

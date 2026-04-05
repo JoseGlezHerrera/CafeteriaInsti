@@ -16,7 +16,7 @@
 
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
-              Padding="16,14" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              Padding="16,14" ColumnDefinitions="Auto,*,Auto,6,Auto" ColumnSpacing="8">
             <Button Grid.Column="0"
                     Text="←"
                     Style="{StaticResource SecondaryButton}"
@@ -25,6 +25,11 @@
             <Label Grid.Column="1" Text="Ingredientes" FontFamily="SyneBold" FontSize="20"
                    TextColor="{DynamicResource TextColor}" VerticalOptions="Center" Margin="8,0,0,0"/>
             <Button Grid.Column="2"
+                    Text="Alérgenos"
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
+                    Clicked="OnIrAlergenosClicked"/>
+            <Button Grid.Column="4"
                     Text="+ Nuevo"
                     Style="{StaticResource PrimaryButton}"
                     HeightRequest="38" Padding="14,0"

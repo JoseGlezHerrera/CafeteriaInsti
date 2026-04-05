@@ -608,6 +608,42 @@ public class AdminController : ControllerBase
         return Ok(alergenos.Select(a => a.ToDto()).ToList());
     }
 
+    // ── POST /api/admin/alergenos ─────────────────────────────────────────────
+    [HttpPost("alergenos")]
+    public async Task<ActionResult<AlergenoDto>> CrearAlergeno([FromBody] AlergenoDto req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Nombre))
+            return BadRequest(new { mensaje = "El nombre es obligatorio." });
+
+        var alergeno = new Alergeno { Nombre = req.Nombre.Trim(), Emoji = req.Emoji };
+        _db.Alergenos.Add(alergeno);
+        await _db.SaveChangesAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogInformation("[AUDIT] {Admin} creó el alérgeno {Id} ({Nombre})",
+            adminEmail, alergeno.Id, alergeno.Nombre);
+
+        return CreatedAtAction(nameof(GetAlergenos), alergeno.ToDto());
+    }
+
+    // ── DELETE /api/admin/alergenos/{id} ──────────────────────────────────────
+    [HttpDelete("alergenos/{id}")]
+    public async Task<ActionResult> EliminarAlergeno(int id)
+    {
+        var alergeno = await _db.Alergenos.FindAsync(id);
+        if (alergeno is null) return NotFound();
+
+        // La relación muchos-a-muchos ProductoAlergeno se elimina en cascada
+        _db.Alergenos.Remove(alergeno);
+        await _db.SaveChangesAsync();
+
+        var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
+        _logger.LogWarning("[AUDIT] {Admin} eliminó el alérgeno {Id} ({Nombre})",
+            adminEmail, id, alergeno.Nombre);
+
+        return NoContent();
+    }
+
     // ── DELETE /api/admin/tokens/purge ────────────────────────────────────────
     /// <summary>
     /// Elimina tokens FCM inactivos (no actualizados en más de 30 días).

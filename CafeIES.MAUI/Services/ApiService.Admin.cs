@@ -232,6 +232,38 @@ public partial class ApiService
         }
     }
 
+    // ── Alérgenos (admin) ─────────────────────────────────────────────────────
+
+    public async Task<bool> CrearAlergenoAsync(string nombre, string emoji)
+    {
+        try
+        {
+            var req  = new AlergenoDto(0, nombre, emoji);
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/admin/alergenos",
+                JsonContent.Create(req));
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al crear el alérgeno '{Nombre}'.", nombre);
+            return false;
+        }
+    }
+
+    public async Task<bool> EliminarAlergenoAsync(int id)
+    {
+        try
+        {
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/admin/alergenos/{id}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al eliminar el alérgeno {Id}.", id);
+            return false;
+        }
+    }
+
     // ── Categorías (admin) ────────────────────────────────────────────────────
 
     public async Task<bool> CrearCategoriaAsync(string nombre, string emoji)
