@@ -57,6 +57,12 @@ public partial class PedidosViewModel : ObservableObject
     // artefactos visuales (ítems duplicados) al navegar entre tabs.
     [ObservableProperty] private List<PedidoDto>? _pedidos;
 
+    // Verdadero cuando no hay datos que mostrar (y no está cargando, el skeleton cubre ese caso).
+    public bool SinPedidos => Pedidos == null || Pedidos.Count == 0;
+
+    partial void OnPedidosChanged(List<PedidoDto>? value) =>
+        OnPropertyChanged(nameof(SinPedidos));
+
     [RelayCommand]
     public async Task CargarAsync()
     {

@@ -31,12 +31,11 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <!-- Skeleton — visible en la primera carga mientras la lista está vacía -->
+        <!-- Skeleton — visible mientras carga -->
         <VerticalStackLayout x:Name="SkeletonPedidos" Grid.Row="2"
                               BackgroundColor="{DynamicResource BgColor}"
                               IsVisible="{Binding CargarCommand.IsRunning}"
                               Margin="24,16" Spacing="12">
-            <!-- 3 filas skeleton de tarjeta de pedido -->
             <Border Style="{StaticResource Card}" Padding="16">
                 <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -78,78 +77,87 @@
             </Border>
         </VerticalStackLayout>
 
+        <!-- Lista — BindableLayout en lugar de CollectionView para evitar el bug de
+             duplicación del RecyclerView de MAUI al navegar entre tabs. BindableLayout
+             no virtualiza ni recicla celdas: destruye y recrea las vistas en cada cambio
+             de ItemsSource, por lo que es imposible que se dupliquen ítems. -->
         <RefreshView Grid.Row="2" Command="{Binding CargarCommand}"
                      IsRefreshing="{Binding CargarCommand.IsRunning}"
                      RefreshColor="{StaticResource AccentColor}">
-            <CollectionView x:Name="PedidosList" ItemsSource="{Binding Pedidos}" Margin="24,16">
-                <CollectionView.EmptyView>
-                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
-                                         Spacing="12" Margin="0,80"
-                                         IsVisible="{Binding CargarCommand.IsRunning, Converter={StaticResource InvertBoolConverter}}">
+            <ScrollView>
+                <VerticalStackLayout Margin="24,16" Spacing="0">
+
+                    <!-- Estado vacío -->
+                    <VerticalStackLayout IsVisible="{Binding SinPedidos}"
+                                         VerticalOptions="Center" HorizontalOptions="Center"
+                                         Spacing="12" Margin="0,80">
                         <Label Text="📋" FontSize="60" HorizontalOptions="Center"/>
                         <Label Text="Sin pedidos aún" FontFamily="SyneBold" FontSize="18"
                                TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
                         <Label Text="Tus pedidos aparecerán aquí" Style="{StaticResource SubtitleLabel}"
                                HorizontalOptions="Center"/>
                     </VerticalStackLayout>
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="dto:PedidoDto">
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnPedidoTapped"/>
-                            </Border.GestureRecognizers>
-                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
 
-                                <!-- Fila 1: Número + estado -->
-                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
-                                           TextColor="{StaticResource AccentColor}">
-                                        <Label.FormattedText>
-                                            <FormattedString>
-                                                <Span Text="#"/>
-                                                <Span Text="{Binding NumeroPedido, StringFormat='{0:D3}'}"/>
-                                            </FormattedString>
-                                        </Label.FormattedText>
-                                    </Label>
-                                    <!-- Pill de estado -->
-                                    <Border Grid.Column="1" Padding="10,4"
-                                            BackgroundColor="{Binding Estado, Converter={StaticResource EstadoPedidoBgConverter}}"
-                                            StrokeThickness="1"
-                                            Stroke="{Binding Estado, Converter={StaticResource EstadoPedidoBorderConverter}}">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
-                                        <Label Text="{Binding Estado, Converter={StaticResource EstadoPedidoLabelConverter}}"
-                                               FontFamily="SyneBold" FontSize="11"
-                                               TextColor="{Binding Estado, Converter={StaticResource EstadoPedidoTextConverter}}"/>
-                                    </Border>
-                                </Grid>
+                    <!-- Ítems -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pedidos}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="dto:PedidoDto">
+                                <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPedidoTapped"/>
+                                    </Border.GestureRecognizers>
+                                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
 
-                                <!-- Fila 2: Items del pedido -->
-                                <Label Grid.Row="1" Style="{StaticResource SubtitleLabel}" FontSize="13"
-                                       Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}"
-                                       LineBreakMode="TailTruncation"/>
+                                        <!-- Fila 1: Número + estado -->
+                                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                            <Label Grid.Column="0" FontFamily="SyneBold" FontSize="16"
+                                                   TextColor="{StaticResource AccentColor}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="#"/>
+                                                        <Span Text="{Binding NumeroPedido, StringFormat='{0:D3}'}"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <Border Grid.Column="1" Padding="10,4"
+                                                    BackgroundColor="{Binding Estado, Converter={StaticResource EstadoPedidoBgConverter}}"
+                                                    StrokeThickness="1"
+                                                    Stroke="{Binding Estado, Converter={StaticResource EstadoPedidoBorderConverter}}">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="50"/></Border.StrokeShape>
+                                                <Label Text="{Binding Estado, Converter={StaticResource EstadoPedidoLabelConverter}}"
+                                                       FontFamily="SyneBold" FontSize="11"
+                                                       TextColor="{Binding Estado, Converter={StaticResource EstadoPedidoTextConverter}}"/>
+                                            </Border>
+                                        </Grid>
 
-                                <!-- Fila 3: Fecha + total -->
-                                <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0"
-                                           Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM/yyyy HH:mm'}"
-                                           Style="{StaticResource CaptionLabel}"/>
-                                    <Label Grid.Column="1" FontFamily="SyneBold" FontSize="15"
-                                           TextColor="{DynamicResource TextColor}">
-                                        <Label.FormattedText>
-                                            <FormattedString>
-                                                <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
-                                                <Span Text="€"/>
-                                            </FormattedString>
-                                        </Label.FormattedText>
-                                    </Label>
-                                </Grid>
+                                        <!-- Fila 2: Items del pedido -->
+                                        <Label Grid.Row="1" Style="{StaticResource SubtitleLabel}" FontSize="13"
+                                               Text="{Binding Lineas, Converter={StaticResource LineasResumenConverter}}"
+                                               LineBreakMode="TailTruncation"/>
 
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.Footer>
+                                        <!-- Fila 3: Fecha + total -->
+                                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM/yyyy HH:mm'}"
+                                                   Style="{StaticResource CaptionLabel}"/>
+                                            <Label Grid.Column="1" FontFamily="SyneBold" FontSize="15"
+                                                   TextColor="{DynamicResource TextColor}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding Total, StringFormat='{0:F2}'}"/>
+                                                        <Span Text="€"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </Grid>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <!-- Cargar más -->
                     <VerticalStackLayout Padding="0,4,0,20">
                         <Button Text="Cargar más"
                                 Command="{Binding CargarMasCommand}"
@@ -162,8 +170,9 @@
                                            Color="{StaticResource AccentColor}"
                                            HorizontalOptions="Center"/>
                     </VerticalStackLayout>
-                </CollectionView.Footer>
-            </CollectionView>
+
+                </VerticalStackLayout>
+            </ScrollView>
         </RefreshView>
     </Grid>
 </ContentPage>
