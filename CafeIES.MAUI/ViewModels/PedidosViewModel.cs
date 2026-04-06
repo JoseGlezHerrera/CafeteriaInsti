@@ -51,22 +51,22 @@ public partial class PedidosViewModel : ObservableObject
 
     [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
 
-    // Lista plana en lugar de ObservableCollection: al reasignar la referencia,
-    // CollectionView recibe un objeto completamente nuevo y renderiza desde cero,
-    // evitando el bug de MAUI donde Clear+Add en ObservableCollection deja
-    // artefactos visuales (ítems duplicados) al navegar entre tabs.
-    [ObservableProperty] private List<PedidoDto>? _pedidos;
+    // Colección fija: su referencia NUNCA cambia. BindableLayout se suscribe
+    // una sola vez a CollectionChanged y recibe notificaciones incrementales
+    // (Reset al limpiar, Add por cada ítem). Esto elimina el bug donde
+    // SetProperty devuelve false al asignar null dos veces consecutivas,
+    // dejando los hijos del VerticalStackLayout "huérfanos" y causando
+    // que los nuevos ítems se sumen sobre los anteriores (duplicación).
+    public ObservableCollection<PedidoDto> Pedidos { get; } = new();
 
-    // Verdadero cuando no hay datos que mostrar (y no está cargando, el skeleton cubre ese caso).
-    public bool SinPedidos => Pedidos == null || Pedidos.Count == 0;
-
-    partial void OnPedidosChanged(List<PedidoDto>? value) =>
-        OnPropertyChanged(nameof(SinPedidos));
+    public bool SinPedidos => Pedidos.Count == 0;
 
     [RelayCommand]
     public async Task CargarAsync()
     {
         _todos.Clear();
+        Pedidos.Clear();
+        OnPropertyChanged(nameof(SinPedidos));
         _paginaActual = 1;
         try
         {
@@ -98,13 +98,14 @@ public partial class PedidosViewModel : ObservableObject
     private void AplicarFiltro()
     {
         var hoy = DateTime.Now.Date;
+        Pedidos.Clear();
         var query = FiltroFecha == "Hoy"
             ? _todos.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy)
             : _todos.AsEnumerable();
-        // Reasignar la propiedad (no mutar) para que CollectionView renderice
-        // desde cero y no acumule ítems duplicados entre navegaciones.
-        Pedidos = query.ToList();
+        foreach (var p in query)
+            Pedidos.Add(p);
         HayMas = FiltroFecha != "Hoy" && _hayMasServidor;
+        OnPropertyChanged(nameof(SinPedidos));
     }
 
     [RelayCommand]
@@ -116,17 +117,14 @@ public partial class PedidosViewModel : ObservableObject
     /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
     public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 
-    /// <summary>
-    /// Vacía los datos locales para que el CollectionView empiece desde cero
-    /// cuando el usuario vuelva a la pestaña (evita duplicados visuales por caché de MAUI).
-    /// </summary>
     public void LimpiarPedidos()
     {
         _todos.Clear();
-        Pedidos = null;
+        Pedidos.Clear();
         HayMas = false;
         _hayMasServidor = false;
         _paginaActual = 1;
+        OnPropertyChanged(nameof(SinPedidos));
     }
 
     /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
