@@ -37,16 +37,18 @@ public partial class PedidosPage : ContentPage
         _vm.LimpiarPedidos();
         base.OnAppearing();
 
+        // WORKAROUND-DUP: MAUI Shell acumula suscripciones a CollectionChanged al
+        // re-adjuntar la página del tab cacheado. Cada Pedidos.Add() dispararía el
+        // handler N veces → N vistas por ítem → duplicación visual.
+        // SetItemsSource(null) fuerza la desuscripción de todas las suscripciones
+        // acumuladas; SetItemsSource(Pedidos) crea UNA suscripción limpia.
+        // Mismo patrón que CarritoPage (probado y funcional).
+        BindableLayout.SetItemsSource(PedidosList, null);
+        BindableLayout.SetItemsSource(PedidosList, _vm.Pedidos);
+
         _vm.Resubscribe();
         _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
 
-        // FIX-DUP-DEF: Diferir la carga al siguiente ciclo del message pump, DESPUÉS de
-        // que Android complete la animación de transición de tabs. EventToCommandBehavior
-        // disparaba CargarCommand dentro de base.OnAppearing(), mientras la jerarquía de
-        // vistas nativa aún tenía estado obsoleto del frame anterior → BindableLayout añadía
-        // ítems nuevos encima de vistas nativas sin limpiar → duplicación visual.
-        // Al diferir con Dispatcher.Dispatch, la vista ya es estable (igual que al hacer
-        // pull-to-refresh manualmente, que nunca duplica).
         Dispatcher.Dispatch(() =>
         {
             if (_vm.CargarCommand.IsRunning) return;

@@ -94,7 +94,10 @@ xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
                     </VerticalStackLayout>
 
                     <!-- Ítems -->
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pedidos}" Spacing="0">
+                    <!-- x:Name permite el workaround null+reassign en OnAppearing para evitar
+                         la duplicación visual por suscripciones acumuladas de BindableLayout -->
+                    <VerticalStackLayout x:Name="PedidosList"
+                                         BindableLayout.ItemsSource="{Binding Pedidos}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="dto:PedidoDto">
                                 <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
