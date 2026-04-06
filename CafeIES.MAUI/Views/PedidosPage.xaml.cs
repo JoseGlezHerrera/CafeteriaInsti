@@ -34,18 +34,25 @@ public partial class PedidosPage : ContentPage
             return;
         }
 
-        // FIX-DUP-3: Nulificar Pedidos ANTES de que base.OnAppearing dispare el
-        // EventToCommandBehavior. Con la vista ya visible, CollectionView procesa
-        // el null en el siguiente frame y destruye el recycler de celdas.
-        // CargarAsync es async: cuando retorna los datos (tras el await de red),
-        // CollectionView reconstruye desde cero → sin duplicados.
         _vm.LimpiarPedidos();
         base.OnAppearing();
 
         _vm.Resubscribe();
-        // FIX-SK: AsyncRelayCommand.IsRunning notifica en el propio comando, no en el ViewModel.
         _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
-        if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
+
+        // FIX-DUP-DEF: Diferir la carga al siguiente ciclo del message pump, DESPUÉS de
+        // que Android complete la animación de transición de tabs. EventToCommandBehavior
+        // disparaba CargarCommand dentro de base.OnAppearing(), mientras la jerarquía de
+        // vistas nativa aún tenía estado obsoleto del frame anterior → BindableLayout añadía
+        // ítems nuevos encima de vistas nativas sin limpiar → duplicación visual.
+        // Al diferir con Dispatcher.Dispatch, la vista ya es estable (igual que al hacer
+        // pull-to-refresh manualmente, que nunca duplica).
+        Dispatcher.Dispatch(() =>
+        {
+            if (_vm.CargarCommand.IsRunning) return;
+            StartSkeletonAnimation();
+            _vm.CargarCommand.Execute(null);
+        });
     }
 
     private async void OnPedidoTapped(object sender, EventArgs e)

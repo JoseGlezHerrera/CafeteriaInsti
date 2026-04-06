@@ -2,15 +2,10 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:CafeIES.MAUI.ViewModels"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
+xmlns:dto="clr-namespace:CafeIES.Shared.Models;assembly=CafeIES.Shared"
              x:Class="CafeIES.MAUI.Views.PedidosPage"
              x:DataType="vm:PedidosViewModel"
              BackgroundColor="{DynamicResource BgColor}">
-
-    <ContentPage.Behaviors>
-        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
-    </ContentPage.Behaviors>
 
     <Grid RowDefinitions="Auto,Auto,*">
         <!-- Header -->
