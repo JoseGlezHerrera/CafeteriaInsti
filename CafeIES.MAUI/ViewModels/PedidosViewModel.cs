@@ -5,7 +5,6 @@ using CafeIES.Shared.Models;
 using CafeIES.MAUI.Services;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
-using System.Collections.ObjectModel;
 
 namespace CafeIES.MAUI.ViewModels;
 
@@ -51,22 +50,32 @@ public partial class PedidosViewModel : ObservableObject
 
     [RelayCommand] private void SetFiltroFecha(string f) => FiltroFecha = f;
 
-    // Colección fija: su referencia NUNCA cambia. BindableLayout se suscribe
-    // una sola vez a CollectionChanged y recibe notificaciones incrementales
-    // (Reset al limpiar, Add por cada ítem). Esto elimina el bug donde
-    // SetProperty devuelve false al asignar null dos veces consecutivas,
-    // dejando los hijos del VerticalStackLayout "huérfanos" y causando
-    // que los nuevos ítems se sumen sobre los anteriores (duplicación).
-    public ObservableCollection<PedidoDto> Pedidos { get; } = new();
+    // FIX-DUP-FINAL: List<T> en lugar de ObservableCollection<T>.
+    // ObservableCollection tiene referencia fija, así que BindableLayout solo se
+    // suscribe a CollectionChanged. MAUI Shell al re-adjuntar la página (vuelta
+    // al tab) puede re-suscribirse a CollectionChanged SIN desuscribirse primero,
+    // acumulando suscripciones duplicadas. Resultado: cada Pedidos.Add() dispara
+    // el handler N veces → N vistas creadas en lugar de 1 → duplicación visual.
+    //
+    // Con List<T> (no implementa INotifyCollectionChanged) BindableLayout no puede
+    // suscribirse a cambios internos. Solo responde cuando la propiedad Pedidos
+    // cambia de referencia, lo que dispara RecreateChildren() — un único Clear()
+    // seguido de CreateChildren() — operación atómica e idempotente aunque se
+    // llame varias veces. SetProperty() siempre dispara PropertyChanged porque
+    // cada new List<>() tiene una referencia distinta.
+    [ObservableProperty] private List<PedidoDto> _pedidos = new();
 
-    public bool SinPedidos => Pedidos.Count == 0;
+    // Notificar SinPedidos cada vez que Pedidos cambia de referencia
+    partial void OnPedidosChanged(List<PedidoDto> value) =>
+        OnPropertyChanged(nameof(SinPedidos));
+
+    public bool SinPedidos => _pedidos.Count == 0;
 
     [RelayCommand]
     public async Task CargarAsync()
     {
         _todos.Clear();
-        Pedidos.Clear();
-        OnPropertyChanged(nameof(SinPedidos));
+        Pedidos = new List<PedidoDto>();   // vista vacía inmediatamente mientras carga
         _paginaActual = 1;
         try
         {
@@ -98,14 +107,13 @@ public partial class PedidosViewModel : ObservableObject
     private void AplicarFiltro()
     {
         var hoy = DateTime.Now.Date;
-        Pedidos.Clear();
         var query = FiltroFecha == "Hoy"
             ? _todos.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy)
             : _todos.AsEnumerable();
-        foreach (var p in query)
-            Pedidos.Add(p);
+        // Nueva referencia en cada llamada → BindableLayout siempre hace RecreateChildren()
+        // (Clear completo + rebuild desde cero), nunca operaciones incrementales.
+        Pedidos = query.ToList();
         HayMas = FiltroFecha != "Hoy" && _hayMasServidor;
-        OnPropertyChanged(nameof(SinPedidos));
     }
 
     [RelayCommand]
@@ -120,11 +128,10 @@ public partial class PedidosViewModel : ObservableObject
     public void LimpiarPedidos()
     {
         _todos.Clear();
-        Pedidos.Clear();
+        Pedidos = new List<PedidoDto>();   // nueva referencia → PropertyChanged siempre dispara
         HayMas = false;
         _hayMasServidor = false;
         _paginaActual = 1;
-        OnPropertyChanged(nameof(SinPedidos));
     }
 
     /// <summary>BUG-4: Restaura suscripciones al volver a la página (tab cacheado).</summary>
