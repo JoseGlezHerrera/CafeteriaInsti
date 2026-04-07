@@ -103,10 +103,10 @@ public partial class PedidosPage : ContentPage
             if (_vm.CargarCommand.IsRunning)
                 StartSkeletonAnimation();
             else
-            {
                 this.AbortAnimation("skeletonPedidos");
-                RebuildList();
-            }
+            // RebuildList() NO se llama aquí — AplicarFiltro() ya notificó SinPedidos
+            // antes de que IsRunning se ponga a false, por lo que OnVmPropertyChanged
+            // ya habrá reconstruido la lista.
         }
     }
 
