@@ -8,9 +8,9 @@
              BackgroundColor="{DynamicResource BgColor}">
 
     <ContentPage.Resources>
-        <!--  Tarjeta de pedido — instanciada manualmente en RebuildList() para evitar
-              el bug de BindableLayout que acumula suscripciones a CollectionChanged
-              al navegar entre tabs en MAUI Shell, causando duplicación visual.  -->
+        <!--  Tarjeta de pedido.
+              x:DataType habilita bindings compilados; el BindingContext lo asigna
+              CollectionView por cada ítem de ItemsSource (List<PedidoDto>).       -->
         <DataTemplate x:Key="PedidoCardTemplate" x:DataType="dto:PedidoDto">
             <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16">
                 <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
@@ -64,6 +64,7 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*">
+
         <!-- Header -->
         <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}" Padding="24,16">
             <Label Text="Mis pedidos" FontFamily="SyneBold" FontSize="22"
@@ -82,7 +83,61 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <!-- Skeleton — visible mientras carga -->
+        <!--  RefreshView > CollectionView (sin ScrollView intermedio).
+              IMPORTANTE: IsRefreshing NO está enlazado a CargarCommand.IsRunning.
+              En Android, ese binding de dos vías hace que setRefreshing(false) dispare
+              onRefresh() en SwipeRefreshLayout → segunda ejecución de CargarCommand →
+              _todos.AddRange() sin Clear() previo → 2× items.
+              En su lugar, PullToRefresh.IsRefreshing se pone a false en code-behind
+              cuando IsRunning pasa a false.                                          -->
+        <RefreshView x:Name="PullToRefresh"
+                     Grid.Row="2"
+                     Command="{Binding CargarCommand}"
+                     RefreshColor="{StaticResource AccentColor}">
+
+            <!--  CollectionView directamente dentro de RefreshView (sin ScrollView).
+                  ItemsSource = List<PedidoDto> (no ObservableCollection) → CollectionView
+                  no suscribe ningún evento CollectionChanged → 0 acumulación de handlers. -->
+            <CollectionView x:Name="PedidosList"
+                            ItemTemplate="{StaticResource PedidoCardTemplate}"
+                            SelectionMode="Single"
+                            SelectionChanged="OnPedidoSelected"
+                            BackgroundColor="{DynamicResource BgColor}"
+                            Margin="24,16,24,0">
+
+                <!-- Estado vacío — CollectionView lo muestra cuando ItemsSource es vacío/null -->
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                         Spacing="12" Margin="0,80"
+                                         IsVisible="{Binding CargarCommand.IsRunning, Converter={StaticResource InvertBoolConverter}}">
+                        <Label Text="📋" FontSize="60" HorizontalOptions="Center"/>
+                        <Label Text="Sin pedidos aún" FontFamily="SyneBold" FontSize="18"
+                               TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
+                        <Label Text="Tus pedidos aparecerán aquí" Style="{StaticResource SubtitleLabel}"
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <!-- Cargar más / spinner — pie de la lista -->
+                <CollectionView.Footer>
+                    <VerticalStackLayout Padding="0,4,0,20">
+                        <Button Text="Cargar más"
+                                Command="{Binding CargarMasCommand}"
+                                IsVisible="{Binding HayMas}"
+                                IsEnabled="{Binding IsCargandoMas, Converter={StaticResource InvertBoolConverter}}"
+                                Style="{StaticResource SecondaryButton}"
+                                HorizontalOptions="Center" Margin="0,8"/>
+                        <ActivityIndicator IsRunning="{Binding IsCargandoMas}"
+                                           IsVisible="{Binding IsCargandoMas}"
+                                           Color="{StaticResource AccentColor}"
+                                           HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
+
+            </CollectionView>
+        </RefreshView>
+
+        <!-- Skeleton — DESPUÉS del RefreshView para quedar encima (mayor Z-order en Grid) -->
         <VerticalStackLayout x:Name="SkeletonPedidos" Grid.Row="2"
                               BackgroundColor="{DynamicResource BgColor}"
                               IsVisible="{Binding CargarCommand.IsRunning}"
@@ -128,47 +183,5 @@
             </Border>
         </VerticalStackLayout>
 
-        <RefreshView Grid.Row="2" Command="{Binding CargarCommand}"
-                     IsRefreshing="{Binding CargarCommand.IsRunning}"
-                     RefreshColor="{StaticResource AccentColor}">
-            <ScrollView>
-                <VerticalStackLayout Margin="24,16" Spacing="0">
-
-                    <!-- Estado vacío -->
-                    <VerticalStackLayout IsVisible="{Binding SinPedidos}"
-                                         VerticalOptions="Center" HorizontalOptions="Center"
-                                         Spacing="12" Margin="0,80">
-                        <Label Text="📋" FontSize="60" HorizontalOptions="Center"/>
-                        <Label Text="Sin pedidos aún" FontFamily="SyneBold" FontSize="18"
-                               TextColor="{DynamicResource TextColor}" HorizontalOptions="Center"/>
-                        <Label Text="Tus pedidos aparecerán aquí" Style="{StaticResource SubtitleLabel}"
-                               HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-
-                    <!-- Ítems — construidos en RebuildList() desde code-behind.
-                         ContentView garantiza reemplazo atómico del árbol visual:
-                         PedidosContainer.Content = new VSL(...) elimina el árbol
-                         viejo y añade el nuevo en una sola operación nativa, evitando
-                         el bug de MAUI Android donde Children.Clear() + Add() en el
-                         mismo ciclo deja views huérfanos en el ViewGroup nativo. -->
-                    <ContentView x:Name="PedidosContainer"/>
-
-                    <!-- Cargar más -->
-                    <VerticalStackLayout Padding="0,4,0,20">
-                        <Button Text="Cargar más"
-                                Command="{Binding CargarMasCommand}"
-                                IsVisible="{Binding HayMas}"
-                                IsEnabled="{Binding IsCargandoMas, Converter={StaticResource InvertBoolConverter}}"
-                                Style="{StaticResource SecondaryButton}"
-                                HorizontalOptions="Center" Margin="0,8"/>
-                        <ActivityIndicator IsRunning="{Binding IsCargandoMas}"
-                                           IsVisible="{Binding IsCargandoMas}"
-                                           Color="{StaticResource AccentColor}"
-                                           HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-
-                </VerticalStackLayout>
-            </ScrollView>
-        </RefreshView>
     </Grid>
 </ContentPage>

@@ -10,11 +10,9 @@ public partial class PedidosPage : ContentPage
     private const string PendingPiKey = "pending_pi_v1";
     private PropertyChangedEventHandler? _vmPropertyChangedHandler;
 
-    // Secuencia de carga: cada OnAppearing incrementa el número.
-    // La lambda de Dispatcher.Dispatch captura el valor en el momento en que se
-    // creó; si OnAppearing vuelve a dispararse antes de que la lambda ejecute
-    // (doble OnAppearing, bug conocido de MAUI Shell en Android), la lambda
-    // obsoleta detecta que la secuencia ya avanzó y sale sin hacer nada.
+    // Guard contra doble OnAppearing (bug MAUI Shell Android):
+    // cada OnAppearing incrementa _loadSequence; la lambda de Dispatch
+    // verifica que la secuencia no haya avanzado antes de ejecutar.
     private int _loadSequence;
 
     public PedidosPage(PedidosViewModel vm)
@@ -25,9 +23,7 @@ public partial class PedidosPage : ContentPage
 
     protected override void OnAppearing()
     {
-        // FIX-PI: Si la app se cerró durante un pago (entre la confirmación de Stripe y la
-        // creación del pedido en BD), el webhook habrá creado el pedido. Al volver a la app,
-        // redirigimos a ConfirmacionPedidoPage para que el usuario vea el resultado.
+        // FIX-PI: pago interrumpido — ver si hay un PaymentIntent pendiente
         var pendingPi = Preferences.Default.Get(PendingPiKey, string.Empty);
         if (!string.IsNullOrEmpty(pendingPi))
         {
@@ -43,7 +39,7 @@ public partial class PedidosPage : ContentPage
         }
 
         _vm.LimpiarPedidos();
-        PedidosContainer.Content = null;   // Vaciar árbol visual de forma atómica
+        PedidosList.ItemsSource = null;   // Limpiar lista de forma limpia
         base.OnAppearing();
 
         // Garantizar UNA sola suscripción a PropertyChanged del ViewModel
@@ -56,8 +52,6 @@ public partial class PedidosPage : ContentPage
         _vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
 
-        // Capturamos la secuencia actual para que esta lambda sea la única que ejecute
-        // aunque OnAppearing dispare varias veces antes de que la lambda llegue a correr.
         var seq = ++_loadSequence;
         Dispatcher.Dispatch(() =>
         {
@@ -80,57 +74,53 @@ public partial class PedidosPage : ContentPage
         _vm.Cleanup();
         this.AbortAnimation("skeletonPedidos");
         _vm.LimpiarPedidos();
-        PedidosContainer.Content = null;   // Vaciar árbol visual al salir
+        PedidosList.ItemsSource = null;
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // SinPedidos se notifica en AplicarFiltro() una vez que los datos están listos:
-        // es la señal de que la lista cambió (carga inicial, "Cargar más" o cambio de filtro).
+        // SinPedidos se notifica en AplicarFiltro() cuando los datos están listos.
+        // Es el único trigger de reconstrucción: carga inicial, "Cargar más" y filtro.
         if (e.PropertyName == nameof(PedidosViewModel.SinPedidos))
             RebuildList();
     }
 
     /// <summary>
-    /// Reconstruye la lista de pedidos de forma atómica: crea un nuevo VerticalStackLayout
-    /// con todos los ítems y lo asigna a PedidosContainer.Content en una sola operación.
-    /// Esto evita el bug de MAUI Android donde Children.Clear() + Children.Add() en el
-    /// mismo ciclo deja views nativos huérfanos en el ViewGroup → duplicación visual.
+    /// Reemplaza ItemsSource con un snapshot List&lt;T&gt; de los pedidos actuales.
+    /// List&lt;T&gt; (sin INotifyCollectionChanged) garantiza que CollectionView
+    /// no suscribe ningún evento de colección → imposible acumulación de handlers.
     /// </summary>
     private void RebuildList()
     {
-        if (!Resources.TryGetValue("PedidoCardTemplate", out var res) || res is not DataTemplate template)
-        {
-            PedidosContainer.Content = null;
-            return;
-        }
+        PedidosList.ItemsSource = new List<PedidoDto>(_vm.Pedidos);
+    }
 
-        var vsl = new VerticalStackLayout { Spacing = 0 };
-        foreach (var pedido in _vm.Pedidos)
+    private async void OnPedidoSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is PedidoDto pedido)
         {
-            var card = (View)template.CreateContent();
-            card.BindingContext = pedido;
-            card.GestureRecognizers.Add(new TapGestureRecognizer
-            {
-                Command = _vm.VerDetallePedidoCommand,
-                CommandParameter = pedido
-            });
-            vsl.Children.Add(card);
+            PedidosList.SelectedItem = null;   // Desseleccionar para limpiar el highlight
+            await _vm.VerDetallePedidoCommand.ExecuteAsync(pedido);
         }
-
-        // Asignación atómica: un solo cambio de referencia → MAUI trata el árbol
-        // viejo y el nuevo como una sustitución completa, sin dejar views colgados.
-        PedidosContainer.Content = vsl;
     }
 
     private void OnCargarCommandPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CommunityToolkit.Mvvm.Input.IAsyncRelayCommand.IsRunning))
+        if (e.PropertyName != nameof(CommunityToolkit.Mvvm.Input.IAsyncRelayCommand.IsRunning))
+            return;
+
+        if (_vm.CargarCommand.IsRunning)
         {
-            if (_vm.CargarCommand.IsRunning)
-                StartSkeletonAnimation();
-            else
-                this.AbortAnimation("skeletonPedidos");
+            StartSkeletonAnimation();
+        }
+        else
+        {
+            this.AbortAnimation("skeletonPedidos");
+            // Restablecer el indicador de pull-to-refresh manualmente.
+            // NO usamos IsRefreshing={Binding IsRunning} porque en Android ese binding
+            // de dos vías provoca que setRefreshing(false) dispare onRefresh() en
+            // SwipeRefreshLayout → segunda ejecución de CargarCommand → duplicación.
+            PullToRefresh.IsRefreshing = false;
         }
     }
 
