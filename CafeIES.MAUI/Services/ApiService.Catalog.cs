@@ -25,7 +25,7 @@ public partial class ApiService
     {
         try
         {
-            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/admin/alergenos");
+            var resp = await EnviarConRefreshAsync(HttpMethod.Get, "api/alergenos");
             return resp.IsSuccessStatusCode
                 ? await resp.Content.ReadFromJsonAsync<List<AlergenoDto>>() ?? new()
                 : new();

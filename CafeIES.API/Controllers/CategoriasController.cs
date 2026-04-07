@@ -35,7 +35,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<CategoriaDto>> Crear([FromBody] CategoriaDto req)
     {
         var cat = new Categoria { Nombre = req.Nombre, Emoji = req.Emoji };
@@ -50,7 +50,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<CategoriaDto>> Actualizar(int id, [FromBody] CategoriaDto req)
     {
         var cat = await _db.Categorias.FindAsync(id);
@@ -67,7 +67,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult> Eliminar(int id)
     {
         var cat = await _db.Categorias.FindAsync(id);

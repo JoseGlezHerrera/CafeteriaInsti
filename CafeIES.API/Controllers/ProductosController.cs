@@ -64,9 +64,9 @@ public class ProductosController : ControllerBase
         return p is null ? NotFound() : Ok(p.ToDto());
     }
 
-    // ── POST /api/productos  (solo Admin) ────────────────────────────────────
+    // ── POST /api/productos  (Admin / Empleado) ──────────────────────────────
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     public async Task<ActionResult<ProductoDto>> Crear([FromBody] CrearProductoRequest req)
     {
         if (!await _db.Categorias.AnyAsync(c => c.Id == req.CategoriaId))

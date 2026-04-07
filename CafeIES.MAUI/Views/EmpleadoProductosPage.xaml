@@ -12,12 +12,26 @@
     </ContentPage.Behaviors>
     <Grid RowDefinitions="Auto,*">
         <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}"
-              Padding="20,16" ColumnDefinitions="*,Auto">
-            <Label Grid.Column="0" Text="Productos" FontFamily="SyneBold" FontSize="22" TextColor="{DynamicResource TextColor}"/>
-            <Button Grid.Column="1" Text="Ingredientes"
+              Padding="16,16" ColumnDefinitions="*,Auto,6,Auto,6,Auto,6,Auto">
+            <Label Grid.Column="0" Text="Productos"
+                   FontFamily="SyneBold" FontSize="20"
+                   TextColor="{DynamicResource TextColor}"/>
+            <Button Grid.Column="1" Text="Alérg."
                     Style="{StaticResource SecondaryButton}"
-                    HeightRequest="38" FontSize="13" Padding="12,0"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
+                    Command="{Binding IrAlergenosCommand}"/>
+            <Button Grid.Column="3" Text="Categ."
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
+                    Command="{Binding IrCategoriasCommand}"/>
+            <Button Grid.Column="5" Text="Ingred."
+                    Style="{StaticResource SecondaryButton}"
+                    HeightRequest="38" FontSize="12" Padding="10,0"
                     Command="{Binding IrIngredientesCommand}"/>
+            <Button Grid.Column="7" Text="+ Nuevo"
+                    Style="{StaticResource PrimaryButton}"
+                    HeightRequest="38" FontSize="12" Padding="12,0"
+                    Command="{Binding NuevoProductoCommand}"/>
         </Grid>
         <RefreshView Grid.Row="1" IsRefreshing="{Binding IsLoading}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Productos}" Margin="16,12">

@@ -34,8 +34,20 @@ public partial class EmpleadoProductosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task IrAlergenosAsync()
+        => await Shell.Current.GoToAsync("AdminAlergenos");
+
+    [RelayCommand]
+    private async Task IrCategoriasAsync()
+        => await Shell.Current.GoToAsync("AdminCategorias");
+
+    [RelayCommand]
     private async Task IrIngredientesAsync()
         => await Shell.Current.GoToAsync("AdminIngredientes");
+
+    [RelayCommand]
+    private async Task NuevoProductoAsync()
+        => await Shell.Current.GoToAsync("AdminEditProducto?productoId=0");
 
     [RelayCommand]
     private async Task ToggleActivoAsync(ProductoDto producto)

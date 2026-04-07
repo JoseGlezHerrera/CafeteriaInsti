@@ -239,7 +239,7 @@ public partial class ApiService
         try
         {
             var req  = new AlergenoDto(0, nombre, emoji);
-            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/admin/alergenos",
+            var resp = await EnviarConRefreshAsync(HttpMethod.Post, "api/alergenos",
                 JsonContent.Create(req));
             return resp.IsSuccessStatusCode;
         }
@@ -254,7 +254,7 @@ public partial class ApiService
     {
         try
         {
-            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/admin/alergenos/{id}");
+            var resp = await EnviarConRefreshAsync(HttpMethod.Delete, $"api/alergenos/{id}");
             return resp.IsSuccessStatusCode;
         }
         catch (Exception ex)
