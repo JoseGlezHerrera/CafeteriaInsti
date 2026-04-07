@@ -1,13 +1,14 @@
 using CafeIES.MAUI.ViewModels;
 using CafeIES.Shared.Models;
+using System.ComponentModel;
 
 namespace CafeIES.MAUI.Views;
 
 public partial class PedidosPage : ContentPage
 {
     private readonly PedidosViewModel _vm;
-    // FIX-PI: clave debe coincidir con CarritoViewModel.PendingPiKey
     private const string PendingPiKey = "pending_pi_v1";
+    private PropertyChangedEventHandler? _vmPropertyChangedHandler;
 
     public PedidosPage(PedidosViewModel vm)
     {
@@ -35,18 +36,17 @@ public partial class PedidosPage : ContentPage
         }
 
         _vm.LimpiarPedidos();
+        PedidosList.Children.Clear();
         base.OnAppearing();
 
-        // WORKAROUND-DUP: MAUI Shell acumula suscripciones a CollectionChanged al
-        // re-adjuntar la página del tab cacheado. Cada Pedidos.Add() dispararía el
-        // handler N veces → N vistas por ítem → duplicación visual.
-        // SetItemsSource(null) fuerza la desuscripción de todas las suscripciones
-        // acumuladas; SetItemsSource(Pedidos) crea UNA suscripción limpia.
-        // Mismo patrón que CarritoPage (probado y funcional).
-        BindableLayout.SetItemsSource(PedidosList, null);
-        BindableLayout.SetItemsSource(PedidosList, _vm.Pedidos);
+        // Garantizar UNA sola suscripción a PropertyChanged del ViewModel
+        if (_vmPropertyChangedHandler != null)
+            ((INotifyPropertyChanged)_vm).PropertyChanged -= _vmPropertyChangedHandler;
+        _vmPropertyChangedHandler = OnVmPropertyChanged;
+        ((INotifyPropertyChanged)_vm).PropertyChanged += _vmPropertyChangedHandler;
 
         _vm.Resubscribe();
+        _vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         _vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
 
         Dispatcher.Dispatch(() =>
@@ -57,30 +57,56 @@ public partial class PedidosPage : ContentPage
         });
     }
 
-    private async void OnPedidoTapped(object sender, EventArgs e)
-    {
-        if ((sender as BindableObject)?.BindingContext is PedidoDto pedido)
-            await _vm.VerDetallePedidoCommand.ExecuteAsync(pedido);
-    }
-
-    // FIX-11: Desuscribir mensajes al desaparecer la página
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        if (_vmPropertyChangedHandler != null)
+        {
+            ((INotifyPropertyChanged)_vm).PropertyChanged -= _vmPropertyChangedHandler;
+            _vmPropertyChangedHandler = null;
+        }
         _vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         _vm.Cleanup();
         this.AbortAnimation("skeletonPedidos");
-        // FIX-DUP: vaciar datos para que CollectionView empiece limpio al volver;
-        // sin esto, MAUI mantiene los ítems en caché visual y los duplica al recargar.
         _vm.LimpiarPedidos();
+        PedidosList.Children.Clear();
     }
 
-    private void OnCargarCommandPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PedidosViewModel.SinPedidos))
+            RebuildList();
+    }
+
+    private void RebuildList()
+    {
+        PedidosList.Children.Clear();
+        if (!Resources.TryGetValue("PedidoCardTemplate", out var res) || res is not DataTemplate template)
+            return;
+        foreach (var pedido in _vm.Pedidos)
+        {
+            var card = (View)template.CreateContent();
+            card.BindingContext = pedido;
+            card.GestureRecognizers.Add(new TapGestureRecognizer
+            {
+                Command = _vm.VerDetallePedidoCommand,
+                CommandParameter = pedido
+            });
+            PedidosList.Children.Add(card);
+        }
+    }
+
+    private void OnCargarCommandPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(CommunityToolkit.Mvvm.Input.IAsyncRelayCommand.IsRunning))
         {
-            if (_vm.CargarCommand.IsRunning) StartSkeletonAnimation();
-            else this.AbortAnimation("skeletonPedidos");
+            if (_vm.CargarCommand.IsRunning)
+                StartSkeletonAnimation();
+            else
+            {
+                this.AbortAnimation("skeletonPedidos");
+                RebuildList();
+            }
         }
     }
 
