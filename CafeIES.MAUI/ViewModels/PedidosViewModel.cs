@@ -62,7 +62,10 @@ public partial class PedidosViewModel : ObservableObject
     {
         _todos.Clear();
         Pedidos.Clear();
-        OnPropertyChanged(nameof(SinPedidos));
+        // No notificamos SinPedidos aquí: AplicarFiltro() lo notifica al final con
+        // los datos reales. Lanzarlo también en vacío causaba dos llamadas a RebuildList
+        // por carga, y en MAUI Android el segundo Children.Add() sobre un Clear() pendiente
+        // dejaba views huérfanos en el ViewGroup nativo (bug de duplicación visual).
         _paginaActual = 1;
         try
         {

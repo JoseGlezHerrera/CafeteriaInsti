@@ -145,8 +145,13 @@
                                HorizontalOptions="Center"/>
                     </VerticalStackLayout>
 
-                    <!-- Ítems — construidos en RebuildList() desde code-behind -->
-                    <VerticalStackLayout x:Name="PedidosList" Spacing="0"/>
+                    <!-- Ítems — construidos en RebuildList() desde code-behind.
+                         ContentView garantiza reemplazo atómico del árbol visual:
+                         PedidosContainer.Content = new VSL(...) elimina el árbol
+                         viejo y añade el nuevo en una sola operación nativa, evitando
+                         el bug de MAUI Android donde Children.Clear() + Add() en el
+                         mismo ciclo deja views huérfanos en el ViewGroup nativo. -->
+                    <ContentView x:Name="PedidosContainer"/>
 
                     <!-- Cargar más -->
                     <VerticalStackLayout Padding="0,4,0,20">
