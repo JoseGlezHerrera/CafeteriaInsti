@@ -107,6 +107,7 @@ CafeIES/
 │   │   ├── PagosController.cs          Crear PaymentIntent (con split gratuito), cancelar, webhook
 │   │   ├── AdminController.cs          Usuarios, institutos, invitaciones, horarios, reportes,
 │   │   │                               desayunos (consumos + gestión beneficiarios)
+│   │   ├── AlergenosController.cs      CRUD alérgenos — [Authorize(Roles="Admin,Empleado")]
 │   │   ├── NotificacionesController.cs Registro/eliminación tokens FCM (infraestructura)
 │   │   └── EmpleadoController.cs       Pedidos en curso para empleados/personal
 │   ├── Data/
@@ -154,7 +155,7 @@ CafeIES/
 │   │   ├── AdminHorariosPage           Gestión de franjas horarias por instituto
 │   │   ├── AdminPerfilPage             Perfil del administrador
 │   │   ├── EmpleadoPedidosPage         Historial del día: activos (Pendiente/EnPrep) + cerrados (Listo/Entregado/Cancelado)
-│   │   └── EmpleadoProductosPage       Catálogo con control de stock y toggle de disponibilidad
+│   │   └── EmpleadoProductosPage       Catálogo con control de stock, toggle y accesos rápidos a Alérgenos, Categorías, Ingredientes y crear producto
 │   ├── ViewModels/                     MVVM con CommunityToolkit.Mvvm
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR; warmup a /health
@@ -552,6 +553,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Gestión de Ingredientes — botón eliminar visible (sustituyó al SwipeView oculto); toggle activo/inactivo; acceso directo a Alérgenos desde la cabecera
 - Forzar borrado de usuario — si el usuario tiene pedidos asociados, se ofrece confirmar el borrado forzoso (los pedidos quedan con `UsuarioId = null`, historial preservado)
 - Accesos rápidos desde AdminProductosPage a Categorías e Ingredientes en la cabecera
+- Empleados tienen los mismos accesos rápidos: Alérgenos / Categorías / Ingredientes / + Nuevo producto — mismos permisos en API (AlergenosController, CategoriasController POST/PUT/DELETE, ProductosController POST)
 
 **Panel admin web (Blazor WASM) — 11 páginas**
 - Dashboard con métricas en tiempo real
@@ -603,6 +605,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | UX carrito | ✅ Completada | Fix duplicación visual items; "Editar ingredientes" visible en todos los productos configurables; botones ±  circulares 44×44dp |
 | Bugs navegación + UX stepper | ✅ Completada | Fix duplicación PedidosPage (List vs ObservableCollection); ConfirmacionPedidoPage se saca del stack; stepper ingredientes 36×36dp |
 | Gestión completa MAUI admin | ✅ Completada | Imagen desde cámara/galería; CRUD categorías y alérgenos; eliminar ingrediente visible; forzar borrado usuario con pedidos; detalle pedido desde historial |
+| Permisos Empleado — catálogo completo | ✅ Completada | AlergenosController (api/alergenos) con rol Empleado; Categorías y Productos POST/PUT/DELETE abiertos a Empleado; botones Alérg./Categ./+Nuevo en EmpleadoProductosPage |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -612,6 +615,21 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.30.0 — Permisos Empleado: alérgenos, categorías y crear productos (2026-04-08)
+
+#### Backend
+- **`AlergenosController`** (nuevo, `api/alergenos`): GET/POST/DELETE con `[Authorize(Roles="Admin,Empleado")]`. El endpoint anterior `api/admin/alergenos` seguía requiriendo rol Admin a nivel de clase; se crea un controlador independiente para poder dar acceso a empleados sin tocar AdminController
+- **`CategoriasController`**: POST, PUT y DELETE cambian de `"Admin"` a `"Admin,Empleado"` — el empleado puede crear, renombrar y eliminar categorías
+- **`ProductosController`**: POST cambia de `"Admin"` a `"Admin,Empleado"` — el empleado puede crear productos nuevos
+
+#### MAUI
+- **`ApiService.Catalog.GetAlergenosAsync`**: URL actualizada de `api/admin/alergenos` a `api/alergenos` — el empleado ya puede cargar la lista (antes recibía 403)
+- **`ApiService.Admin.CrearAlergenoAsync` / `EliminarAlergenoAsync`**: misma actualización de URL
+- **`EmpleadoProductosViewModel`**: añadidos `IrAlergenosCommand`, `IrCategoriasCommand` y `NuevoProductoCommand` — navegan a `AdminAlergenos`, `AdminCategorias` y `AdminEditProducto?productoId=0`
+- **`EmpleadoProductosPage`**: cabecera rediseñada con 4 botones (igual que `AdminProductosPage`): **Alérg. / Categ. / Ingred. / + Nuevo**
+
+---
 
 ### v0.29.0 — Gestión de alérgenos desde MAUI (2026-04-06)
 
