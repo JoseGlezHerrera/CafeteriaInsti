@@ -249,9 +249,9 @@ public class ProductosController : ControllerBase
         return NoContent();
     }
 
-    // ── POST /api/productos/{id}/imagen  (Admin) ──────────────────────────────
+    // ── POST /api/productos/{id}/imagen  (Admin / Empleado) ─────────────────
     [HttpPost("{id}/imagen")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Empleado")]
     [RequestFormLimits(MultipartBodyLengthLimit = 5_242_880)]  // 5 MB
     [RequestSizeLimit(5_242_880)]
     public async Task<ActionResult> SubirImagen(int id, IFormFile imagen)
