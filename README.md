@@ -14,6 +14,11 @@
 
 ## Tabla de contenidos
 
+- [Resumen ejecutivo](#resumen-ejecutivo)
+- [Características destacadas](#características-destacadas)
+- [Decisiones técnicas y justificación](#decisiones-técnicas-y-justificación)
+- [Flujos principales de usuario](#flujos-principales-de-usuario)
+- [Guía de demo rápida](#guía-de-demo-rápida)
 - [Arquitectura](#arquitectura)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del proyecto](#estructura-del-proyecto)
@@ -29,6 +34,120 @@
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
 - [Roadmap](#roadmap)
 - [Changelog](#changelog)
+
+---
+
+## Resumen ejecutivo
+
+CaféIES es un sistema completo de gestión de pedidos de cafetería diseñado para institutos de educación secundaria, desarrollado como proyecto académico con tecnologías de producción.
+
+- **App móvil Android** (MAUI) para alumnos y empleados: catálogo, carrito, pago real con Stripe, personalización de ingredientes y seguimiento de pedido en tiempo real.
+- **Panel web de administración** (Blazor WASM) para gestión completa: usuarios, productos, pedidos, horarios, reportes Excel/PDF e institutos.
+- **API REST** (ASP.NET Core 9) con JWT + BCrypt, rate limiting en 4 políticas, audit trail y SignalR para actualizaciones en vivo.
+- **Programa de desayuno gratuito**: alumnos beneficiarios reciben 1 zumo + 1 bocadillo al día sin cargo, con validación concurrente en servidor para evitar dobles consumos.
+- **Infraestructura Azure en producción**: App Service F1 + SQL Server + Blob Storage + Static Web Apps, con CI/CD automático vía GitHub Actions.
+
+---
+
+## Características destacadas
+
+### Móvil (MAUI Android)
+- Auto-login sin flash de pantalla — fade-in solo si no hay sesión activa
+- Skeleton loading animado en catálogo y pedidos mientras cargan los datos
+- Personalización de ingredientes: switches on/off y stepper para cantidades múltiples; precio recalculado en tiempo real
+- Tema claro/oscuro reactivo — sigue la preferencia del sistema sin reiniciar
+- Carrito persistente entre sesiones vía `Preferences`; se recupera si la app se cierra
+
+### Pagos
+- Stripe PaymentIntent con total calculado **siempre en servidor** — el cliente nunca envía el importe
+- Pantalla de confirmación aparece inmediatamente tras el pago; el pedido se crea en background
+- Desayuno gratuito: si el total es 0 €, se salta Stripe por completo
+- Webhook como respaldo: si la app falla tras el pago, Stripe crea el pedido igualmente
+
+### Tiempo real
+- SignalR con grupos por cafetería y por usuario — el alumno ve el estado de su pedido actualizado en vivo
+- Dashboard admin con pedidos nuevos al instante + auto-refresh de respaldo cada 30 s
+
+### Seguridad
+- BCrypt workFactor 12, JWT (1 h access / 30 días refresh con rotación), rate limiting en 4 políticas
+- Audit trail con prefijo `[AUDIT]` en todos los endpoints admin/empleado
+- Transacción `Serializable` para el desayuno gratuito + índice único `(UsuarioId, Fecha)` — previene dobles consumos concurrentes
+
+### Infraestructura y calidad
+- 108 tests unitarios (xUnit): HorarioService, AuthService, dominio, validaciones, DesayunoService
+- 3 pipelines GitHub Actions: API (~4 min), Admin (~2 min), APK Android (~3 min)
+- Health check en `/health`; warmup automático al arrancar para reducir cold starts en F1
+
+---
+
+## Decisiones técnicas y justificación
+
+| Decisión | Alternativa considerada | Por qué se eligió |
+|---|---|---|
+| **.NET MAUI** para la app móvil | Flutter, React Native | Stack único .NET — se comparte `CafeIES.Shared` con la API sin duplicar modelos ni validaciones |
+| **Blazor WASM** para el panel admin | React/Angular | Mismo ecosistema .NET; el panel no necesita SEO y el primer-load de 2 s es aceptable para un panel interno |
+| **Stripe** para pagos | PayPal, pasarela bancaria propia | SDK oficial, webhooks fiables, modo test completo sin necesidad de cuenta bancaria real durante el desarrollo |
+| **SignalR** para tiempo real | Polling puro, WebSockets manuales | Integrado en ASP.NET Core; reconexión automática y grupos de difusión sin infraestructura adicional |
+| **JWT + BCrypt** en lugar de Identity | ASP.NET Core Identity | Control total sobre el flujo de refresh token; workFactor 12 para contraseñas; sin dependencia de tablas Identity |
+| **Azure App Service F1** | VPS propio, Railway, Fly.io | Integración directa con GitHub Actions; SSL gratuito; escala sin gestionar servidores |
+| **EF Core + SQL Server** | Dapper, PostgreSQL | EF Migrations facilita el historial de esquema; SQL Server gratuito con Azure SQL (5 GB) |
+| **AlergenosController separado** | Añadir rol Empleado en AdminController | `AdminController` tiene `[Authorize(Roles="Admin")]` a nivel de clase — no se puede sobreescribir por acción; controlador propio evita tocar la clase |
+
+---
+
+## Flujos principales de usuario
+
+### Alumno — hacer un pedido
+1. Abre la app → auto-login (o registro si es la primera vez)
+2. Explora el catálogo: filtra por categoría o busca por nombre
+3. Toca un producto → personaliza ingredientes → añade al carrito
+4. Abre el carrito → ve el banner 🍊 si tiene desayuno disponible hoy
+5. Pulsa "Pagar" → Stripe WebView → introduce tarjeta (o 0 € flujo gratuito → sin Stripe)
+6. Pantalla de confirmación → muestra número de pedido y estado en tiempo real (SignalR)
+7. Puede seguir el estado desde "Mis pedidos" → tap en el pedido → DetallePedidoPage
+
+### Empleado — gestionar el servicio
+1. Login → vista "Pedidos del día" (solo los del propio instituto)
+2. Ve pedidos Pendiente → pulsa "Preparar" → estado cambia a En preparación (SignalR notifica al alumno)
+3. Cuando está listo → pulsa "Listo" → alumno notificado; empleado puede "Entregar" o "Cancelar"
+4. Accede a "Productos" → puede crear/editar productos, gestionar stock, toggle activo/inactivo
+5. Desde Productos → "Categ." (AdminCategoriasPage) · "Ingred." → AdminIngredientesPage → "Alérgenos"
+
+### Admin — gestión completa
+1. Login → Dashboard Blazor o app MAUI (ambos operativos)
+2. **Usuarios**: aprobar alumnos pendientes, activar desayuno gratuito 🍊, crear invitaciones QR
+3. **Productos**: CRUD completo con imagen (cámara/galería), asignación de ingredientes, ComponenteDesayuno
+4. **Pedidos**: filtrar por instituto/fecha/estado; cambiar estado; exportar Excel/PDF
+5. **Horarios**: configurar franjas horarias por instituto y turno
+6. **Institutos**: alta de nuevos centros; el admin solo puede ver/gestionar su propio instituto
+
+---
+
+## Guía de demo rápida
+
+### Credenciales
+
+| Rol | Email | Contraseña |
+|---|---|---|
+| Admin | `admin@cafeies.local` | (configurado en Azure App Settings) |
+| Empleado | crear desde MAUI Admin → Usuarios → Invitación | — |
+| Alumno | registro en la app con instituto seleccionado | — |
+
+### Tarjeta de prueba Stripe
+
+```
+Número:   4242 4242 4242 4242
+Caducidad: cualquier fecha futura
+CVC:       cualquier 3 dígitos
+```
+
+### Orden de demo recomendado
+
+1. **Admin (Blazor)**: mostrar Dashboard, crear un producto con imagen, activar desayuno gratuito a un alumno
+2. **Admin (MAUI)**: mismo producto desde la app; mostrar panel contextual de usuarios
+3. **Alumno**: hacer un pedido con personalización de ingredientes + pago Stripe (o pedido gratuito)
+4. **Empleado**: recibir el pedido, cambiar estado a "En preparación" → ver cómo se actualiza en el MAUI del alumno en tiempo real
+5. **Blazor**: ver el pedido aparece en tiempo real en el Dashboard; exportar reporte Excel
 
 ---
 
@@ -71,7 +190,7 @@
 | Pagos | Stripe PaymentIntent + Webhook | Stripe.net 50.x |
 | Tiempo real | ASP.NET Core SignalR | — |
 | Almacenamiento imágenes | Azure Blob Storage (prod) / local (dev) | Azure.Storage.Blobs 12.x |
-| Hosting API | Azure App Service (B1, Linux, .NET 9) | — |
+| Hosting API | Azure App Service (F1, Linux, .NET 9) | — |
 | Hosting Admin | Azure Static Web Apps (free tier) | — |
 | CI/CD | GitHub Actions | — |
 | Reportes | ClosedXML (Excel) + QuestPDF (PDF) | — |
@@ -155,7 +274,7 @@ CafeIES/
 │   │   ├── AdminHorariosPage           Gestión de franjas horarias por instituto
 │   │   ├── AdminPerfilPage             Perfil del administrador
 │   │   ├── EmpleadoPedidosPage         Historial del día: activos (Pendiente/EnPrep) + cerrados (Listo/Entregado/Cancelado)
-│   │   └── EmpleadoProductosPage       Catálogo con control de stock, toggle y accesos rápidos a Alérgenos, Categorías, Ingredientes y crear producto
+│   │   └── EmpleadoProductosPage       Catálogo con control de stock, toggle y accesos rápidos a Categorías, Ingredientes (→ Alérgenos) y crear producto
 │   ├── ViewModels/                     MVVM con CommunityToolkit.Mvvm
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR; warmup a /health
@@ -285,7 +404,7 @@ Para dispositivo físico Android, reemplazar `10.0.2.2` por la IP local de tu m�
 
 | Recurso | Tipo | Región |
 |---|---|---|
-| `cafeies-api` | App Service (B1, Linux, .NET 9) | North Europe |
+| `cafeies-api` | App Service (F1, Linux, .NET 9) | North Europe |
 | `cafeies-sql` | Azure SQL Database | North Europe |
 | `cafeies-storage` | Storage Account (Blob) | North Europe |
 | `cafeies-admin` | Static Web App (Free) | Global |
@@ -317,7 +436,7 @@ Los tres workflows se disparan automáticamente al hacer push a `main`:
 | `deploy-admin.yml` | `CafeIES.Admin/**`, `CafeIES.Shared/**` | Azure Static Web Apps |
 | `deploy-android.yml` | `CafeIES.MAUI/**`, `CafeIES.Shared/**` | GitHub Releases (APK) |
 
-El APK se versiona automáticamente como `YYYY.MM.<run_number>` y se publica como pre-release en [Releases](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases).
+El APK se versiona automáticamente como `YYYY.MM.<run_number>` y se publica como **latest release** en [Releases](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases).
 
 ---
 
@@ -553,7 +672,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Gestión de Ingredientes — botón eliminar visible (sustituyó al SwipeView oculto); toggle activo/inactivo; acceso directo a Alérgenos desde la cabecera
 - Forzar borrado de usuario — si el usuario tiene pedidos asociados, se ofrece confirmar el borrado forzoso (los pedidos quedan con `UsuarioId = null`, historial preservado)
 - Accesos rápidos desde AdminProductosPage a Categorías e Ingredientes en la cabecera
-- Empleados tienen los mismos accesos rápidos: Alérgenos / Categorías / Ingredientes / + Nuevo producto — mismos permisos en API (AlergenosController, CategoriasController POST/PUT/DELETE, ProductosController POST)
+- Empleados tienen los mismos accesos rápidos que el admin: Categorías / Ingredientes (desde donde se accede a Alérgenos) / + Nuevo producto — mismos permisos en API (AlergenosController, CategoriasController POST/PUT/DELETE, ProductosController POST + imagen)
 
 **Panel admin web (Blazor WASM) — 11 páginas**
 - Dashboard con métricas en tiempo real
@@ -568,14 +687,19 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Sistema de Invitaciones con QR descargable
 - Reportes: Excel (3 hojas) y PDF (límite 1.000 registros)
 
+**Catálogo y fotos**
+- Fotos reales de productos en las tarjetas del catálogo (con fallback a emoji de categoría si no hay imagen)
+- Caché de catálogo invalidada en cada carga explícita — los cambios de foto son visibles de inmediato
+- Banner de horario simplificado: solo muestra "Pedidos no disponibles ahora" cuando está fuera de franja
+
 **Infraestructura**
 - Multi-instituto — selector en registro, filtros por instituto en admin, claim en JWT
 - Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod); fix: boundary multipart y URLs absolutas corregidas
-- Infraestructura Azure operativa — App Service + SQL + Blob Storage + Static Web Apps
-- CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min)
+- Infraestructura Azure operativa — App Service F1 + SQL Server + Blob Storage + Static Web Apps (tier gratuito)
+- CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min); cada APK publicado como latest release
 - 108 tests unitarios — HorarioService, AuthService, dominio, validaciones, DesayunoService
 - Health check en `/health` para Azure App Service
-- Warmup automático al arrancar (ping a `/health` en frío para reducir lag)
+- Warmup automático al arrancar (ping a `/health` en frío para reducir lag en F1)
 - Hard delete de productos con historial conservado (FK nullable `SET NULL`)
 
 ---
@@ -605,7 +729,8 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | UX carrito | ✅ Completada | Fix duplicación visual items; "Editar ingredientes" visible en todos los productos configurables; botones ±  circulares 44×44dp |
 | Bugs navegación + UX stepper | ✅ Completada | Fix duplicación PedidosPage (List vs ObservableCollection); ConfirmacionPedidoPage se saca del stack; stepper ingredientes 36×36dp |
 | Gestión completa MAUI admin | ✅ Completada | Imagen desde cámara/galería; CRUD categorías y alérgenos; eliminar ingrediente visible; forzar borrado usuario con pedidos; detalle pedido desde historial |
-| Permisos Empleado — catálogo completo | ✅ Completada | AlergenosController (api/alergenos) con rol Empleado; Categorías y Productos POST/PUT/DELETE abiertos a Empleado; botones Alérg./Categ./+Nuevo en EmpleadoProductosPage |
+| Permisos Empleado — catálogo completo | ✅ Completada | AlergenosController propio (api/alergenos) con rol Empleado; Categorías y Productos POST/PUT/DELETE+imagen abiertos a Empleado; botones Categ./Ingred./+Nuevo en EmpleadoProductosPage |
+| Fotos en catálogo + UX horario | ✅ Completada | Imagen real en tarjetas del catálogo (fallback emoji); invalidación de caché en cada carga; banner horario simplificado |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -615,6 +740,23 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.31.0 — Fotos en catálogo, UX horario y ajustes de empleado (2026-04-08)
+
+#### Backend
+- **`ProductosController`** `POST /{id}/imagen`: cambia de `"Admin"` a `"Admin,Empleado"` — el empleado puede subir la foto al crear un producto nuevo (antes recibía 403 al intentar subir la imagen aunque el POST del producto sí funcionaba)
+
+#### MAUI
+- **`HomeViewModel.CargarAsync`**: `_cacheTimestamp = DateTime.MinValue` al inicio de cada carga — invalida la caché en cada llamada explícita; los cambios de foto en los productos son visibles de inmediato sin tener que esperar los 60 s de caché
+- **`HomePage.xaml`**: añadido `<Image>` superpuesto sobre el emoji de categoría en la tarjeta de producto; visible solo cuando `ImagenUrl` no es nulo/vacío (`StringNotNullOrEmptyConverter`); `Aspect="AspectFill"` para mantener la proporción
+- **`HomePage.xaml`**: banner de horario simplificado — eliminada la segunda línea "Próxima ventana: …"; ahora solo muestra "Pedidos no disponibles ahora"
+- **`EmpleadoProductosPage.xaml`**: layout de cabecera final con 3 botones (**Categ. / Ingred. / + Nuevo**) — el acceso a Alérgenos queda igual que en AdminProductosPage: a través de Ingredientes → Alérgenos
+- **`EmpleadoProductosViewModel`**: añadidos `IrCategoriasCommand` y `NuevoProductoCommand`; `IrIngredientesCommand` ya existía
+
+#### CI/CD
+- **`deploy-android.yml`**: `prerelease: false` + `make_latest: true` — cada nuevo APK se publica como latest release en GitHub Releases (antes se marcaba como pre-release)
+
+---
 
 ### v0.30.0 — Permisos Empleado: alérgenos, categorías y crear productos (2026-04-08)
 
@@ -755,147 +897,16 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 
 ---
 
-### v0.20.0 — Auditoría completa + correcciones de bugs y tema claro (2026-04-03)
+### v0.15.0 – v0.20.0 — Resumen (2026-04-02 / 2026-04-03)
 
-#### Correcciones de bugs
-- `PedidosPage` — skeleton de carga ahora se suscribe a `CargarCommand.PropertyChanged` en lugar de `ViewModel.PropertyChanged`: `AsyncRelayCommand.IsRunning` notifica en el propio comando, no en el VM, por lo que la animación pulsante ahora termina correctamente
-- `ConfirmacionPedidoPage` — botón "atrás" permanentemente bloqueado tras un pago con Stripe: se añade flag `_pagoCompletado` que se activa cuando el polling encuentra el pedido o agota el timeout (60 s); el usuario ya puede volver al historial sin quedar atrapado
-
-#### Mejoras de tema claro
-- `AppShell` — colores de la barra de tabs eran hardcoded oscuros en XAML; ahora se aplican desde código en `ApplyTabBarTheme()` con `RequestedThemeChanged`, adaptándose al tema del sistema
-- `DetallePedidoViewModel` — color "dim" de los pasos del pedido cambiado de `#2E2B26` (invisible en fondo claro) a `#7A7468` (gris neutro legible en ambos temas)
-- 20 archivos XAML: `StaticResource` en estilos de colores cambiados a `DynamicResource` para que el cambio de tema sea instantáneo sin reiniciar la app
-
----
-
-### v0.19.0 — Deuda técnica, bugs/robustez y UX 2ª ronda (2026-04-02)
-
-#### Deuda técnica (T-01..T-06)
-- `ApiService.cs` (~1100 líneas) refactorizado en 6 clases parciales por dominio: Auth, Pagos, Catalog, Pedidos, Admin
-- `PedidoCardView` — ContentView reutilizable con events tipados `EventHandler<PedidoDto>`; usado en AdminPedidosPage y EmpleadoPedidosPage
-- Tema claro/oscuro: reemplazados `AppThemeColor` (incompatibles con XamlC) por `<Color>` + código en `App.xaml.cs`
-- `MauiEnableXamlCBindingWithSourceCompilation=true` — elimina 12 avisos XC0025 de compiled bindings
-- `OperatingSystem.IsAndroidVersionAtLeast(35)` guard en `MainActivity.cs` — resuelve CA1422
-- `#pragma warning disable CS0649` en `PushNotificationService` — campo `_currentToken` intencionalmente sin asignar
-
-#### Bugs / Robustez (B-01..B-06)
-- `CambiarEstadoPedidoAsync` ahora devuelve `(bool Ok, string? Error)` — se muestra el mensaje real del servidor en los diálogos
-- `PedidosViewModel.CargarMasAsync` envuelto en try/finally — `IsCargandoMas` siempre se resetea aunque falle la red
-- `PedidosPage.OnAppearing` — null-check de `Shell.Current` en la recuperación de PaymentIntent pendiente
-- Toast en `EmpleadoPedidosViewModel` envueltos en try-catch (COMException en Windows/unpackaged)
-- `AdminEditProductoViewModel` — `IsNullOrEmpty` en lugar de `is not null` para `ImagenUrl`; evita pasar `""` a `BuildImageUrl`
-- Skeleton de `HomePage` solo arranca si `IsLoading=true`; se para/reanuda via `PropertyChanged`
-
-#### UX / Calidad visual (U-01..U-06)
-- `LoginPage` — `SemanticProperties` en heading, campos de texto y los 3 botones
-- `PedidosPage` — `EmptyView` oculto mientras `CargarCommand.IsRunning` (ya no aparece "Sin pedidos" durante la carga inicial)
-- `ProductoDetallePage` — animación de entrada fade+slide (280ms, `CubicOut`) al abrir la página
-- `CarritoPage` — press animation en botón Pagar (`ScaleTo 94%` + rebote); `InputTransparent` en el ScrollView mientras `IsLoading`
-- `PedidosPage` — skeleton loading con 3 tarjetas placeholder y animación pulsante (igual que `HomePage`)
-- `HomeViewModel` — `PeriodicTimer` cada 60 s que refresca solo el banner de horario sin recargar el catálogo
-
----
-
-### v0.18.0 — UX sprint: tema claro, skeleton loading, accesibilidad y animaciones
-
-#### Tema claro/oscuro adaptativo
-- La app detecta el tema del sistema (claro u oscuro) al arrancar y cuando el usuario lo cambia
-- 7 colores de UI se actualizan dinámicamente vía `DynamicResource` + `RequestedThemeChanged` en `App.xaml.cs`
-- Paleta clara: fondos crema (`#FAF8F5`/`#FFFFFF`), bordes suaves (`#E5DFD7`), texto carbón (`#1A1614`)
-- Paleta oscura: fondos casi-negro (`#0F0E0C`/`#1A1916`), texto cálido (`#F2EDE6`) — misma que v0.17
-- Los 20 archivos XAML ya usaban `DynamicResource`, por lo que el cambio es instantáneo y sin parpadeo
-
-#### Skeleton loading en HomePage
-- El `ActivityIndicator` de carga del catálogo fue reemplazado por un grid 2×2 de tarjetas placeholder con `BoxView`
-- Las tarjetas skeleton replican exactamente la estructura del producto real (zona imagen 110px + 3 líneas de texto)
-- Animación pulsante (opacidad 35%→100%, 900ms, `SinInOut`, infinita) activada en `OnAppearing`
-
-#### Accesibilidad — SemanticProperties
-- `SemanticProperties.Description` en buscador de HomePage, botón carrito y botón "+" añadir al carrito
-- `SemanticProperties.HeadingLevel` en los dos títulos principales de HomePage
-- `SemanticProperties.Hint` en los 4 botones de acción de EmpleadoPedidosPage (Preparar / Listo / Entregar / Cancelar)
-
-#### Animaciones de interacción en EmpleadoPedidosPage
-- Press animation (`ScaleTo 88%` + rebote) en todos los botones de acción
-- Toast de confirmación (`CommunityToolkit.Maui.Alerts.Toast`) tras cada cambio de estado exitoso
-- Arreglados 4 avisos XC0022 (Picker sin `x:DataType`) en RegistroPage, RegistroInvitacionPage, AdminPedidosPage y AdminEditProductoPage
-
-#### Robustez de pagos (BUG-F: recuperación de pago incompleto)
-- `CarritoViewModel` persiste el `PaymentIntentId` en `Preferences` al iniciar un pago
-- Si la app se cierra durante el pago y reabre, `PedidosPage.OnAppearing` detecta el PI pendiente y redirige a `ConfirmacionPedidoPage`
-- Añadido catch de `SqlException 1205` (deadlock SQL Server) en `PedidosController` — responde 503 con mensaje amigable
-
-#### Tests
-- 12 nuevos tests para `DesayunoService` (108 en total, 0 errores)
-
----
-
-### v0.17.0 — Seguridad pagos, deudas técnicas y robustez de tests
-
-#### Seguridad Stripe (BUG-E)
-- La clave pública de Stripe (`pk`) ya no viaja en la URL de la página de pago — el servidor la lee de `Stripe:PublishableKey` (configuración) y la valida con regex antes de inyectarla en el HTML
-- Ambas claves (`pk` y `cs`) se sanitizan con regex antes de insertarse en el `<script>` — previene XSS si llegaran valores maliciosos
-- `PagamentoWebPage` simplificada: solo pasa `?cs=` en la URL
-
-#### Race condition desayuno gratuito (BUG-D)
-- `POST /api/pagos/crear-intent`: la lectura del estado de desayuno usa `IsolationLevel.RepeatableRead` — reduce la ventana temporal en la que dos requests simultáneos podrían leer "no consumido" y aplicar el beneficio dos veces
-- La validación definitiva continúa siendo la transacción `Serializable` en `POST /api/pedidos` (FIX-02 existente)
-
-#### Cierre de sesión explícito (D-4)
-- Al cambiar la contraseña con éxito, se muestra un `DisplayAlert` informativo antes de cerrar la sesión — el usuario no se queda desconectado sin aviso
-- Nuevo método `ApiService.CerrarSesionAsync()`: desconecta SignalR, limpia tokens, envía `SesionExpiradaMessage` y navega a login — reutilizable desde cualquier ViewModel
-
-#### Robustez ViewModels y tests (D-3, D-5)
-- `HomeViewModel.CargarAsync()`: eliminado guard manual `if (IsLoading) return;` — `AsyncRelayCommand(AllowConcurrentExecutions=false)` ya previene re-entradas de forma segura
-- `FranjaHorariaTests`: añadidos guards `if (DateTime.Now.Hour is 0 or 23) return;` en 2 tests — evitan falsos negativos a las 23:xx cuando `AddMinutes(+30)` cruza la medianoche
-
----
-
-### v0.16.0 — Historial staff, imagen detalle y paginación admin
-
-#### Historial completo para empleados (F-3)
-- Nuevo endpoint `GET /api/pedidos/historial` (Empleado/Personal/Admin): devuelve hasta 200 pedidos del día en todos los estados, filtrado por instituto para no-admin
-- `EmpleadoPedidosPage` reemplaza "pedidos en curso" por historial completo del día: chips activos (Pendiente/En preparación) + chips cerrados (Listo, Entregado, Cancelado)
-- `ApiService.GetHistorialStaffAsync()` añadido
-
-#### Imagen real en detalle de producto (BUG-H)
-- `ProductoDetallePage` muestra la imagen real del producto cuando está disponible; fallback al emoji si no hay imagen
-- `ProductoDetalleViewModel`: propiedades calculadas `ImagenUrlCompleta` (URL absoluta) y `TieneImagen` para controlar visibilidad
-
-#### Paginación "Cargar más" en admin (D-1)
-- `AdminPedidosPage`: `CollectionView.Footer` con botón "Cargar más" y `ActivityIndicator`, visibles solo cuando `HayMas = true` (modo Todo, hay más páginas en servidor)
-
-#### Corrección guards IsLoading en ViewModels (BUG-F)
-- `AdminPedidosViewModel` y `EmpleadoPedidosViewModel`: eliminado `[ObservableProperty] _isLoading` y sus guards manuales
-- `IsRefreshing` del `RefreshView` bindeado a `CargarCommand.IsRunning` — el framework gestiona el ciclo de vida del spinner sin conflictos
-
----
-
-### v0.15.0 — Robustez: 96 tests, guards IsLoading, audit logging y UX polish
-
-#### Fiabilidad de ViewModels (MAUI)
-- Todos los `CargarAsync` usan `try/finally { IsLoading = false; }` — el spinner se desactiva siempre, incluso si la red falla
-- Guard `if (IsLoading) return;` en todos los ViewModels de carga: evita race conditions entre SignalR y llamadas directas
-- ViewModels afectados: `EmpleadoPedidosViewModel`, `AdminPedidosViewModel`, `AdminHorariosViewModel`, `AdminProductosViewModel`, `AdminEditProductoViewModel`, `EmpleadoProductosViewModel`, `AdminUsuariosViewModel`, `HomeViewModel`, `PedidosViewModel`, `ProductoDetalleViewModel`, `DetallePedidoViewModel`, `AdminInvitacionesViewModel`
-
-#### Audit logging extendido
-- `AuthController`: log `[AUDIT]` en login exitoso, login fallido y cuenta bloqueada — con email e IP
-- `InvitacionesController`: log `[AUDIT]` al crear y revocar invitaciones
-
-#### Guards anti-doble-clic (Blazor Admin)
-- `Institutos.razor`: `_guardando` en botón Guardar y `_toggling` en ToggleActivo — el botón se deshabilita durante la petición
-
-#### Rendimiento (Blazor Admin)
-- `Dashboard.razor`, `Pedidos.razor`, `Usuarios.razor`: carga paralela con `Task.WhenAll` — institutos + datos principales en una sola espera
-- `PerfilViewModel` (MAUI): horario y estadísticas en paralelo
-
-#### Validación de contraseña client-side (MAUI)
-- `RegistroViewModel` y `RegistroInvitacionViewModel`: validación local antes de llamar a la API — mínimo 8 caracteres + mayúscula + número + símbolo, alineado con `PasswordComplexityAttribute` del servidor
-- Eliminado el ejemplo de contraseña `(ej: Admin1234!)` del placeholder de la pantalla de registro
-
-#### Tests
-- Test `PuedePedirAhora_FranjaBloqueoActiva_RetornaDenegado` añadido y funcionando — cobertura del modelo "permisivo por defecto + ventanas de bloqueo" de `HorarioService`
-- Total: **96 tests**, todos en verde
+| Versión | Área | Cambios principales |
+|---|---|---|
+| v0.15.0 | Robustez | `try/finally { IsLoading=false }` en todos los ViewModels; guards anti-doble-clic en Blazor; carga paralela en Dashboard/Pedidos/Usuarios; validación contraseña client-side; 96 tests |
+| v0.16.0 | Historial + paginación | Endpoint `GET /api/pedidos/historial` para staff (hasta 200 pedidos en todos los estados); imagen real en `ProductoDetallePage`; "Cargar más" en AdminPedidosPage |
+| v0.17.0 | Seguridad pagos | Clave pública Stripe inyectada desde servidor; `RepeatableRead` en crear-intent; `CerrarSesionAsync()` centralizado |
+| v0.18.0 | UX sprint | Tema claro/oscuro reactivo; skeleton loading 2×2 placeholders; `SemanticProperties`; recuperación de pago incompleto vía `Preferences`; 108 tests |
+| v0.19.0 | Deuda técnica | `ApiService` en 6 clases parciales; `PedidoCardView` reutilizable; animaciones entrada; skeleton en PedidosPage; `PeriodicTimer` horario |
+| v0.20.0 | Audit + tema | Skeleton suscrito a `CargarCommand.IsRunning`; botón atrás desbloqueado en ConfirmacionPedidoPage; tab bar reactiva al tema; 20 XAML con `DynamicResource` |
 
 ---
 

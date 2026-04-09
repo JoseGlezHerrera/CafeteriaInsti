@@ -158,7 +158,11 @@ public class ProductosController : ControllerBase
         producto.Precio             = req.Precio;
         producto.Stock              = req.Stock;
         producto.CategoriaId        = req.CategoriaId;
-        producto.ImagenUrl          = req.ImagenUrl;
+        // Solo actualizar ImagenUrl si se envía explícitamente en la petición.
+        // Las subidas de imagen usan POST /{id}/imagen — el cliente MAUI siempre
+        // envía null aquí, y sobreescribir con null borraría la URL del Blob.
+        if (req.ImagenUrl != null)
+            producto.ImagenUrl = req.ImagenUrl;
         producto.ComponenteDesayuno = req.ComponenteDesayuno;
 
         // Reemplazar alérgenos

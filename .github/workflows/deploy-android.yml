@@ -115,4 +115,5 @@ jobs:
             > ⚠️ Build de prueba interna — no apto para producción.
           files: ${{ env.apk_path }}
           draft: false
-          prerelease: true
+          prerelease: false
+          make_latest: true
