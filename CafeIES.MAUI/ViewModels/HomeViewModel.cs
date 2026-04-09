@@ -107,16 +107,16 @@ public partial class HomeViewModel : ObservableObject
     public async Task CargarAsync()
     {
         // D-3: AsyncRelayCommand (AllowConcurrentExecutions=false por defecto) ya evita re-entradas.
+        // Caché solo válida si NO han pasado más de CacheDuration Y el usuario no ha forzado recarga.
+        // Al llamar al comando por pull-to-refresh o Appearing, siempre recargamos fresco para
+        // que cambios en productos (fotos, stock, precios) sean visibles de inmediato.
+        _cacheTimestamp = DateTime.MinValue;   // invalidar caché en cada carga explícita
         IsLoading = true;
         try
         {
-            var usarCache = _cacheProductos is not null
-                         && _cacheCategorias is not null
-                         && DateTime.UtcNow - _cacheTimestamp < CacheDuration;
-
             var horarioTask    = _api.GetHorarioStatusAsync();
-            var categoriasTask = usarCache ? Task.FromResult(_cacheCategorias!) : _api.GetCategoriasAsync();
-            var productosTask  = usarCache ? Task.FromResult(_cacheProductos!)  : _api.GetProductosAsync();
+            var categoriasTask = _api.GetCategoriasAsync();
+            var productosTask  = _api.GetProductosAsync();
 
             await Task.WhenAll(horarioTask, categoriasTask, productosTask);
 
@@ -124,12 +124,9 @@ public partial class HomeViewModel : ObservableObject
             var categorias = categoriasTask.Result;
             var productos  = productosTask.Result;
 
-            if (!usarCache)
-            {
-                _cacheCategorias  = categorias;
-                _cacheProductos   = productos;
-                _cacheTimestamp   = DateTime.UtcNow;
-            }
+            _cacheCategorias  = categorias;
+            _cacheProductos   = productos;
+            _cacheTimestamp   = DateTime.UtcNow;
 
             // Estado horario — si la API falla (horario null), asumir permisivo:
             // el servidor hará la validación definitiva al crear el pedido.
