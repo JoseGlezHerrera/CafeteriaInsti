@@ -198,6 +198,9 @@
                                     <Grid Grid.Row="0" BackgroundColor="{DynamicResource Surface2Color}">
                                         <Label Text="{Binding CategoriaEmoji}" FontSize="44"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Image Source="{Binding ImagenUrl}"
+                                               Aspect="AspectFill"
+                                               IsVisible="{Binding ImagenUrl, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
                                         <!-- Stock badge: solo muestra "Agotado" cuando Stock == 0 -->
                                         <Border HorizontalOptions="End" VerticalOptions="Start"
                                                 Margin="8" Padding="6,3"
