@@ -59,12 +59,9 @@
                     <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
                     <Grid ColumnDefinitions="Auto,*">
                         <Label Grid.Column="0" Text="⏳" FontSize="18" Margin="0,0,10,0" VerticalOptions="Start"/>
-                        <VerticalStackLayout Grid.Column="1" Spacing="2">
-                            <Label Text="Pedidos no disponibles ahora"
-                                   FontFamily="SyneBold" FontSize="13" TextColor="#e8834a"/>
-                            <Label Text="{Binding ProximaFranja}"
-                                   FontFamily="DMSans" FontSize="12" TextColor="#e8834a"/>
-                        </VerticalStackLayout>
+                        <Label Grid.Column="1" Text="Pedidos no disponibles ahora"
+                               FontFamily="SyneBold" FontSize="13" TextColor="#e8834a"
+                               VerticalOptions="Center"/>
                     </Grid>
                 </Border>
 
