@@ -195,6 +195,14 @@ public partial class HomeViewModel : ObservableObject
     private async Task VerDetalleProductoAsync(ProductoDto producto)
     {
         if (producto.Stock == 0) return; // producto agotado — no se puede abrir
+        if (!PuedePedir)
+        {
+            await Shell.Current.DisplayAlert(
+                "Pedidos no disponibles",
+                MensajeHorario,
+                "OK");
+            return;
+        }
         await Shell.Current.GoToAsync($"ProductoDetalle?productoId={producto.Id}");
     }
 

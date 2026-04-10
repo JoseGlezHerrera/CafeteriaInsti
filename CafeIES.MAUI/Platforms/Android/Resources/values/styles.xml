@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        .NET 9 MAUI deshabilita edge-to-edge por defecto con maui_edgetoedge_optout=true
+        en su tema base. Aquí lo reactivamos para que la app ocupe el 100% de la pantalla,
+        incluyendo detrás de la status bar y la navigation bar.
+
+        enforceNavigationBarContrast=false  → permite nav bar completamente transparente (Android 10+)
+        enforceStatusBarContrast=false      → permite status bar completamente transparente (Android 10+)
+        windowLayoutInDisplayCutoutMode     → la app se extiende al área del notch/punch-hole
+    -->
+    <style name="Maui.MainTheme" parent="Maui.MainTheme.Base">
+        <item name="maui_edgetoedge_optout">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

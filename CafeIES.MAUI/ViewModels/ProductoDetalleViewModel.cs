@@ -26,6 +26,8 @@ public partial class ProductoDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TextoBotonCarrito))]
     private int _productoId;
     [ObservableProperty] private bool        _isLoading;
+    [ObservableProperty] private bool        _puedePedir = true;
+    [ObservableProperty] private string      _mensajeHorario = string.Empty;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TieneProducto))]
     [NotifyPropertyChangedFor(nameof(TieneDescripcion))]
@@ -145,7 +147,15 @@ public partial class ProductoDetalleViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            Producto = await _api.GetProductoByIdAsync(ProductoId);
+            var tProducto = _api.GetProductoByIdAsync(ProductoId);
+            var tHorario  = _api.GetHorarioStatusAsync();
+            await Task.WhenAll(tProducto, tHorario);
+
+            Producto = tProducto.Result;
+
+            var horario = tHorario.Result;
+            PuedePedir      = horario?.PuedePedir ?? true;
+            MensajeHorario  = horario?.Mensaje ?? string.Empty;
         }
         finally
         {
@@ -159,6 +169,15 @@ public partial class ProductoDetalleViewModel : ObservableObject
     private async Task AnadirAlCarritoAsync()
     {
         if (Producto is null) return;
+
+        if (!PuedePedir)
+        {
+            await Shell.Current.DisplayAlert(
+                "Pedidos no disponibles",
+                MensajeHorario,
+                "OK");
+            return;
+        }
 
         if (Producto.NivelStock == "agotado")
         {
