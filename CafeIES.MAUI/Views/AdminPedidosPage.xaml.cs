@@ -19,16 +19,31 @@ public partial class AdminPedidosPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        // Resubscribir mensajes WeakReference al volver a la página (tab cacheado).
-        // La carga la dispara el EventToCommandBehavior del XAML — no llamar aquí para evitar doble petición.
         Vm.Resubscribe();
+
+        Vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
+        Vm.CargarCommand.PropertyChanged += OnCargarCommandPropertyChanged;
+
+        if (!Vm.CargarCommand.IsRunning)
+            Vm.CargarCommand.Execute(null);
     }
 
-    // FIX-11: Desuscribir mensajes al desaparecer la página
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        Vm.CargarCommand.PropertyChanged -= OnCargarCommandPropertyChanged;
         Vm.Cleanup();
+    }
+
+    private void OnCargarCommandPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CommunityToolkit.Mvvm.Input.IAsyncRelayCommand.IsRunning)) return;
+
+        // Restablecer el indicador de pull-to-refresh manualmente.
+        // NO se usa IsRefreshing={Binding} porque en Android setRefreshing(false)
+        // dispara onRefresh() en SwipeRefreshLayout → segunda carga → duplicados.
+        if (!Vm.CargarCommand.IsRunning)
+            PullToRefresh.IsRefreshing = false;
     }
 
     private void OnImprimirRequested(object? sender, PedidoDto p) =>

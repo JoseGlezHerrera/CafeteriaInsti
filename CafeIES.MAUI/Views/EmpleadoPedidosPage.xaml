@@ -8,9 +8,6 @@
              x:Class="CafeIES.MAUI.Views.EmpleadoPedidosPage"
              x:DataType="vm:EmpleadoPedidosViewModel"
              BackgroundColor="{DynamicResource BgColor}">
-    <ContentPage.Behaviors>
-        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
-    </ContentPage.Behaviors>
     <Grid RowDefinitions="Auto,Auto,Auto,*">
         <Grid Grid.Row="0" BackgroundColor="{DynamicResource SurfaceColor}" Padding="20,16">
             <Label Text="Pedidos en curso" FontFamily="SyneBold" FontSize="22" TextColor="{DynamicResource TextColor}"/>
@@ -48,7 +45,7 @@
                         Command="{Binding SetFiltroCommand}" CommandParameter="Cancelado"/>
             </HorizontalStackLayout>
         </ScrollView>
-        <RefreshView Grid.Row="3" IsRefreshing="{Binding CargarCommand.IsRunning, Mode=OneWay}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
+        <RefreshView x:Name="PullToRefresh" Grid.Row="3" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Margin="0,80">

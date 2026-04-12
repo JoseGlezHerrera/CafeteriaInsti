@@ -9,9 +9,7 @@
              x:DataType="vm:AdminPedidosViewModel"
              BackgroundColor="{DynamicResource BgColor}">
 
-    <ContentPage.Behaviors>
-        <toolkit:EventToCommandBehavior EventName="Appearing" Command="{Binding CargarCommand}"/>
-    </ContentPage.Behaviors>
+
 
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
@@ -75,8 +73,8 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <RefreshView Grid.Row="4"
-                     IsRefreshing="{Binding CargarCommand.IsRunning, Mode=OneWay}"
+        <RefreshView x:Name="PullToRefresh"
+                     Grid.Row="4"
                      Command="{Binding CargarCommand}"
                      RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
