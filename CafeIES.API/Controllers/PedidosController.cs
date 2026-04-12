@@ -572,7 +572,11 @@ public class PedidosController : ControllerBase
         var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
             OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
         var ahoraEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, spainTz);
-        var desde    = TimeZoneInfo.ConvertTimeToUtc(ahoraEsp.Date, spainTz);
+        // Si hoy es lunes, incluir también los pre-pedidos del domingo anterior
+        var desdeEsp = ahoraEsp.DayOfWeek == DayOfWeek.Monday
+            ? ahoraEsp.Date.AddDays(-1)
+            : ahoraEsp.Date;
+        var desde    = TimeZoneInfo.ConvertTimeToUtc(desdeEsp, spainTz);
 
         IQueryable<Pedido> query = _db.Pedidos.Where(p => p.FechaCreacion >= desde);
 

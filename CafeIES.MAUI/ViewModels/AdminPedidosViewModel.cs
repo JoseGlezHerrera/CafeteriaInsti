@@ -152,9 +152,13 @@ public partial class AdminPedidosViewModel : ObservableObject
     private DateTime? DesdeParaFiltro()
     {
         var hoyEsp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _spainTz).Date;
+        // Si hoy es lunes, "Hoy" incluye también los pre-pedidos del domingo
+        var desdeHoyEsp = (FiltroFecha == "Hoy" && hoyEsp.DayOfWeek == DayOfWeek.Monday)
+            ? hoyEsp.AddDays(-1)
+            : hoyEsp;
         return FiltroFecha switch
         {
-            "Hoy"    => TimeZoneInfo.ConvertTimeToUtc(hoyEsp, _spainTz),
+            "Hoy"    => TimeZoneInfo.ConvertTimeToUtc(desdeHoyEsp, _spainTz),
             "Semana" => TimeZoneInfo.ConvertTimeToUtc(hoyEsp.AddDays(-6), _spainTz),
             _        => null
         };

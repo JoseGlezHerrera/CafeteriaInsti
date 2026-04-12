@@ -381,7 +381,7 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Label Text="Base = incluido por defecto · Quitable = el cliente puede quitarlo · Máx. unidades = 1 switch, &gt;1 activa el stepper."
+                    <Label Text="Base = se incluye por defecto · Quitable = el cliente puede quitarlo · Máx. unidades = cuántas puede añadir el cliente"
                            FontFamily="DMSans" FontSize="11"
                            TextColor="{DynamicResource MutedColor}"/>
                 </VerticalStackLayout>
