@@ -26,8 +26,9 @@ public class HorarioService
     /// <summary>
     /// Comprueba si el turno indicado tiene pedidos habilitados ahora mismo.
     /// Los roles Admin, Profesor y Personal no tienen restricción: siempre pueden pedir.
+    /// <paramref name="nowUtc"/> es inyectable para tests; null → DateTime.UtcNow.
     /// </summary>
-    public async Task<HorarioResult> PuedePedirAhoraAsync(int usuarioId)
+    public async Task<HorarioResult> PuedePedirAhoraAsync(int usuarioId, DateTime? nowUtc = null)
     {
         // Cachear rol/turno del usuario (cambian raramente — al cambiar perfil el caché expira en 5 min)
         var userKey = $"usuario-horario:{usuarioId}";
@@ -44,6 +45,18 @@ public class HorarioService
         // Solo Alumno tiene franjas de bloqueo. Usar 'is' enumera los roles exentos claramente.
         if (usuario.Rol is RolUsuario.Admin or RolUsuario.Empleado or RolUsuario.Profesor or RolUsuario.Personal)
             return HorarioResult.Permitido("Sin restricción horaria.");
+
+        // ── Regla día de la semana (solo llegan Alumnos a este punto) ───────────
+        var spainTz   = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
+        var hoyEspana = TimeZoneInfo.ConvertTimeFromUtc(nowUtc ?? DateTime.UtcNow, spainTz);
+
+        if (hoyEspana.DayOfWeek == DayOfWeek.Saturday)
+            return HorarioResult.Denegado("El servicio de cafetería no está disponible los sábados.");
+
+        if (hoyEspana.DayOfWeek == DayOfWeek.Sunday)
+            return HorarioResult.Permitido("Pedido anticipado para el lunes.");
+        // ─────────────────────────────────────────────────────────────────────
 
         // Alumno sin turno asignado (no debería ocurrir)
         if (usuario.Turno is null)

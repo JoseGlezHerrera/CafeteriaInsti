@@ -60,7 +60,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.False(result.Puede);
         Assert.False(result.EsError);
@@ -78,7 +78,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.True(result.Puede);   // sin franjas de bloqueo → permitido
         Assert.False(result.EsError);
@@ -95,7 +95,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         // La franja existe pero está desactivada → sin franjas activas → permitido
         Assert.True(result.Puede);
@@ -118,7 +118,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.True(result.Puede);
         Assert.False(result.EsError);
@@ -136,7 +136,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.True(result.Puede);
         Assert.Contains("Pedidos disponibles", result.Mensaje);
@@ -155,7 +155,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.False(result.Puede);
         Assert.False(result.EsError);
@@ -175,7 +175,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         // Sin franjas Mañana → sin bloqueo → permitido
         Assert.True(result.Puede);
@@ -194,7 +194,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.True(result.Puede);  // no bloquea aunque esté "fuera de ventana"
         Assert.False(result.EsError);
@@ -209,7 +209,7 @@ public class HorarioServiceTests
         await db.SaveChangesAsync();
 
         var sut = CreateService(db);
-        var result = await sut.PuedePedirAhoraAsync(1);
+        var result = await sut.PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
 
         Assert.True(result.Puede);
         Assert.False(result.EsError);
@@ -274,5 +274,74 @@ public class HorarioServiceTests
             HoraFin     = fin.ToString("HH:mm"),
             Activa      = true
         };
+    }
+
+    // ── Reglas de día de la semana ────────────────────────────────────────────
+
+    // Sábado en hora España: 2026-04-11 10:00 UTC = 12:00 CEST (sábado)
+    private static readonly DateTime SabadoUtc  = new(2026, 4, 11, 10, 0, 0, DateTimeKind.Utc);
+    // Domingo en hora España: 2026-04-12 10:00 UTC = 12:00 CEST (domingo)
+    private static readonly DateTime DomingoUtc = new(2026, 4, 12, 10, 0, 0, DateTimeKind.Utc);
+    // Lunes en hora España:   2026-04-13 10:00 UTC = 12:00 CEST (lunes)
+    private static readonly DateTime LunesUtc   = new(2026, 4, 13, 10, 0, 0, DateTimeKind.Utc);
+
+    [Fact]
+    public async Task PuedePedirAhora_Sabado_AlumnoDenegado()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: SabadoUtc);
+
+        Assert.False(result.Puede);
+        Assert.False(result.EsError);
+        Assert.Contains("sábado", result.Mensaje, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PuedePedirAhora_Domingo_AlumnoPermitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: DomingoUtc);
+
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
+        Assert.Contains("lunes", result.Mensaje, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PuedePedirAhora_Sabado_AdminSiemprePermitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(new Usuario
+        {
+            Id = 1, Email = "admin@ies.es", NombreCompleto = "Admin",
+            PasswordHash = "x", Rol = RolUsuario.Admin, Estado = EstadoCuenta.Activa
+        });
+        await db.SaveChangesAsync();
+
+        // Los admins no pasan por el check de día de la semana
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: SabadoUtc);
+
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
+    }
+
+    [Fact]
+    public async Task PuedePedirAhora_Lunes_AlumnoSinFranjas_Permitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        // Sin franjas → permisivo
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: LunesUtc);
+
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
     }
 }
