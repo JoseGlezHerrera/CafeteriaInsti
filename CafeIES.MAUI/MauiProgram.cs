@@ -60,6 +60,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddSingleton<CarritoViewModel>();
         builder.Services.AddSingleton<PushNotificationService>();
+#if ANDROID
+        builder.Services.AddSingleton<IPrintService, CafeIES.MAUI.Platforms.Android.AndroidPrintService>();
+#else
+        builder.Services.AddSingleton<IPrintService, NoOpPrintService>();
+#endif
 
         // â”€â”€ ViewModels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         builder.Services.AddTransient<LoginViewModel>();

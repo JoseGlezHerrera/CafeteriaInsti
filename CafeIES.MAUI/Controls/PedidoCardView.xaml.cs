@@ -9,6 +9,7 @@ namespace CafeIES.MAUI.Controls;
 public partial class PedidoCardView : ContentView
 {
     // ── Eventos de acción ─────────────────────────────────────────────────────
+    public event EventHandler<PedidoDto>? ImprimirRequested;
     public event EventHandler<PedidoDto>? PrepararRequested;
     public event EventHandler<PedidoDto>? ListoRequested;
     public event EventHandler<PedidoDto>? EntregarRequested;
@@ -17,6 +18,15 @@ public partial class PedidoCardView : ContentView
     public PedidoCardView()
     {
         InitializeComponent();
+    }
+
+    private async void OnImprimirClicked(object sender, EventArgs e)
+    {
+        if (sender is Button btn)
+        {
+            await AnimatePress(btn);
+            if (btn.CommandParameter is PedidoDto p) ImprimirRequested?.Invoke(this, p);
+        }
     }
 
     private async void OnPrepararClicked(object sender, EventArgs e)

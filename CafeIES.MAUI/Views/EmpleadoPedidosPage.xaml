@@ -61,6 +61,7 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="dto:PedidoDto">
                         <ctrl:PedidoCardView
+                            ImprimirRequested="OnImprimirRequested"
                             PrepararRequested="OnPrepararRequested"
                             ListoRequested="OnListoRequested"
                             EntregarRequested="OnEntregarRequested"
