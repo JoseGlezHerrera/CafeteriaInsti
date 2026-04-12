@@ -12,11 +12,10 @@ public static class TicketHtmlBuilder
 {
     public static string Build(PedidoDto p)
     {
-        var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
-            OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
-        // SpecifyKind garantiza Kind=Utc tras la deserialización JSON en Android
-        var fechaUtc  = DateTime.SpecifyKind(p.FechaCreacion, DateTimeKind.Utc);
-        var horaLocal = TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, spainTz);
+        // ToLocalTime() usa la zona horaria del sistema del dispositivo (para un móvil
+        // español eso es Europe/Madrid con CEST automático). SpecifyKind garantiza que
+        // la conversión parte siempre de UTC independientemente de lo que devuelva el JSON.
+        var horaLocal = DateTime.SpecifyKind(p.FechaCreacion, DateTimeKind.Utc).ToLocalTime();
 
         var metodoPago = p.MetodoPago switch
         {
