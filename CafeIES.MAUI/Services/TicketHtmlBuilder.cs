@@ -14,7 +14,9 @@ public static class TicketHtmlBuilder
     {
         var spainTz  = TimeZoneInfo.FindSystemTimeZoneById(
             OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid");
-        var horaLocal = TimeZoneInfo.ConvertTimeFromUtc(p.FechaCreacion, spainTz);
+        // SpecifyKind garantiza Kind=Utc tras la deserialización JSON en Android
+        var fechaUtc  = DateTime.SpecifyKind(p.FechaCreacion, DateTimeKind.Utc);
+        var horaLocal = TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, spainTz);
 
         var metodoPago = p.MetodoPago switch
         {
@@ -48,6 +50,8 @@ public static class TicketHtmlBuilder
               .row     { display: flex; justify-content: space-between; margin: 2px 0; }
               .prod    { font-weight: bold; margin-top: 6px; }
               .mod     { padding-left: 14px; font-size: 11px; color: #444; }
+              .nota    { padding-left: 14px; font-size: 11px; font-style: italic; color: #333; }
+              .nota-global { font-size: 12px; font-weight: bold; }
               .subtotal{ text-align: right; font-size: 11px; color: #555; }
               .total   { font-size: 15px; font-weight: bold; }
               .footer  { margin-top: 14px; text-align: center; font-size: 11px; color: #666; }
@@ -81,6 +85,9 @@ public static class TicketHtmlBuilder
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(l.Notas))
+                sb.AppendLine($"<div class=\"nota\">&#x1F4DD; {Esc(l.Notas)}</div>");
+
             if (l.Subtotal > 0)
                 sb.AppendLine($"<div class=\"subtotal\">{l.Subtotal:F2} &euro;</div>");
         }
@@ -88,7 +95,7 @@ public static class TicketHtmlBuilder
         if (!string.IsNullOrWhiteSpace(p.Notas))
         {
             sb.AppendLine("<div class=\"dash\"></div>");
-            sb.AppendLine($"<div class=\"mod\">Nota: {Esc(p.Notas)}</div>");
+            sb.AppendLine($"<div class=\"nota nota-global\">&#x26A0;&#xFE0F; Nota del pedido: {Esc(p.Notas)}</div>");
         }
 
         sb.AppendLine("<div class=\"dash\"></div>");
