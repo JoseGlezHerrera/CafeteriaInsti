@@ -74,7 +74,7 @@ CaféIES es un sistema completo de gestión de pedidos de cafetería diseñado p
 - Transacción `Serializable` para el desayuno gratuito + índice único `(UsuarioId, Fecha)` — previene dobles consumos concurrentes
 
 ### Infraestructura y calidad
-- 108 tests unitarios (xUnit): HorarioService, AuthService, dominio, validaciones, DesayunoService
+- 115 tests unitarios (xUnit): HorarioService, AuthService, dominio, validaciones, DesayunoService
 - 3 pipelines GitHub Actions: API (~4 min), Admin (~2 min), APK Android (~3 min)
 - Health check en `/health`; warmup automático al arrancar para reducir cold starts en F1
 
@@ -664,6 +664,9 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - "Cargar más" paginado en AdminPedidosPage cuando hay más de 20 pedidos (modo Todo)
 - Gestión de estado con máquina de estados (transiciones válidas)
 - Tap en un pedido del historial → navega a DetallePedidoPage con desglose completo (ingredientes, modificaciones, total)
+- **Impresión de tickets desde móvil** — botón 🖨 en cada tarjeta; en Android usa el sistema de impresión nativo (`PrintManager`) vía WebView, compatible con impresoras WiFi, Bluetooth y PDF
+- Empleados pueden marcar pedidos como **Entregado** desde su vista por defecto (filtro "En curso" incluye el estado `Listo`)
+- **Pre-pedidos del domingo aparecen el lunes** automáticamente — la cafetería ve los pedidos anticipados sin ninguna acción manual
 
 **Panel admin MAUI — 10 páginas**
 - Imagen de producto desde cámara o galería (MediaPicker): productos nuevos guardan la foto al crear; edición sube inmediatamente
@@ -697,7 +700,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 - Subida de imágenes — Admin Blazor y MAUI, local (dev) o Azure Blob (prod); fix: boundary multipart y URLs absolutas corregidas
 - Infraestructura Azure operativa — App Service F1 + SQL Server + Blob Storage + Static Web Apps (tier gratuito)
 - CI/CD completo — GitHub Actions para API, Admin y APK Android (~3 min); cada APK publicado como latest release
-- 108 tests unitarios — HorarioService, AuthService, dominio, validaciones, DesayunoService
+- 115 tests unitarios — HorarioService, AuthService, dominio, validaciones, DesayunoService
 - Health check en `/health` para Azure App Service
 - Warmup automático al arrancar (ping a `/health` en frío para reducir lag en F1)
 - Hard delete de productos con historial conservado (FK nullable `SET NULL`)
@@ -731,6 +734,7 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 | Gestión completa MAUI admin | ✅ Completada | Imagen desde cámara/galería; CRUD categorías y alérgenos; eliminar ingrediente visible; forzar borrado usuario con pedidos; detalle pedido desde historial |
 | Permisos Empleado — catálogo completo | ✅ Completada | AlergenosController propio (api/alergenos) con rol Empleado; Categorías y Productos POST/PUT/DELETE+imagen abiertos a Empleado; botones Categ./Ingred./+Nuevo en EmpleadoProductosPage |
 | Fotos en catálogo + UX horario | ✅ Completada | Imagen real en tarjetas del catálogo (fallback emoji); invalidación de caché en cada carga; banner horario simplificado |
+| Impresión de tickets + horario fin de semana | ✅ Completada | Tickets desde móvil (Android Print Framework: WiFi/BT/PDF); sábado bloqueado; domingo permite pre-pedido para el lunes; pre-pedidos visibles el lunes automáticamente |
 | Push Notifications | ⏳ Pendiente | FCM Android + APNs iOS — infraestructura lista, falta activar |
 | Google Play Store | ⏳ Pendiente | Requiere cuenta developer (25 USD) + keystore release |
 | Paginación completa en API | ⏳ Pendiente | Listados con page/pageSize en todos los endpoints admin |
@@ -740,6 +744,26 @@ El APK se genera automáticamente en GitHub Actions al hacer push a `main` con c
 ---
 
 ## Changelog
+
+### v0.32.0 — Impresión de tickets, pre-pedidos domingo→lunes y fixes empleado (2026-04-12)
+
+#### Backend
+- **`HorarioService`**: alumnos bloqueados los sábados; el domingo pueden pedir con anticipación para el lunes (día válido siguiente)
+- **`PedidosController.Historial`**: si hoy es lunes, el filtro "Hoy" retrocede al domingo para incluir automáticamente los pre-pedidos anticipados — los trabajadores no tienen que hacer nada manual
+
+#### MAUI
+- **`IPrintService` / `AndroidPrintService`** (nuevos): botón 🖨 en cada tarjeta de pedido; en Android invoca `WebView.CreatePrintDocumentAdapter` + `PrintManager.Print` con formato A8 sin márgenes — compatible con impresoras WiFi, Bluetooth y exportar a PDF sin instalar nada extra
+- **`TicketHtmlBuilder`** (nuevo): genera HTML del ticket con zona horaria España, desglose de ingredientes modificados y total
+- **`EmpleadoPedidosViewModel`**: filtro "En curso" incluye ahora `Listo` además de `Pendiente` y `EnPreparacion` — los empleados ven los pedidos listos y pueden marcarlos como Entregado desde su vista por defecto
+- **`AdminPedidosViewModel.DesdeParaFiltro`**: filtro "Hoy" extiende al domingo anterior cuando es lunes, igual que el endpoint de historial
+- **`EmpleadoPedidosPage` / `AdminPedidosPage`**: fix duplicación al navegar entre tabs — eliminado `IsRefreshing` binding (en Android `setRefreshing(false)` disparaba `onRefresh()` → segunda carga); `x:Name="PullToRefresh"` con reset manual en code-behind
+- **`AdminEditProductoPage`**: texto de ayuda de ingredientes simplificado; eliminada la jerga técnica "1 switch, >1 activa el stepper"
+
+#### Tests
+- 7 nuevos tests de día de semana en `HorarioServiceTests`: `Viernes`, `ViernesNoche`, `SabadoMedianoche`, `Sabado`, `Domingo`, `DomingoParaLunes`, `Lunes`
+- Total: **115 tests passing**
+
+---
 
 ### v0.31.0 — Fotos en catálogo, UX horario y ajustes de empleado (2026-04-08)
 
