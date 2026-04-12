@@ -48,7 +48,7 @@
                         Command="{Binding SetFiltroCommand}" CommandParameter="Cancelado"/>
             </HorizontalStackLayout>
         </ScrollView>
-        <RefreshView Grid.Row="3" IsRefreshing="{Binding CargarCommand.IsRunning}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
+        <RefreshView Grid.Row="3" IsRefreshing="{Binding CargarCommand.IsRunning, Mode=OneWay}" Command="{Binding CargarCommand}" RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Margin="0,80">

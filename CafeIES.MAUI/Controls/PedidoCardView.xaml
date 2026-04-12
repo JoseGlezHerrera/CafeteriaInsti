@@ -50,11 +50,10 @@
                        Text="{Binding FechaCreacion, Converter={StaticResource UtcToLocalDateTimeConverter}, ConverterParameter='dd/MM HH:mm'}"
                        Style="{StaticResource CaptionLabel}" VerticalOptions="Center"/>
                 <HorizontalStackLayout Grid.Column="1" Spacing="6">
-                    <Button Text="🖨️"
+                    <Button Text="🖨"
                             FontSize="14"
-                            BackgroundColor="Transparent"
-                            TextColor="{DynamicResource TextColor}"
-                            BorderColor="#33808080" BorderWidth="1"
+                            BackgroundColor="#1a808080" TextColor="{DynamicResource TextColor}"
+                            BorderColor="#808080" BorderWidth="1"
                             CornerRadius="50" HeightRequest="32" WidthRequest="36" Padding="0"
                             SemanticProperties.Hint="Imprimir ticket del pedido"
                             CommandParameter="{Binding .}"

@@ -76,7 +76,7 @@
         </ScrollView>
 
         <RefreshView Grid.Row="4"
-                     IsRefreshing="{Binding CargarCommand.IsRunning}"
+                     IsRefreshing="{Binding CargarCommand.IsRunning, Mode=OneWay}"
                      Command="{Binding CargarCommand}"
                      RefreshColor="{StaticResource AccentColor}">
             <CollectionView ItemsSource="{Binding Pedidos}" Margin="16,12">
