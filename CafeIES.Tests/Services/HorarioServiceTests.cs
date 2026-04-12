@@ -278,6 +278,10 @@ public class HorarioServiceTests
 
     // ── Reglas de día de la semana ────────────────────────────────────────────
 
+    // Viernes en hora España: 2026-04-10 10:00 UTC = 12:00 CEST (viernes)
+    private static readonly DateTime ViernesUtc      = new(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc);
+    // Viernes noche: 2026-04-10 21:55 UTC = 23:55 CEST (viernes, 5 min antes de medianoche)
+    private static readonly DateTime ViernesNocheUtc = new(2026, 4, 10, 21, 55, 0, DateTimeKind.Utc);
     // Sábado en hora España: 2026-04-11 10:00 UTC = 12:00 CEST (sábado)
     private static readonly DateTime SabadoUtc  = new(2026, 4, 11, 10, 0, 0, DateTimeKind.Utc);
     // Domingo en hora España: 2026-04-12 10:00 UTC = 12:00 CEST (domingo)
@@ -343,5 +347,58 @@ public class HorarioServiceTests
 
         Assert.True(result.Puede);
         Assert.False(result.EsError);
+    }
+
+    // ── Viernes: día lectivo normal, no se bloquea como sábado ───────────────
+
+    [Fact]
+    // El viernes es un día lectivo normal → sigue la lógica de franjas.
+    // Sin franjas configuradas → permisivo (igual que lunes–jueves).
+    public async Task PuedePedirAhora_Viernes_AlumnoSinFranjas_Permitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: ViernesUtc);
+
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
+    }
+
+    [Fact]
+    // Viernes a las 23:55 hora España (5 min antes de que empiece el sábado bloqueado).
+    // El código convierte a zona horaria España antes de comparar el día de la semana,
+    // por lo que a las 23:55 CEST sigue siendo viernes → no debe bloquearse.
+    public async Task PuedePedirAhora_ViernesNocheAntesDelSabado_AlumnoPermitido()
+    {
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: ViernesNocheUtc);
+
+        // Sigue siendo viernes en España → sigue lógica de franjas, sin franjas = permitido
+        Assert.True(result.Puede);
+        Assert.False(result.EsError);
+    }
+
+    [Fact]
+    // Verifica la transición viernes→sábado: en cuanto pasa medianoche en España
+    // el sábado queda bloqueado. SabadoUtc es 00:02 CEST del sábado 11/04/2026.
+    public async Task PuedePedirAhora_SabadoMedianoche_AlumnoDenegado()
+    {
+        // 2026-04-10 22:02 UTC = 2026-04-11 00:02 CEST → ya es sábado en España
+        var sabadoMedianoche = new DateTime(2026, 4, 10, 22, 2, 0, DateTimeKind.Utc);
+
+        using var db = DbContextFactory.Create();
+        db.Usuarios.Add(AlumnoManana(id: 1));
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).PuedePedirAhoraAsync(1, nowUtc: sabadoMedianoche);
+
+        Assert.False(result.Puede);
+        Assert.False(result.EsError);
+        Assert.Contains("sábado", result.Mensaje, StringComparison.OrdinalIgnoreCase);
     }
 }

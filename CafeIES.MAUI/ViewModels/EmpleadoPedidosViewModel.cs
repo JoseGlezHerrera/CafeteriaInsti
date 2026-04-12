@@ -93,7 +93,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
             filtrados = filtrados.Where(p => p.FechaCreacion.ToLocalTime().Date == hoy);
 
         if (string.IsNullOrEmpty(FiltroEstado))
-            filtrados = filtrados.Where(p => p.Estado == EstadoPedido.Pendiente || p.Estado == EstadoPedido.EnPreparacion);
+            filtrados = filtrados.Where(p => p.Estado == EstadoPedido.Pendiente
+                                          || p.Estado == EstadoPedido.EnPreparacion
+                                          || p.Estado == EstadoPedido.Listo);
         else
             filtrados = filtrados.Where(p => p.Estado.ToString() == FiltroEstado);
 
