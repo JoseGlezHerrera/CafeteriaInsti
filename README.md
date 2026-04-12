@@ -30,6 +30,7 @@
 - [Pagos con Stripe](#pagos-con-stripe)
 - [Tiempo real con SignalR](#tiempo-real-con-signalr)
 - [Seguridad](#seguridad)
+- [Modelo de datos](#modelo-de-datos)
 - [Distribución Android](#distribución-android)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
 - [Roadmap](#roadmap)
@@ -599,6 +600,611 @@ Si el total es 0 € (desayuno completamente gratuito), se salta Stripe y se va 
 | Líneas de pedido | `MaxLength(30)` en `CrearPedidoRequest.Lineas` — previene pedidos abusivos |
 | Stock negativo | `NuevoStock < -1` rechazado explícitamente |
 | Webhook | Rechaza con 503 si `WebhookSecret` no configurado |
+
+---
+
+## Modelo de datos
+
+La base de datos es **SQL Server** gestionada con **EF Core 9 Code-First**. El esquema tiene **15 tablas** (sin contar la tabla `__EFMigrationsHistory` de EF) y almacena toda la lógica de negocio: multi-tenancy por instituto, catálogo con ingredientes personalizables, pedidos con historial inmutable, desayuno gratuito con protección anti-doble-uso y tokens FCM para notificaciones push.
+
+<details>
+<summary><strong>📐 Esquema completo — tablas, columnas, índices, enums y diagramas (abrir)</strong></summary>
+
+---
+
+### Diagrama entidad-relación
+
+```mermaid
+erDiagram
+    Instituto {
+        int Id PK
+        string Nombre
+        string Direccion
+        string CodigoCorto UK
+        bool Activo
+    }
+    Usuario {
+        int Id PK
+        string NombreCompleto
+        string Email UK
+        string PasswordHash
+        int Rol
+        int Turno "nullable"
+        int Estado
+        datetime FechaRegistro
+        datetime FechaValidacion "nullable"
+        int InstitutoId FK "nullable"
+        string RefreshToken "nullable"
+        datetime RefreshTokenExpiry "nullable"
+        bool DesayunoGratuito
+    }
+    FranjaHoraria {
+        int Id PK
+        int Turno
+        string Descripcion
+        string HoraInicio
+        string HoraFin
+        bool Activa
+        bool EsBloqueada
+    }
+    Invitacion {
+        int Id PK
+        string Token UK
+        int Tipo
+        bool Activa
+        datetime FechaCreacion
+        datetime FechaExpiracion
+        int UsosMaximos "nullable"
+        int UsosActuales
+        int InstitutoId "nullable"
+    }
+    Categoria {
+        int Id PK
+        string Nombre
+        string Emoji
+        int Orden
+        bool Activa
+    }
+    Alergeno {
+        int Id PK
+        string Nombre
+        string Emoji
+    }
+    Producto {
+        int Id PK
+        string Nombre
+        string Descripcion
+        decimal Precio
+        int Stock
+        string ImagenUrl "nullable"
+        bool Activo
+        int ComponenteDesayuno
+        int CategoriaId FK
+    }
+    ProductoAlergeno {
+        int ProductoId FK
+        int AlergenoId FK
+    }
+    Ingrediente {
+        int Id PK
+        string Nombre
+        string Emoji
+        decimal PrecioExtra
+        int Stock
+        bool Activo
+    }
+    ProductoIngrediente {
+        int ProductoId PK_FK
+        int IngredienteId PK_FK
+        bool EsBase
+        bool EsQuitable
+        int Orden
+        int CantidadMaxima
+    }
+    Pedido {
+        int Id PK
+        int NumeroPedido
+        int UsuarioId FK "nullable SET NULL"
+        datetime FechaCreacion
+        int Estado
+        int MetodoPago
+        decimal Total
+        string Notas "nullable"
+        string ReferenciasPago UK_nullable
+    }
+    LineaPedido {
+        int Id PK
+        int PedidoId FK
+        int ProductoId FK "nullable SET NULL"
+        int Cantidad
+        decimal PrecioUnitario
+        string Notas "nullable"
+    }
+    LineaPedidoIngrediente {
+        int Id PK
+        int LineaPedidoId FK
+        int IngredienteId FK "nullable SET NULL"
+        int Accion
+        decimal PrecioAplicado
+        int Cantidad
+    }
+    ConsumoDesayuno {
+        int Id PK
+        int UsuarioId FK
+        date Fecha
+        bool ZumoConsumido
+        bool BocataConsumido
+    }
+    DispositivoToken {
+        int Id PK
+        int UsuarioId FK
+        string Token UK
+        string Plataforma
+        datetime FechaActualizacion
+    }
+
+    Instituto ||--o{ Usuario : "tiene"
+    Instituto ||--o{ Invitacion : "restringe (nullable)"
+    Usuario ||--o{ Pedido : "realiza (SET NULL)"
+    Usuario ||--o{ ConsumoDesayuno : "registra consumo"
+    Usuario ||--o{ DispositivoToken : "posee tokens FCM"
+    Categoria ||--o{ Producto : "agrupa"
+    Producto }o--o{ Alergeno : "via ProductoAlergeno"
+    Producto ||--o{ ProductoIngrediente : "configura ingredientes"
+    Ingrediente ||--o{ ProductoIngrediente : "aparece en productos"
+    Pedido ||--o{ LineaPedido : "contiene"
+    Producto ||--o{ LineaPedido : "referenciado (SET NULL)"
+    LineaPedido ||--o{ LineaPedidoIngrediente : "modifica ingredientes"
+    Ingrediente ||--o{ LineaPedidoIngrediente : "referenciado (SET NULL)"
+```
+
+---
+
+### Documentación tabla a tabla
+
+#### `Institutos`
+Centro educativo que utiliza la plataforma. Punto raíz del modelo multi-tenant.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | Identificador autoincremental |
+| `Nombre` | `nvarchar(150)` | NOT NULL | Nombre completo del centro |
+| `Direccion` | `nvarchar(300)` | | Dirección postal (opcional) |
+| `CodigoCorto` | `nvarchar(20)` | NOT NULL, **UNIQUE** | Identificador corto (ej: `IES-NORTE`) |
+| `Activo` | `bit` | NOT NULL, DEFAULT 1 | Permite desactivar un centro sin borrar datos |
+
+**Índices:** `IX_Institutos_CodigoCorto` UNIQUE  
+**Relaciones:** 1:N → `Usuarios`, 0:1 → `Invitaciones`  
+**Seed:** 3 institutos de demostración (`IES-1`, `IES-2`, `IES-3`)
+
+---
+
+#### `Usuarios`
+Tabla central del sistema. Almacena todos los tipos de usuario bajo un único modelo con discriminación por `Rol`.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `NombreCompleto` | `nvarchar(100)` | NOT NULL | Nombre y apellidos |
+| `Email` | `nvarchar(150)` | NOT NULL, **UNIQUE** | Se usa como credencial de login |
+| `PasswordHash` | `nvarchar(max)` | NOT NULL | Hash BCrypt (workFactor 12). Nunca texto plano |
+| `Rol` | `int` | NOT NULL | Ver enum `RolUsuario` |
+| `Turno` | `int` | nullable | Solo Alumno/Profesor/Personal. `NULL` para Admin/Empleado |
+| `Estado` | `int` | NOT NULL | Ver enum `EstadoCuenta` |
+| `FechaRegistro` | `datetime2` | NOT NULL | UTC, establecido al crear |
+| `FechaValidacion` | `datetime2` | nullable | Cuándo el admin aprobó la cuenta |
+| `InstitutoId` | `int` | FK nullable, RESTRICT | `NULL` para Admin (gestiona todos los centros) |
+| `RefreshToken` | `nvarchar(max)` | nullable | Token de refresco JWT activo (rotación en cada uso) |
+| `RefreshTokenExpiry` | `datetime2` | nullable | Expiración del refresh token (30 días) |
+| `DesayunoGratuito` | `bit` | NOT NULL, DEFAULT 0 | Beneficiario del programa de desayuno escolar |
+
+**Índices:** `IX_Usuarios_Email` UNIQUE  
+**Relaciones:** N:1 → `Institutos` (RESTRICT), 1:N → `Pedidos`, `ConsumoDesayunos`, `DispositivoTokens`  
+**Notas de seguridad:** La FK a `Institutos` usa `DeleteBehavior.Restrict` — no se puede borrar un instituto con usuarios. El campo `RefreshToken` se invalida en cada rotación para evitar reuso de tokens robados.
+
+---
+
+#### `FranjasHorarias`
+Ventanas temporales en las que un turno puede (o no puede) realizar pedidos. El admin las configura sin necesidad de código.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Turno` | `int` | NOT NULL | Ver enum `Turno` |
+| `Descripcion` | `nvarchar(60)` | NOT NULL | Etiqueta legible (ej: "Recreo", "Antes de entrar") |
+| `HoraInicio` | `nvarchar(5)` | NOT NULL | Formato `HH:mm` (ej: `10:30`) |
+| `HoraFin` | `nvarchar(5)` | NOT NULL | Formato `HH:mm`. Soporta cruce de medianoche |
+| `Activa` | `bit` | NOT NULL, DEFAULT 1 | Permite desactivar sin borrar |
+| `EsBloqueada` | `bit` | NOT NULL, DEFAULT 0 | `true` = franja de clase (bloqueada); `false` = recreo (permitida) |
+
+**Lógica de evaluación:** `HorarioService.PuedePedirAhoraAsync()` itera todas las franjas activas del turno. Una franja bloqueada activa bloquea independientemente de las permitidas. El cruce de medianoche se detecta cuando `HoraInicio > HoraFin`.  
+**Seed:** 3 franjas bloqueadas (una por turno: mañana 08-14, tarde 14:30-20:30, noche 21-03)  
+**Regla especial:** Sábado bloqueado para alumnos; domingo permite pre-pedido para el lunes.
+
+---
+
+#### `Invitaciones`
+Tokens de un solo uso (o multi-uso) que el admin genera para que profesores, personal y empleados se registren con el rol correcto sin intervención manual en cada caso.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Token` | `nvarchar(max)` | NOT NULL, **UNIQUE** | UUID sin guiones (`Guid.NewGuid().ToString("N")`) |
+| `Tipo` | `int` | NOT NULL | Ver enum `TipoInvitacion` (Profesor / Personal / Empleado) |
+| `Activa` | `bit` | NOT NULL, DEFAULT 1 | El admin puede revocarla manualmente |
+| `FechaCreacion` | `datetime2` | NOT NULL | UTC |
+| `FechaExpiracion` | `datetime2` | NOT NULL | Por defecto +7 días. Máx. 365 días |
+| `UsosMaximos` | `int` | nullable | `NULL` = ilimitada mientras esté activa |
+| `UsosActuales` | `int` | NOT NULL, DEFAULT 0 | Protegido con `[ConcurrencyCheck]` |
+| `InstitutoId` | `int` | nullable | Si tiene valor, el registrante queda fijado a ese instituto |
+
+**Índices:** `IX_Invitaciones_Token` UNIQUE  
+**Anti-race-condition:** `UsosActuales` lleva `[ConcurrencyCheck]` — EF Core genera `WHERE UsosActuales = @old` en el UPDATE, lo que hace que dos registros simultáneos con la misma invitación provoquen una `DbUpdateConcurrencyException` en el segundo y se rechace.
+
+---
+
+#### `Categorias`
+Agrupación de productos para el catálogo. Tienen emoji y orden de visualización.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Nombre` | `nvarchar(80)` | NOT NULL | Ej: "Bocadillos", "Bebidas" |
+| `Emoji` | `nvarchar(10)` | | Emoji de representación (ej: `🥖`) |
+| `Orden` | `int` | NOT NULL, DEFAULT 0 | Orden de aparición en el catálogo |
+| `Activa` | `bit` | NOT NULL, DEFAULT 1 | |
+
+**Relaciones:** 1:N → `Productos` (RESTRICT — no se puede borrar una categoría con productos)  
+**Seed:** 5 categorías iniciales: Bocadillos 🥖, Ensaladas 🥗, Bebidas 🥤, Postres 🍰, Café ☕
+
+---
+
+#### `Alergenos`
+Los 14 alérgenos de declaración obligatoria según el Reglamento (UE) 1169/2011. Relación M:N con `Productos` a través de `ProductoAlergeno`.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Nombre` | `nvarchar(60)` | NOT NULL | Ej: "Gluten", "Lácteos" |
+| `Emoji` | `nvarchar(10)` | | Ej: `🌾`, `🥛` |
+
+**Seed:** 14 alérgenos UE: Gluten 🌾, Crustáceos 🦐, Huevo 🥚, Pescado 🐟, Cacahuetes 🥜, Soja 🫘, Lácteos 🥛, Frutos secos 🌰, Apio 🌿, Mostaza 🌻, Sésamo 🌱, Sulfitos 🍷, Altramuces 🌼, Moluscos 🦑
+
+---
+
+#### `Productos`
+Artículos del catálogo de la cafetería.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Nombre` | `nvarchar(120)` | NOT NULL | |
+| `Descripcion` | `nvarchar(300)` | | |
+| `Precio` | `decimal(6,2)` | NOT NULL | Precio base. El total real puede variar por extras de ingredientes |
+| `Stock` | `int` | NOT NULL, DEFAULT -1 | `-1` = sin control de stock; `0` = agotado; `>0` = unidades disponibles |
+| `ImagenUrl` | `nvarchar(500)` | nullable | Ruta relativa (local) o URL absoluta (Azure Blob) |
+| `Activo` | `bit` | NOT NULL, DEFAULT 1 | Producto inactivo no aparece en el catálogo |
+| `ComponenteDesayuno` | `int` | NOT NULL, DEFAULT 0 | Ver enum `ComponenteDesayuno` |
+| `CategoriaId` | `int` | FK NOT NULL, RESTRICT | Categoría a la que pertenece |
+
+**Control de stock:** `[ConcurrencyCheck]` en `Stock`. En la creación del pedido, EF Core genera `WHERE Stock = @expected` para detectar contención concurrente y prevenir sobreventa.  
+**Soft-delete:** Los productos se marcan como `Activo = false` en lugar de borrarse. Si se eliminan físicamente, `LineaPedido.ProductoId` pasa a `NULL` mediante `SET NULL` (FK nullable), preservando el historial de pedidos.
+
+---
+
+#### `ProductoAlergeno` *(tabla de unión generada por EF)*
+Relación M:N entre `Productos` y `Alergenos`. EF Core la genera automáticamente con `.UsingEntity(j => j.ToTable("ProductoAlergeno"))`.
+
+| Columna | Tipo SQL | Restricciones |
+|---|---|---|
+| `ProductoId` | `int` | PK compuesto, FK → Productos |
+| `AlergenoId` | `int` | PK compuesto, FK → Alergenos |
+
+---
+
+#### `Ingredientes`
+Catálogo de ingredientes disponibles en la cafetería. Pueden ser componentes base de un producto (jamón, tomate) o extras que el cliente puede añadir (doble jamón, guacamole).
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `Nombre` | `nvarchar(80)` | NOT NULL | |
+| `Emoji` | `nvarchar(10)` | | |
+| `PrecioExtra` | `decimal(6,2)` | NOT NULL, DEFAULT 0 | Suplemento de precio al añadir como extra. 0 para ingredientes base |
+| `Stock` | `int` | NOT NULL, DEFAULT -1 | Mismo control que `Producto.Stock` |
+| `Activo` | `bit` | NOT NULL, DEFAULT 1 | Ingrediente inactivo no aparece en la personalización |
+
+**Índices:** `IX_Ingredientes_Nombre`  
+**Notas:** No se puede borrar un ingrediente mientras esté asignado a un producto (`ProductoIngrediente` usa RESTRICT). Si se borra del catálogo, `LineaPedidoIngrediente.IngredienteId` pasa a `NULL` (SET NULL), preservando el historial inmutable del pedido.
+
+---
+
+#### `ProductoIngredientes`
+Tabla de configuración que define cómo un ingrediente aparece en la pantalla de personalización de un producto concreto. Clave primaria **compuesta** `(ProductoId, IngredienteId)`.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `ProductoId` | `int` | PK compuesto, FK → Productos (CASCADE) | |
+| `IngredienteId` | `int` | PK compuesto, FK → Ingredientes (RESTRICT) | |
+| `EsBase` | `bit` | NOT NULL | `true` = viene incluido por defecto (ej: jamón en bocata de jamón) |
+| `EsQuitable` | `bit` | NOT NULL | Solo si `EsBase = true`. El cliente puede quitarlo sin coste |
+| `Orden` | `int` | NOT NULL | Orden de visualización en la UI |
+| `CantidadMaxima` | `int` | NOT NULL, DEFAULT 1 | `1` → switch on/off; `>1` → stepper 0..N (solo para extras) |
+
+**Semántica de las combinaciones:**
+
+| `EsBase` | `EsQuitable` | Comportamiento en la app |
+|:---:|:---:|---|
+| `true` | `true` | Ingrediente que viene de serie pero se puede quitar (ej: tomate) |
+| `true` | `false` | Ingrediente fijo, no modificable (ej: pan) |
+| `false` | n/a | Extra opcional que el cliente puede añadir pagando el suplemento |
+
+---
+
+#### `Pedidos`
+Núcleo transaccional del sistema. Un pedido se crea atómicamente con todas sus líneas e ingredientes en una sola transacción.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `NumeroPedido` | `int` | NOT NULL | Número secuencial visible (ej: #042). Generado con `MAX(NumeroPedido) + 1` dentro de la transacción |
+| `UsuarioId` | `int` | FK nullable, **SET NULL** | `NULL` si el usuario fue borrado con `forzar=true` — el pedido se conserva para auditoría |
+| `FechaCreacion` | `datetime2` | NOT NULL | UTC (`DateTime.UtcNow`). Marcado explícitamente con `SpecifyKind(Utc)` en el mapper |
+| `Estado` | `int` | NOT NULL | Ver enum `EstadoPedido`. Sigue una máquina de estados |
+| `MetodoPago` | `int` | NOT NULL | Ver enum `MetodoPago` |
+| `Total` | `decimal(8,2)` | NOT NULL | Calculado en servidor. El cliente no puede manipularlo |
+| `Notas` | `nvarchar(300)` | nullable | Nota libre del usuario para toda la comanda |
+| `ReferenciasPago` | `nvarchar(200)` | nullable, **UNIQUE filtrado** | PaymentIntentId de Stripe. El índice único evita pedidos duplicados por webhooks repetidos |
+
+**Índices:**  
+- `IX_Pedidos_UsuarioId_FechaCreacion` — búsquedas de historial por usuario  
+- `IX_Pedidos_Estado` — filtrado de cola de preparación  
+- `IX_Pedidos_ReferenciasPago` UNIQUE `WHERE ReferenciasPago IS NOT NULL` — deduplicación Stripe  
+
+**Máquina de estados:**
+```
+Pendiente → EnPreparacion → Listo → Entregado
+    ↓              ↓          ↓
+Cancelado      Cancelado  Cancelado
+```
+
+---
+
+#### `LineasPedido`
+Cada fila es un producto dentro de un pedido. El `PrecioUnitario` es un **snapshot inmutable** del precio en el momento de la compra — los cambios posteriores al precio del producto no afectan a pedidos pasados.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `PedidoId` | `int` | FK NOT NULL, **CASCADE** | Al borrar el pedido, se borran sus líneas en cascada |
+| `ProductoId` | `int` | FK nullable, **SET NULL** | `NULL` si el producto fue eliminado físicamente del catálogo |
+| `Cantidad` | `int` | NOT NULL | Unidades pedidas (1..20 por línea) |
+| `PrecioUnitario` | `decimal(6,2)` | NOT NULL | Precio del producto **en el momento del pedido** (snapshot) |
+| `Notas` | `nvarchar(200)` | nullable | Nota por línea (ej: "extra picante en este bocata") |
+
+**Columna calculada (no mapeada):** `Subtotal = Cantidad × PrecioUnitario` — calculada en .NET, no almacenada en BD.
+
+---
+
+#### `LineaPedidoIngredientes`
+Registro de cada modificación de ingrediente realizada por el cliente en una línea de pedido. Es también un snapshot inmutable — `PrecioAplicado` capta el suplemento del ingrediente en el momento del pedido.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `LineaPedidoId` | `int` | FK NOT NULL, **CASCADE** | Al borrar la línea, se borran sus modificaciones |
+| `IngredienteId` | `int` | FK nullable, **SET NULL** | `NULL` si el ingrediente fue borrado del catálogo (historial preservado) |
+| `Accion` | `int` | NOT NULL | Ver enum `AccionIngrediente` (Quitar / Añadir) |
+| `PrecioAplicado` | `decimal(6,2)` | NOT NULL | `0` para Quitar; `Ingrediente.PrecioExtra` para Añadir (snapshot) |
+| `Cantidad` | `int` | NOT NULL, DEFAULT 1 | Para extras con `CantidadMaxima > 1` |
+
+**Índices:** `IX_LineaPedidoIngredientes_LineaPedidoId` — recuperar modificaciones de una línea eficientemente.
+
+---
+
+#### `ConsumoDesayunos`
+Control anti-fraude del programa de desayuno gratuito. Un registro por usuario por día; los campos `ZumoConsumido` y `BocataConsumido` se actualizan atómicamente dentro de la transacción del pedido con nivel de aislamiento **Serializable**.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `UsuarioId` | `int` | FK NOT NULL, **CASCADE** | |
+| `Fecha` | `date` | NOT NULL | Fecha en zona horaria española (no UTC) |
+| `ZumoConsumido` | `bit` | NOT NULL, DEFAULT 0 | El beneficiario ya recibió su zumo hoy |
+| `BocataConsumido` | `bit` | NOT NULL, DEFAULT 0 | El beneficiario ya recibió su bocadillo hoy |
+
+**Índices:** `IX_ConsumoDesayunos_UsuarioId_Fecha` **UNIQUE** — garantía a nivel de BD de que es imposible tener dos registros para el mismo usuario el mismo día.  
+**Doble protección:** El índice único en BD + la transacción Serializable en aplicación constituyen dos capas independientes de protección contra el doble consumo concurrente.
+
+---
+
+#### `DispositivoTokens`
+Tokens FCM (Firebase Cloud Messaging) registrados por los dispositivos móviles para recibir notificaciones push (pedido listo, cambio de estado, etc.). Infraestructura preparada para cuando se active FCM.
+
+| Columna | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, IDENTITY | |
+| `UsuarioId` | `int` | FK NOT NULL, **CASCADE** | Al borrar el usuario, se borran sus tokens |
+| `Token` | `nvarchar(512)` | NOT NULL, **UNIQUE** | Token de registro FCM. Único por dispositivo (no por usuario) |
+| `Plataforma` | `nvarchar(10)` | NOT NULL | `"android"` / `"ios"` (string para evitar migración futura) |
+| `FechaActualizacion` | `datetime2` | NOT NULL | Para expirar tokens inactivos |
+
+**Índices:** `IX_DispositivoTokens_Token` UNIQUE, `IX_DispositivoTokens_UsuarioId`  
+**Notas:** Un usuario puede tener múltiples tokens (varios dispositivos). Los tokens se actualizan al iniciar sesión.
+
+---
+
+### Catálogo de índices
+
+| Tabla | Índice | Tipo | Propósito |
+|---|---|---|---|
+| `Institutos` | `IX_Institutos_CodigoCorto` | UNIQUE | Búsqueda y unicidad de código corto |
+| `Usuarios` | `IX_Usuarios_Email` | UNIQUE | Login y unicidad de email |
+| `Invitaciones` | `IX_Invitaciones_Token` | UNIQUE | Validación de tokens de registro |
+| `Pedidos` | `IX_Pedidos_UsuarioId_FechaCreacion` | Compuesto | Historial de pedidos de un usuario |
+| `Pedidos` | `IX_Pedidos_Estado` | Simple | Cola de preparación (filtrar Pendiente/EnPrep) |
+| `Pedidos` | `IX_Pedidos_ReferenciasPago` | UNIQUE FILTERED | Deduplicación de webhooks Stripe |
+| `ConsumoDesayunos` | `IX_ConsumoDesayunos_UsuarioId_Fecha` | UNIQUE compuesto | Anti-doble-consumo de desayuno gratuito |
+| `DispositivoTokens` | `IX_DispositivoTokens_Token` | UNIQUE | Unicidad de token FCM por dispositivo |
+| `DispositivoTokens` | `IX_DispositivoTokens_UsuarioId` | Simple | Obtener todos los tokens de un usuario |
+| `Ingredientes` | `IX_Ingredientes_Nombre` | Simple | Búsqueda de ingredientes en panel admin |
+| `LineaPedidoIngredientes` | `IX_LineaPedidoIngredientes_LineaPedidoId` | Simple | Cargar modificaciones de una línea |
+
+---
+
+### Referencia de enumeraciones
+
+Todos los enums se almacenan como `int` en la BD mediante `.HasConversion<int>()`.
+
+#### `RolUsuario`
+| Valor | Entero | Descripción |
+|---|:---:|---|
+| `Alumno` | 0 | Se registra libremente; requiere validación admin |
+| `Profesor` | 1 | Registro mediante invitación |
+| `Personal` | 2 | Personal del centro; registro mediante invitación |
+| `Empleado` | 3 | Empleado de cafetería; puede gestionar pedidos y catálogo |
+| `Admin` | 99 | Acceso total a todos los institutos; creado directamente en BD |
+
+#### `EstadoCuenta`
+| Valor | Entero | Descripción |
+|---|:---:|---|
+| `PendienteValidacion` | 0 | Recién registrado, esperando aprobación del admin |
+| `Activa` | 1 | Cuenta operativa, puede hacer pedidos |
+| `Suspendida` | 2 | Bloqueada temporalmente por el admin |
+| `Rechazada` | 3 | Registro denegado por el admin |
+
+#### `Turno`
+| Valor | Entero | Franja bloqueada seed | Descripción |
+|---|:---:|---|---|
+| `Manana` | 0 | 08:00 – 14:00 | Turno de mañana |
+| `Tarde` | 1 | 14:30 – 20:30 | Turno de tarde |
+| `Noche` | 2 | 21:00 – 03:00 | Turno de noche (cruza medianoche) |
+
+#### `EstadoPedido`
+| Valor | Entero | Quién lo asigna | Descripción |
+|---|:---:|---|---|
+| `Pendiente` | 0 | Sistema al crear | Pagado, esperando atención de la cafetería |
+| `EnPreparacion` | 1 | Empleado / Admin | La cafetería está preparando el pedido |
+| `Listo` | 2 | Empleado / Admin | En el mostrador, pendiente de recoger |
+| `Entregado` | 3 | Empleado / Admin | Recogido por el alumno |
+| `Cancelado` | 4 | Empleado / Admin / Sistema | Pedido anulado |
+
+#### `MetodoPago`
+| Valor | Entero | Descripción |
+|---|:---:|---|
+| `Tarjeta` | 0 | Stripe: tarjeta débito/crédito |
+| `GooglePay` | 1 | Stripe: Google Pay |
+| `ApplePay` | 2 | Stripe: Apple Pay |
+| `Gratuito` | 3 | Desayuno gratuito — sin pasarela de pago |
+
+#### `ComponenteDesayuno`
+| Valor | Entero | Descripción |
+|---|:---:|---|
+| `Ninguno` | 0 | No forma parte del desayuno gratuito |
+| `Zumo` | 1 | Zumo / bebida del desayuno (1 por beneficiario/día) |
+| `Bocata` | 2 | Bocadillo / sándwich del desayuno (1 por beneficiario/día) |
+
+#### `TipoInvitacion`
+| Valor | Entero | Rol resultante |
+|---|:---:|---|
+| `Profesor` | 1 | `RolUsuario.Profesor` |
+| `Personal` | 2 | `RolUsuario.Personal` |
+| `Empleado` | 3 | `RolUsuario.Empleado` |
+
+#### `AccionIngrediente`
+| Valor | Entero | Coste | Descripción |
+|---|:---:|:---:|---|
+| `Quitar` | 0 | 0 € | Eliminar un ingrediente base (sin cargo) |
+| `Añadir` | 1 | `PrecioExtra` del ingrediente | Añadir un extra |
+
+---
+
+### Flujos clave para diagramas de secuencia
+
+#### Flujo de creación de pedido con Stripe
+
+```
+Cliente (MAUI)          API                   Stripe         BD (SQL Server)
+     │                   │                      │                 │
+     │── POST /pagos/crear-intent ──────────────│                 │
+     │                   │── createPaymentIntent─►               │
+     │                   │◄── clientSecret ──────│               │
+     │◄── clientSecret ──│                      │                 │
+     │                   │                      │                 │
+     │── confirmPayment() con Stripe.js ─────────►               │
+     │◄── paymentIntentId (ok) ──────────────────│               │
+     │                   │                      │                 │
+     │── POST /pedidos/crear ──────────────────►│                 │
+     │   (paymentIntentId + líneas + notas)      │                 │
+     │                   │── ValidarPago ──────►│                 │
+     │                   │◄── confirmed ─────────│               │
+     │                   │─── BEGIN TRANSACTION ───────────────►│
+     │                   │─── Stock -= Cantidad ───────────────►│
+     │                   │─── INSERT Pedido + Lineas ──────────►│
+     │                   │─── INSERT LineaPedidoIngredientes ──►│
+     │                   │─── COMMIT ──────────────────────────►│
+     │                   │── SignalR.NuevoPedido ──► Admin/Empl │
+     │◄── 201 Created ───│                      │                 │
+```
+
+#### Flujo de desayuno gratuito (anti-doble-consumo)
+
+```
+Cliente (MAUI)          API                              BD
+     │                   │                               │
+     │── POST /pedidos/crear (Total=0€) ───────────────►│
+     │                   │─── BEGIN SERIALIZABLE ───────►│
+     │                   │─── SELECT ConsumoDesayuno ───►│
+     │                   │◄── (null o parcial) ──────────│
+     │                   │─── UPSERT ConsumoDesayuno ───►│
+     │                   │─── INSERT Pedido... ─────────►│
+     │                   │─── COMMIT ──────────────────►│
+     │◄── 201 Created ───│                               │
+     │                   │                               │
+     │── POST /pedidos/crear (mismo día) ──────────────►│
+     │                   │─── BEGIN SERIALIZABLE ───────►│
+     │                   │─── SELECT ConsumoDesayuno ───►│
+     │                   │◄── (ZumoConsumido=true) ──────│
+     │                   │─── ROLLBACK ────────────────►│
+     │◄── 400 "Ya has consumido tu desayuno hoy" ────────│
+```
+
+#### Ciclo de vida del token JWT
+
+```
+App MAUI                API (/auth)              SecureStorage
+    │                      │                          │
+    │── POST /login ───────►│                         │
+    │◄── accessToken (1h) + refreshToken (30d) ───────│
+    │── Guardar tokens ────────────────────────────►  │
+    │                      │                          │
+    │   [55 min después]    │                         │
+    │── GET /catalogo ─────►│                         │
+    │◄── 401 Unauthorized ──│                         │
+    │                       │                         │
+    │── POST /auth/refresh ─►│                        │
+    │   (refreshToken) ─────►│── Validar + Rotar ───►│
+    │◄── nuevo accessToken + nuevo refreshToken ───────│
+    │── Guardar nuevos tokens ──────────────────────►  │
+    │── (reintenta GET /catalogo) ──────────────────►  │
+```
+
+---
+
+### Decisiones de diseño destacadas
+
+| Decisión | Alternativa descartada | Motivo |
+|---|---|---|
+| `Pedido.UsuarioId` nullable con SET NULL | Borrado en cascada del pedido | Preservar historial de auditoría aunque se elimine el usuario |
+| `LineaPedido.PrecioUnitario` snapshot | Calcular en tiempo real desde `Producto.Precio` | Los cambios de precio no deben afectar facturas pasadas |
+| `ConsumoDesayuno` Serializable + índice UNIQUE | Solo transacción | Doble capa: la BD rechaza duplicados incluso si la lógica de aplicación falla |
+| Enums como `int` en BD | Como `string` | Ahorro de espacio + joins más rápidos; los valores no cambian en producción |
+| `RefreshToken` solo en memoria (Blazor) | En `localStorage` | Mitiga ataques XSS — el token más valioso nunca toca el DOM |
+| `FranjaHoraria.EsBloqueada` en lugar de "solo permitido" | Lista blanca de horas | Permite modelar tanto horarios de clase (bloqueados) como recreos (permitidos) con una sola tabla |
+| `ProductoIngrediente` PK compuesta | PK surrogate + UQ | Garantiza a nivel de BD que un ingrediente solo aparece una vez por producto |
+| `ReferenciasPago` índice UNIQUE FILTERED | Sin índice | Evita pedidos duplicados si el webhook de Stripe llega dos veces antes del primer COMMIT |
+
+</details>
 
 ---
 
