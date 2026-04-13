@@ -25,6 +25,7 @@ public partial class DetallePedidoViewModel : ObservableObject
     [ObservableProperty] private int _pedidoId;
     [ObservableProperty] private int _numeroPedido;
     [ObservableProperty] private decimal _total;
+    [ObservableProperty] private string? _pedidoNotas;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EstadoEmoji))]
     [NotifyPropertyChangedFor(nameof(EstadoTexto))]
@@ -98,6 +99,7 @@ public partial class DetallePedidoViewModel : ObservableObject
 
             NumeroPedido = pedido.NumeroPedido;
             Total        = pedido.Total;
+            PedidoNotas  = pedido.Notas;
             Estado       = pedido.Estado;
             Lineas.Clear();
             foreach (var l in pedido.Lineas) Lineas.Add(l);

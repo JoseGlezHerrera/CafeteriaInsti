@@ -109,12 +109,14 @@
                                             </FormattedString>
                                         </Label.FormattedText>
                                     </Label>
-                                    <!-- Modificaciones de ingredientes -->
-                                    <CollectionView ItemsSource="{Binding Ingredientes}"
-                                                    SelectionMode="None"
-                                                    IsVisible="{Binding Ingredientes,
-                                                        Converter={StaticResource ListNotEmptyConverter}}">
-                                        <CollectionView.ItemTemplate>
+                                    <!-- Modificaciones de ingredientes
+                                         NOTA: BindableLayout en lugar de CollectionView anidado
+                                         para evitar el bug de RecyclerView anidado en Android
+                                         (el inner CollectionView no renderiza su contenido). -->
+                                    <VerticalStackLayout
+                                        BindableLayout.ItemsSource="{Binding Ingredientes}"
+                                        IsVisible="{Binding Ingredientes, Converter={StaticResource ListNotEmptyConverter}}">
+                                        <BindableLayout.ItemTemplate>
                                             <DataTemplate x:DataType="dto:LineaPedidoIngredienteDto">
                                                 <Label FontFamily="DMSans" FontSize="11"
                                                        TextColor="{DynamicResource MutedColor}"
@@ -134,8 +136,8 @@
                                                     </Label.FormattedText>
                                                 </Label>
                                             </DataTemplate>
-                                        </CollectionView.ItemTemplate>
-                                    </CollectionView>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
                                     <Label Text="{Binding Notas}"
                                            FontFamily="DMSans" FontSize="11"
                                            TextColor="{DynamicResource MutedColor}"
@@ -151,6 +153,22 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
+            </Border>
+
+            <!-- Nota global del pedido -->
+            <Border Style="{StaticResource SurfaceCard}" Padding="16,12" Margin="0,0,0,16"
+                    IsVisible="{Binding PedidoNotas, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Label Grid.Column="0" Text="📝" FontSize="16" VerticalOptions="Start"/>
+                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                        <Label Text="Nota del pedido" FontFamily="SyneBold" FontSize="12"
+                               TextColor="{DynamicResource MutedColor}"/>
+                        <Label Text="{Binding PedidoNotas}"
+                               FontFamily="DMSans" FontSize="13"
+                               TextColor="{DynamicResource TextColor}"
+                               FontAttributes="Italic"/>
+                    </VerticalStackLayout>
+                </Grid>
             </Border>
 
             <!-- Total -->
