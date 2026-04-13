@@ -47,8 +47,12 @@ public partial class EmpleadoPedidosPage : ContentPage
             PullToRefresh.IsRefreshing = false;
     }
 
-    private void OnImprimirRequested(object? sender, PedidoDto p) =>
-        _ = _print.ImprimirAsync(TicketHtmlBuilder.Build(p), $"Pedido #{p.NumeroPedido:D3}");
+    private async void OnImprimirRequested(object? sender, PedidoDto p)
+    {
+        // Re-fetch para garantizar que Ingredientes y Notas estén completamente cargados
+        var fresco = await Vm.ObtenerParaImpresionAsync(p.Id) ?? p;
+        _ = _print.ImprimirAsync(TicketHtmlBuilder.Build(fresco), $"Pedido #{p.NumeroPedido:D3}");
+    }
     private void OnPrepararRequested(object? sender, PedidoDto p)  => Vm.PrepararCommand.Execute(p);
     private void OnListoRequested(object? sender, PedidoDto p)     => Vm.ListoCommand.Execute(p);
     private void OnEntregarRequested(object? sender, PedidoDto p)  => Vm.EntregarCommand.Execute(p);

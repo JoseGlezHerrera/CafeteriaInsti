@@ -149,6 +149,9 @@ public partial class EmpleadoPedidosViewModel : ObservableObject
         await CargarAsync();
     }
 
+    /// <summary>Obtiene un PedidoDto completo (con ingredientes) para impresión del ticket.</summary>
+    public Task<PedidoDto?> ObtenerParaImpresionAsync(int id) => _api.GetPedidoAsync(id);
+
     /// <summary>FIX-11: Limpia suscripciones de mensajes para evitar memory leaks.</summary>
     public void Cleanup() => WeakReferenceMessenger.Default.UnregisterAll(this);
 
