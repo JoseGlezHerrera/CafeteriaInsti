@@ -55,8 +55,12 @@ public class AndroidPrintService : IPrintService
             if (pm is null) return;
 
             var adapter = view.CreatePrintDocumentAdapter(_jobName);
+            // Usar A5 (148×210 mm) como tamaño de referencia. En la previsualización de Android
+            // todo el contenido aparece en una sola página sin truncar, independientemente del
+            // número de líneas o ingredientes del pedido. La impresora térmica real puede
+            // ajustar su propio tamaño; este valor sólo afecta al diálogo de impresión.
             var attrs   = new PrintAttributes.Builder()
-                .SetMediaSize(PrintAttributes.MediaSize.IsoA8)   // ~52×74 mm, similar a ticket 80 mm
+                .SetMediaSize(PrintAttributes.MediaSize.IsoA5)
                 .SetMinMargins(PrintAttributes.Margins.NoMargins)
                 .Build();
 

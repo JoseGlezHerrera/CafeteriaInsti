@@ -48,9 +48,9 @@ public static class TicketHtmlBuilder
               .dash    { border-top: 1px dashed #000; margin: 7px 0; }
               .row     { display: flex; justify-content: space-between; margin: 2px 0; }
               .prod    { font-weight: bold; margin-top: 6px; }
-              .mod     { padding-left: 14px; font-size: 11px; color: #444; }
-              .nota    { padding-left: 14px; font-size: 11px; font-style: italic; color: #333; }
-              .nota-global { font-size: 12px; font-weight: bold; }
+              .mod     { padding-left: 14px; font-size: 13px; color: #444; }
+              .nota    { padding-left: 14px; font-size: 13px; font-style: italic; color: #333; }
+              .nota-global { font-size: 14px; font-weight: bold; }
               .subtotal{ text-align: right; font-size: 11px; color: #555; }
               .total   { font-size: 15px; font-weight: bold; }
               .footer  { margin-top: 14px; text-align: center; font-size: 11px; color: #666; }
