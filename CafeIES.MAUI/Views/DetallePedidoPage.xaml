@@ -100,8 +100,15 @@
                                     <Label Text="{Binding ProductoNombre}"
                                            FontFamily="SyneBold" FontSize="14"
                                            TextColor="{DynamicResource TextColor}"/>
-                                    <Label FontSize="12" TextColor="{DynamicResource MutedColor}"
-                                           Text="{Binding ., Converter={StaticResource PrecioBaseLineaConverter}}"/>
+                                    <Label FontSize="12" TextColor="{DynamicResource MutedColor}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding Cantidad}"/>
+                                                <Span Text=" × "/>
+                                                <Span Text="{Binding PrecioUnitario, StringFormat='{0:0.00}€'}"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
                                     <!-- Modificaciones de ingredientes
                                          NOTA: BindableLayout en lugar de CollectionView anidado
                                          para evitar el bug de RecyclerView anidado en Android

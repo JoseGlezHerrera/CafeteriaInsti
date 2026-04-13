@@ -22,8 +22,17 @@ public class AndroidPrintService : IPrintService
             var webView = new global::Android.Webkit.WebView(activity);
             webView.Settings.JavaScriptEnabled = false;
 
+            // CRÍTICO: WebView.createPrintDocumentAdapter() exige que el WebView
+            // esté asociado a una ventana Android. Sin esto el motor de renderizado
+            // nunca inicializa el layout y el PDF/ticket sale en blanco o incompleto.
+            // Añadimos el WebView al DecorView con tamaño mínimo (1×1) para que sea
+            // invisible al usuario pero esté correctamente "attached". Se elimina
+            // en OnPageFinished, una vez que el adaptador de impresión ya lo capturó.
+            var decorView = (global::Android.Views.ViewGroup)activity.Window!.DecorView;
+            decorView.AddView(webView, new global::Android.Views.ViewGroup.LayoutParams(1, 1));
+
             // Mantener referencia hasta que termine de imprimir
-            webView.SetWebViewClient(new TicketPrintWebViewClient(activity, jobName, webView));
+            webView.SetWebViewClient(new TicketPrintWebViewClient(activity, jobName, webView, decorView));
             webView.LoadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
         });
     }
@@ -36,15 +45,18 @@ public class AndroidPrintService : IPrintService
         private readonly string _jobName;
         // Mantener WebView vivo hasta OnPageFinished para evitar GC prematuro
         private readonly global::Android.Webkit.WebView _webView;
+        private readonly global::Android.Views.ViewGroup _decorView;
 
         public TicketPrintWebViewClient(
             global::Android.App.Activity activity,
             string jobName,
-            global::Android.Webkit.WebView webView)
+            global::Android.Webkit.WebView webView,
+            global::Android.Views.ViewGroup decorView)
         {
-            _activity = activity;
-            _jobName  = jobName;
-            _webView  = webView;
+            _activity  = activity;
+            _jobName   = jobName;
+            _webView   = webView;
+            _decorView = decorView;
         }
 
         public override void OnPageFinished(global::Android.Webkit.WebView? view, string? url)
@@ -72,6 +84,9 @@ public class AndroidPrintService : IPrintService
                 .Build();
 
             pm.Print(_jobName, adapter, attrs);
+
+            // Limpiar: desanclar WebView del DecorView ahora que el adaptador ya lo capturó
+            _decorView.RemoveView(_webView);
         }
     }
 }
