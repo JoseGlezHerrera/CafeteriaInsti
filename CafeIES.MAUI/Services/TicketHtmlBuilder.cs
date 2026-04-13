@@ -53,8 +53,8 @@ public static class TicketHtmlBuilder
               .dash    { border-top: 1px dashed #000; margin: 6pt 0; }
               .row     { display: flex; justify-content: space-between; margin: 2pt 0; }
               .prod    { font-weight: bold; margin-top: 5pt; }
-              .mod     { padding-left: 10pt; font-size: 11pt; color: #222; }
-              .nota    { padding-left: 10pt; font-size: 11pt; font-style: italic; color: #222; }
+              .mod     { padding-left: 10pt; font-size: 11pt; font-style: italic; color: #444; }
+              .nota    { padding-left: 10pt; font-size: 11pt; font-style: italic; color: #444; }
               .nota-global { font-size: 11pt; font-weight: bold; }
               .subtotal{ text-align: right; font-size: 10pt; color: #555; }
               .total   { font-size: 13pt; font-weight: bold; }
@@ -83,9 +83,12 @@ public static class TicketHtmlBuilder
             {
                 foreach (var ing in l.Ingredientes)
                 {
-                    var accion = ing.Accion == AccionIngrediente.Quitar ? "sin" : "+";
-                    var extra  = ing.Cantidad > 1 ? $" x{ing.Cantidad}" : string.Empty;
-                    sb.AppendLine($"<div class=\"mod\">{accion} {Esc(ing.Nombre)}{extra}</div>");
+                    var accion    = ing.Accion == AccionIngrediente.Quitar ? "sin" : "+";
+                    var cantStr   = ing.Cantidad > 1 ? $" x{ing.Cantidad}" : string.Empty;
+                    var precioStr = (ing.Accion == AccionIngrediente.Añadir && ing.PrecioAplicado > 0)
+                        ? $" (+{ing.PrecioAplicado * ing.Cantidad:F2}&euro;)"
+                        : string.Empty;
+                    sb.AppendLine($"<div class=\"mod\">{accion} {Esc(ing.Nombre)}{cantStr}{precioStr}</div>");
                 }
             }
 
