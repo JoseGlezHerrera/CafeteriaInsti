@@ -34,26 +34,31 @@ public static class TicketHtmlBuilder
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
             <style>
+              /* @page instruye al motor de impresión del WebView a usar 80 mm de ancho.
+                 El alto "auto" deja que el contenido determine la longitud del rollo.  */
+              @page { size: 80mm auto; margin: 3mm; }
               * { box-sizing: border-box; margin: 0; padding: 0; }
               body {
                 font-family: 'Courier New', Courier, monospace;
-                font-size: 13px; color: #000; background: #fff;
-                max-width: 300px; margin: 0 auto; padding: 10px;
+                font-size: 12pt; color: #000; background: #fff;
+                width: 74mm;        /* 80 mm - 3 mm × 2 márgenes */
+                margin: 0 auto;
+                padding: 0;
               }
-              @media print { body { max-width: 100%; } }
+              @media print { body { width: 100%; margin: 0; } }
               .center  { text-align: center; }
               .bold    { font-weight: bold; }
-              .title   { font-size: 20px; font-weight: bold; text-align: center; letter-spacing: 2px; }
-              .inst    { text-align: center; font-size: 11px; color: #555; margin-bottom: 10px; }
-              .dash    { border-top: 1px dashed #000; margin: 7px 0; }
-              .row     { display: flex; justify-content: space-between; margin: 2px 0; }
-              .prod    { font-weight: bold; margin-top: 6px; }
-              .mod     { padding-left: 14px; font-size: 13px; color: #444; }
-              .nota    { padding-left: 14px; font-size: 13px; font-style: italic; color: #333; }
-              .nota-global { font-size: 14px; font-weight: bold; }
-              .subtotal{ text-align: right; font-size: 11px; color: #555; }
-              .total   { font-size: 15px; font-weight: bold; }
-              .footer  { margin-top: 14px; text-align: center; font-size: 11px; color: #666; }
+              .title   { font-size: 16pt; font-weight: bold; text-align: center; letter-spacing: 2px; }
+              .inst    { text-align: center; font-size: 10pt; color: #555; margin-bottom: 8pt; }
+              .dash    { border-top: 1px dashed #000; margin: 6pt 0; }
+              .row     { display: flex; justify-content: space-between; margin: 2pt 0; }
+              .prod    { font-weight: bold; margin-top: 5pt; }
+              .mod     { padding-left: 10pt; font-size: 11pt; color: #222; }
+              .nota    { padding-left: 10pt; font-size: 11pt; font-style: italic; color: #222; }
+              .nota-global { font-size: 11pt; font-weight: bold; }
+              .subtotal{ text-align: right; font-size: 10pt; color: #555; }
+              .total   { font-size: 13pt; font-weight: bold; }
+              .footer  { margin-top: 12pt; text-align: center; font-size: 10pt; color: #666; }
             </style>
             </head>
             <body>

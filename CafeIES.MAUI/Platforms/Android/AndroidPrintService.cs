@@ -55,12 +55,19 @@ public class AndroidPrintService : IPrintService
             if (pm is null) return;
 
             var adapter = view.CreatePrintDocumentAdapter(_jobName);
-            // Usar A5 (148×210 mm) como tamaño de referencia. En la previsualización de Android
-            // todo el contenido aparece en una sola página sin truncar, independientemente del
-            // número de líneas o ingredientes del pedido. La impresora térmica real puede
-            // ajustar su propio tamaño; este valor sólo afecta al diálogo de impresión.
-            var attrs   = new PrintAttributes.Builder()
-                .SetMediaSize(PrintAttributes.MediaSize.IsoA5)
+
+            // Tamaño personalizado: 80 mm de ancho (rollo térmico estándar) × alto A4.
+            // Android PrintManager espera dimensiones en milésimas de pulgada (mils).
+            // 1 mm = 1000/25,4 mils ≈ 39,37 mils.
+            // El alto (297 mm ≈ A4) sirve como cota superior; el HTML fija el alto real
+            // mediante @page { size: 80mm auto } en el CSS del ticket.
+            const int widthMils  = 3150;   // 80 mm  (80 × 39,37 ≈ 3150)
+            const int heightMils = 11693;  // 297 mm (A4, techo para rollos largos)
+            var receiptSize = new PrintAttributes.MediaSize(
+                "thermal_receipt_80mm", "Rollo térmico 80 mm", widthMils, heightMils);
+
+            var attrs = new PrintAttributes.Builder()
+                .SetMediaSize(receiptSize)
                 .SetMinMargins(PrintAttributes.Margins.NoMargins)
                 .Build();
 
