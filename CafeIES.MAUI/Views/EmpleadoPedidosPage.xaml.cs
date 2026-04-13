@@ -1,3 +1,4 @@
+using System.Text;
 using CafeIES.MAUI.Controls;
 using CafeIES.MAUI.Services;
 using CafeIES.MAUI.ViewModels;
@@ -49,10 +50,49 @@ public partial class EmpleadoPedidosPage : ContentPage
 
     private async void OnImprimirRequested(object? sender, PedidoDto p)
     {
-        // Re-fetch para garantizar que Ingredientes y Notas estén completamente cargados
         var fresco = await Vm.ObtenerParaImpresionAsync(p.Id) ?? p;
-        _ = _print.ImprimirAsync(TicketHtmlBuilder.Build(fresco), $"Pedido #{p.NumeroPedido:D3}");
+        var resumen = BuildResumenTexto(fresco);
+        var imprimir = await Shell.Current.DisplayAlert(
+            $"Pedido #{fresco.NumeroPedido:D3}",
+            resumen,
+            "Imprimir",
+            "Cerrar");
+        if (imprimir)
+            _ = _print.ImprimirAsync(TicketHtmlBuilder.Build(fresco), $"Pedido #{fresco.NumeroPedido:D3}");
     }
+
+    private static string BuildResumenTexto(PedidoDto p)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(p.UsuarioNombre);
+        foreach (var l in p.Lineas)
+        {
+            sb.AppendLine();
+            sb.Append($"{l.ProductoNombre} x{l.Cantidad}");
+            if (l.Subtotal > 0) sb.Append($"  {l.Subtotal:F2}€");
+            sb.AppendLine();
+            if (l.Ingredientes is { Count: > 0 })
+            {
+                foreach (var ing in l.Ingredientes)
+                {
+                    var accion = ing.Accion == AccionIngrediente.Quitar ? "sin" : "+";
+                    var extra = ing.Cantidad > 1 ? $" x{ing.Cantidad}" : string.Empty;
+                    sb.AppendLine($"  {accion} {ing.Nombre}{extra}");
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(l.Notas))
+                sb.AppendLine($"  → {l.Notas}");
+        }
+        if (!string.IsNullOrWhiteSpace(p.Notas))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"NOTA: {p.Notas}");
+        }
+        sb.AppendLine();
+        sb.Append($"Total: {p.Total:F2}€");
+        return sb.ToString();
+    }
+
     private void OnPrepararRequested(object? sender, PedidoDto p)  => Vm.PrepararCommand.Execute(p);
     private void OnListoRequested(object? sender, PedidoDto p)     => Vm.ListoCommand.Execute(p);
     private void OnEntregarRequested(object? sender, PedidoDto p)  => Vm.EntregarCommand.Execute(p);
