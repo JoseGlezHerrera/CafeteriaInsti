@@ -50,6 +50,7 @@
             <conv:PrecioIngredienteConverter x:Key="PrecioIngredienteConverter"/>
             <conv:ListNotEmptyConverter x:Key="ListNotEmptyConverter"/>
             <conv:DecimalPositivoConverter x:Key="DecimalPositivoConverter"/>
+            <conv:PrecioBaseLineaConverter x:Key="PrecioBaseLineaConverter"/>
 
             <!-- ── Estilos base ────────────────────────────────────────────── -->
             <Style TargetType="ContentPage" ApplyToDerivedTypes="True">

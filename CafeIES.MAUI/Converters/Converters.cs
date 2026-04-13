@@ -459,6 +459,26 @@ public class ListNotEmptyConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// LineaPedidoDto → "Cantidad × PrecioBase€" donde PrecioBase = PrecioUnitario - extras Añadir.
+/// Así el usuario ve el precio base junto a los extras de ingredientes por separado.
+/// </summary>
+public class PrecioBaseLineaConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not LineaPedidoDto linea) return string.Empty;
+        var extrasPorUnidad = linea.Ingredientes?
+            .Where(i => i.Accion == AccionIngrediente.Añadir)
+            .Sum(i => i.PrecioAplicado * i.Cantidad) ?? 0m;
+        var precioBase = linea.PrecioUnitario - extrasPorUnidad;
+        return $"{linea.Cantidad} × {precioBase:F2}€";
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 // ── Alérgenos: IReadOnlyList<AlergenoDto> → string de emojis ─────────────────
 
 public class AlergenosToEmojiConverter : IValueConverter
