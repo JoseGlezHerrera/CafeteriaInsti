@@ -694,8 +694,8 @@ erDiagram
         bool Activo
     }
     ProductoIngrediente {
-        int ProductoId PK_FK
-        int IngredienteId PK_FK
+        int ProductoId PK "también FK"
+        int IngredienteId PK "también FK"
         bool EsBase
         bool EsQuitable
         int Orden
@@ -710,7 +710,7 @@ erDiagram
         int MetodoPago
         decimal Total
         string Notas "nullable"
-        string ReferenciasPago UK_nullable
+        string ReferenciasPago UK "nullable"
     }
     LineaPedido {
         int Id PK

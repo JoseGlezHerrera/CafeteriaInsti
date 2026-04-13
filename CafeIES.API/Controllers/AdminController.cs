@@ -509,6 +509,7 @@ public class AdminController : ControllerBase
 
         var pedidos = await baseQuery
             .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
