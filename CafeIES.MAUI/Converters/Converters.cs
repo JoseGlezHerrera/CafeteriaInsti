@@ -422,6 +422,29 @@ public class AccionIngredienteConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// Para ingredientes de pedido: devuelve el sufijo " ×N (+X,XX€)" según cantidad y precio aplicado.
+/// Muestra ×N solo cuando Cantidad &gt; 1; precio solo cuando PrecioAplicado &gt; 0.
+/// Ejemplo: " ×2 (+1,00€)" o " (+0,50€)" o " ×3" o "".
+/// </summary>
+public class PrecioIngredienteConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not LineaPedidoIngredienteDto ing) return string.Empty;
+        var sb = new System.Text.StringBuilder();
+        if (ing.Cantidad > 1)
+            sb.Append($" ×{ing.Cantidad}");
+        var extra = ing.PrecioAplicado * ing.Cantidad;
+        if (extra > 0)
+            sb.Append($" (+{extra:F2}€)");
+        return sb.ToString();
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>Devuelve true si la colección no es null y tiene al menos 1 elemento.</summary>
 public class ListNotEmptyConverter : IValueConverter
 {

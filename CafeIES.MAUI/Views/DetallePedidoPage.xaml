@@ -127,6 +127,9 @@
                                                             <Span Text="{Binding Emoji}"/>
                                                             <Span Text=" "/>
                                                             <Span Text="{Binding Nombre}"/>
+                                                            <Span Text="{Binding .,
+                                                                Converter={StaticResource PrecioIngredienteConverter}}"
+                                                                  TextColor="{StaticResource AccentColor}"/>
                                                         </FormattedString>
                                                     </Label.FormattedText>
                                                 </Label>

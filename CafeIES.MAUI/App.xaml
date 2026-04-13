@@ -47,6 +47,7 @@
             <conv:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter"/>
             <conv:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
             <conv:AccionIngredienteConverter x:Key="AccionIngredienteConverter"/>
+            <conv:PrecioIngredienteConverter x:Key="PrecioIngredienteConverter"/>
             <conv:ListNotEmptyConverter x:Key="ListNotEmptyConverter"/>
             <conv:DecimalPositivoConverter x:Key="DecimalPositivoConverter"/>
 
