@@ -1,10 +1,12 @@
 <div align="center">
 
-# CaféIES
+# ☕ CaféIES
 
 **Sistema integral de gestión de pedidos para cafeterías de institutos de educación secundaria.**
 
-App Android nativa · Panel web de administración · API REST en producción · Pagos reales con Stripe
+*App Android nativa · Panel web de administración · API REST en producción · Pagos reales con Stripe*
+
+<br>
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![MAUI Android](https://img.shields.io/badge/MAUI-Android-3DDC84?logo=android&logoColor=white)](https://learn.microsoft.com/dotnet/maui/)
@@ -12,55 +14,37 @@ App Android nativa · Panel web de administración · API REST en producción ·
 [![Stripe](https://img.shields.io/badge/Stripe-PaymentIntent-635bff?logo=stripe&logoColor=white)](https://stripe.com/)
 [![Azure](https://img.shields.io/badge/Azure-Producción-0089D6?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
-[![Tests](https://img.shields.io/badge/Tests-115_passing-4caf50?logo=xunit&logoColor=white)](#tests)
+[![Tests](https://img.shields.io/badge/Tests-115_passing-4caf50?logo=xunit&logoColor=white)](#-tests)
 [![License](https://img.shields.io/badge/Licencia-MIT-22c55e)](LICENSE)
 
-[**Descargar APK**](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases/latest) · [**Panel Admin**](https://cafeies-admin.azurestaticapps.net) · [**API Swagger**](https://cafeies-api.azurewebsites.net/swagger) · [**Política de privacidad**](https://JoseGlezHerrera.github.io/CafeteriaInsti/politica-privacidad.html)
+<br>
+
+[**📲 Descargar APK**](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases/latest) &nbsp;·&nbsp;
+[**🖥️ Panel Admin**](https://cafeies-admin.azurestaticapps.net) &nbsp;·&nbsp;
+[**📖 API Swagger**](https://cafeies-api.azurewebsites.net/swagger) &nbsp;·&nbsp;
+[**🔒 Política de privacidad**](https://JoseGlezHerrera.github.io/CafeteriaInsti/politica-privacidad.html)
 
 </div>
 
 ---
 
-## Índice
+CaféIES cubre el ciclo completo de una cafetería escolar: el alumno pide desde el móvil y paga con tarjeta (Stripe), el empleado prepara y cambia el estado del pedido, el alumno recibe la notificación en tiempo real, y el administrador supervisa todo desde un panel Blazor con reportes exportables. Está desarrollado con **tecnologías de producción reales** — CI/CD, despliegue en Azure, JWT con refresh tokens, SignalR y webhook de Stripe. No es una simulación.
 
-1. [Descripción del proyecto](#descripción-del-proyecto)
-2. [Arquitectura del sistema](#arquitectura-del-sistema)
-3. [Stack tecnológico](#stack-tecnológico)
-4. [Funcionalidades](#funcionalidades)
-5. [Modelo de datos](#modelo-de-datos)
-6. [Seguridad](#seguridad)
-7. [Pagos con Stripe](#pagos-con-stripe)
-8. [Tiempo real con SignalR](#tiempo-real-con-signalr)
-9. [Sistema de desayuno gratuito](#sistema-de-desayuno-gratuito)
-10. [Flujos de usuario](#flujos-de-usuario)
-11. [Tests](#tests)
-12. [Puesta en marcha local](#puesta-en-marcha-local)
-13. [Despliegue en Azure](#despliegue-en-azure)
-14. [Estructura del proyecto](#estructura-del-proyecto)
-15. [Decisiones de diseño](#decisiones-de-diseño)
-16. [Roadmap](#roadmap)
+<br>
+
+| Componente | Tecnología | Descripción |
+|---|---|---|
+| **App móvil** | .NET MAUI Android | Catálogo, personalización de ingredientes, carrito, Stripe, seguimiento en tiempo real, impresión de tickets |
+| **Panel admin** | Blazor WebAssembly | Gestión de usuarios, productos, pedidos, horarios, desayunos y reportes Excel/PDF |
+| **API REST** | ASP.NET Core 9 | JWT, rate limiting (4 políticas), audit trail, SignalR y webhook de Stripe |
+| **Base de datos** | SQL Server (Azure) | 15 tablas, multi-tenancy por instituto, ingredientes personalizables, control de stock |
+| **Desayuno gratuito** | — | 1 zumo + 1 bocadillo/día para beneficiarios, con protección anti-doble-consumo por triple barrera |
 
 ---
 
-## Descripción del proyecto
-
-CaféIES es un sistema de gestión de pedidos desarrollado para cafeterías de institutos de educación secundaria. El proyecto cubre el ciclo completo: el alumno realiza un pedido desde su móvil, lo paga con tarjeta (Stripe), el empleado de cafetería lo prepara y le notifica cuando está listo, y el administrador supervisa todo desde un panel web con reportes en tiempo real.
-
-El proyecto está desarrollado con **tecnologías de producción reales**, incluyendo CI/CD automático, despliegue en Azure, pagos reales con Stripe y autenticación JWT con refresh tokens. No es una simulación — la aplicación está en producción y funciona con datos reales.
-
-### Qué incluye
-
-| Componente | Descripción |
-|---|---|
-| **App móvil** (MAUI Android) | Catálogo interactivo, personalización de ingredientes, carrito, pago con Stripe, seguimiento de pedidos en tiempo real e impresión de tickets térmicos |
-| **Panel admin web** (Blazor WASM) | Gestión completa de usuarios, productos, pedidos, horarios, desayunos y exportación de reportes Excel/PDF |
-| **API REST** (ASP.NET Core 9) | Backend completo con JWT, rate limiting, audit trail, SignalR y webhook de Stripe |
-| **Base de datos** (SQL Server) | 15 tablas con multi-tenancy por instituto, ingredientes personalizables y control de stock |
-| **Desayuno gratuito** | Programa de 1 zumo + 1 bocadillo/día para alumnos beneficiarios, con protección anti-doble-consumo |
-
----
-
-## Arquitectura del sistema
+<details>
+<summary><b>🏗️ Arquitectura del sistema</b></summary>
+<br>
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -110,9 +94,13 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 - API → Azure Blob: almacenamiento de imágenes de productos
 - API → FCM: notificaciones push (infraestructura disponible; envío opcional)
 
+</details>
+
 ---
 
-## Stack tecnológico
+<details>
+<summary><b>📦 Stack tecnológico</b></summary>
+<br>
 
 | Capa | Tecnología | Versión | Justificación |
 |---|---|---|---|
@@ -133,11 +121,15 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 | **QR** | QRCoder | — | Generación de QR de invitaciones en PNG |
 | **Tests** | xUnit + EF InMemory | — | 115 tests unitarios de servicios, dominio y validaciones |
 
+</details>
+
 ---
 
-## Funcionalidades
+<details>
+<summary><b>✨ Funcionalidades</b></summary>
+<br>
 
-### Alumno
+#### 👨‍🎓 Alumno
 
 - Registro con selección de instituto y turno; validación pendiente por el administrador
 - Auto-login transparente al reabrir la app (sin flash de login)
@@ -145,13 +137,13 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 - Personalización de ingredientes por producto (añadir extras, quitar componentes base)
 - Visualización de alérgenos con iconos
 - Carrito con control de stock en tiempo real
-- Banner de desayuno gratuito con componentes disponibles del día
+- Banner de desayuno gratuito 🍊 con componentes disponibles del día
 - Pago con tarjeta mediante Stripe (WebView con Stripe.js) o flujo gratuito (0 €)
 - Seguimiento del estado del pedido en tiempo real (SignalR): Recibido → En preparación → Listo → Recogido
 - Historial de pedidos con desglose de ingredientes, precios y notas
 - Perfil con cambio de contraseña (validación de complejidad)
 
-### Empleado / Personal
+#### 👷 Empleado / Personal
 
 - Vista de pedidos del día filtrada por instituto
 - Cambio de estado de pedidos con un toque (barra de progreso en tiempo real)
@@ -159,7 +151,7 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 - Gestión de productos: crear, editar, controlar stock
 - Gestión de ingredientes, categorías y alérgenos
 
-### Administrador
+#### 🛠️ Administrador
 
 - Dashboard Blazor con métricas del día e historial de pedidos en tiempo real
 - Gestión de usuarios: aprobar alumnos, asignar rol, activar desayuno gratuito
@@ -171,7 +163,7 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 - Exportación de reportes en Excel (pedidos, usuarios, productos) y PDF
 - Acceso a las mismas funciones de empleado desde la app MAUI
 
-### Sistema
+#### ⚙️ Sistema
 
 - Multi-tenancy: cada instituto tiene sus propios productos, usuarios y horarios
 - Rate limiting en 4 niveles (auth, general, invitaciones, pagos)
@@ -179,13 +171,17 @@ El proyecto está desarrollado con **tecnologías de producción reales**, inclu
 - Webhook de Stripe con reconstrucción automática de pedidos huérfanos
 - Control de stock con transacciones `ReadCommitted` y `[ConcurrencyCheck]`
 
+</details>
+
 ---
 
-## Modelo de datos
+<details>
+<summary><b>🗄️ Modelo de datos</b></summary>
+<br>
 
 La base de datos es **SQL Server** gestionada con **EF Core 9 Code-First**. El esquema tiene **15 tablas** con multi-tenancy por instituto.
 
-### Diagrama entidad-relación
+#### Diagrama entidad-relación
 
 ```mermaid
 erDiagram
@@ -300,7 +296,7 @@ erDiagram
     Ingrediente ||--o{ LineaPedidoIngrediente : referenciado
 ```
 
-### Índices relevantes
+#### Índices relevantes
 
 | Tabla | Índice | Tipo | Propósito |
 |---|---|---|---|
@@ -310,9 +306,14 @@ erDiagram
 | `DispositivoTokens` | `IX_Dispositivos_UsuarioId` | Normal | Lookup de tokens FCM por usuario |
 | `Usuarios` | `IX_Usuarios_Email` | UNIQUE | Login por email |
 
-### Descripción detallada de tablas
+---
 
-#### `Institutos`
+#### Descripción detallada de tablas
+
+<details>
+<summary><code>Institutos</code> — centros educativos (unidad de multi-tenancy)</summary>
+<br>
+
 Representa cada centro educativo dado de alta en el sistema. Toda la información de usuarios, horarios e invitaciones está asociada a un instituto — es la unidad de multi-tenancy del sistema.
 
 | Campo | Tipo | Restricción | Descripción |
@@ -323,10 +324,13 @@ Representa cada centro educativo dado de alta en el sistema. Toda la informació
 | `CodigoCorto` | `nvarchar(10)` | UNIQUE, NOT NULL | Código breve para identificar el instituto en listas (ej: "IES-01") |
 | `Activo` | `bit` | NOT NULL, default `1` | Permite deshabilitar un instituto sin borrarlo |
 
----
+</details>
 
-#### `Usuarios`
-Almacena todos los usuarios del sistema: alumnos, profesores, personal y administradores. El rol y el estado determinan qué puede hacer cada usuario.
+<details>
+<summary><code>Usuarios</code> — alumnos, profesores, personal y administradores</summary>
+<br>
+
+Almacena todos los usuarios del sistema. El rol y el estado determinan qué puede hacer cada usuario.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -349,10 +353,13 @@ Almacena todos los usuarios del sistema: alumnos, profesores, personal y adminis
 - Solo un usuario con `DesayunoGratuito = true` puede acceder al flujo de desayuno sin coste.
 - El campo `Rol` controla el acceso a las secciones admin/empleado de la app.
 
----
+</details>
 
-#### `Categorias`
-Agrupación de productos del catálogo de la cafetería (ej: Bocadillos, Bebidas, Bollería). No están asociadas a un instituto específico — son globales.
+<details>
+<summary><code>Categorias</code> — agrupación de productos del catálogo</summary>
+<br>
+
+Agrupación de productos del catálogo de la cafetería (ej: Bocadillos, Bebidas, Bollería). Son globales — no están asociadas a un instituto específico.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -361,10 +368,13 @@ Agrupación de productos del catálogo de la cafetería (ej: Bocadillos, Bebidas
 | `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🥪") |
 | `Orden` | `int` | NOT NULL, default `0` | Posición en la lista ordenada del catálogo |
 
----
+</details>
 
-#### `Productos`
-Catálogo de artículos disponibles en la cafetería. Cada producto puede tener imagen, pertenecer a una categoría, estar asociado a alérgenos e ingredientes personalizables, y opcionalmente ser parte del programa de desayuno gratuito.
+<details>
+<summary><code>Productos</code> — artículos del catálogo de la cafetería</summary>
+<br>
+
+Catálogo de artículos disponibles. Cada producto puede tener imagen, pertenecer a una categoría, estar asociado a alérgenos e ingredientes personalizables, y opcionalmente ser parte del programa de desayuno gratuito.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -382,10 +392,13 @@ Catálogo de artículos disponibles en la cafetería. Cada producto puede tener 
 - El campo `Stock` tiene `[ConcurrencyCheck]` — si dos usuarios intentan comprar el último artículo al mismo tiempo, EF Core lanza una excepción de concurrencia y solo uno lo obtiene.
 - `Precio` es el precio base. El precio final de una línea de pedido puede ser mayor si el usuario añade ingredientes extra.
 
----
+</details>
 
-#### `Alergenos`
-Catálogo de alérgenos alimentarios que pueden estar presentes en los productos (gluten, lactosa, frutos secos, etc.).
+<details>
+<summary><code>Alergenos</code> · <code>ProductoAlergenos</code> — alérgenos y su asignación a productos</summary>
+<br>
+
+**`Alergenos`** — catálogo de alérgenos alimentarios (gluten, lactosa, frutos secos, etc.)
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -393,34 +406,31 @@ Catálogo de alérgenos alimentarios que pueden estar presentes en los productos
 | `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del alérgeno (ej: "Gluten") |
 | `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🌾") |
 
----
-
-#### `ProductoAlergenos` *(tabla pivote)*
-Relación muchos-a-muchos entre `Productos` y `Alergenos`. Un producto puede tener varios alérgenos y un alérgeno puede estar en varios productos.
+**`ProductoAlergenos`** — tabla pivote M:N entre `Productos` y `Alergenos`
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
 | `ProductoId` | `int` | FK → Productos, PK compuesta | |
 | `AlergenoId` | `int` | FK → Alergenos, PK compuesta | |
 
----
+</details>
 
-#### `Ingredientes`
-Catálogo de ingredientes que los usuarios pueden añadir o quitar al personalizar un producto. Cada ingrediente puede tener un suplemento de precio y su propio control de stock.
+<details>
+<summary><code>Ingredientes</code> · <code>ProductoIngredientes</code> — personalización de productos</summary>
+<br>
+
+**`Ingredientes`** — catálogo de ingredientes que los usuarios pueden añadir o quitar al personalizar un producto.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
 | `Id` | `int` | PK, autoincremento | Identificador único |
 | `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del ingrediente (ej: "Jamón ibérico") |
 | `Emoji` | `nvarchar(10)` | nullable | Emoji representativo (ej: "🥩") |
-| `PrecioExtra` | `decimal(6,2)` | NOT NULL, default `0` | Suplemento en euros que se añade al precio del producto si el usuario elige este ingrediente. `0` para ingredientes sin coste adicional |
+| `PrecioExtra` | `decimal(6,2)` | NOT NULL, default `0` | Suplemento en euros que se añade al precio si el usuario elige este ingrediente |
 | `Stock` | `int` | NOT NULL | Unidades disponibles. `-1` = ilimitado |
 | `Activo` | `bit` | NOT NULL, default `1` | Permite ocultar el ingrediente sin eliminarlo |
 
----
-
-#### `ProductoIngredientes` *(tabla pivote)*
-Define qué ingredientes puede personalizar el usuario en cada producto, y con qué restricciones (si es base del producto, si se puede quitar, cuántas unidades puede añadir como máximo).
+**`ProductoIngredientes`** — define qué ingredientes puede personalizar el usuario en cada producto y con qué restricciones.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -432,10 +442,13 @@ Define qué ingredientes puede personalizar el usuario en cada producto, y con q
 | `CantidadMaxima` | `int` | NOT NULL, default `1` | Máximo de unidades de este ingrediente que el usuario puede añadir |
 | `Orden` | `int` | NOT NULL, default `0` | Posición en la lista de ingredientes del producto |
 
----
+</details>
 
-#### `Pedidos`
-Cabecera de cada pedido realizado. Contiene el estado, el método de pago, el total y la referencia de Stripe si se pagó con tarjeta.
+<details>
+<summary><code>Pedidos</code> — cabecera de cada pedido realizado</summary>
+<br>
+
+Contiene el estado, el método de pago, el total y la referencia de Stripe si se pagó con tarjeta.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -456,10 +469,13 @@ Pendiente → EnPreparacion → Listo → Entregado
 ```
 Solo las transiciones válidas están permitidas en la API.
 
----
+</details>
 
-#### `LineasPedido`
-Cada fila representa un producto dentro de un pedido, con su cantidad y el precio unitario en el momento del pedido (snapshot inmutable — si el producto cambia de precio después, el historial no se altera).
+<details>
+<summary><code>LineasPedido</code> · <code>LineaPedidoIngredientes</code> — detalle de productos e ingredientes por pedido</summary>
+<br>
+
+**`LineasPedido`** — cada fila representa un producto dentro de un pedido, con su cantidad y el precio unitario en el momento del pedido (snapshot inmutable).
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -470,12 +486,9 @@ Cada fila representa un producto dentro de un pedido, con su cantidad y el preci
 | `PrecioUnitario` | `decimal(6,2)` | NOT NULL | Precio por unidad **incluyendo extras de ingredientes** en el momento del pedido |
 | `Notas` | `nvarchar(200)` | nullable | Nota específica para esta línea (ej: "sin sal") |
 
-**Nota:** `Subtotal` es una propiedad calculada `[NotMapped]` = `Cantidad × PrecioUnitario`. No se persiste en la base de datos.
+> `Subtotal` es una propiedad calculada `[NotMapped]` = `Cantidad × PrecioUnitario`. No se persiste en la base de datos.
 
----
-
-#### `LineaPedidoIngredientes`
-Registra cada modificación de ingrediente dentro de una línea de pedido. Si el usuario añadió jamón extra o quitó el tomate, cada acción queda registrada aquí con el precio aplicado en ese momento.
+**`LineaPedidoIngredientes`** — registra cada modificación de ingrediente dentro de una línea de pedido.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -486,10 +499,13 @@ Registra cada modificación de ingrediente dentro de una línea de pedido. Si el
 | `PrecioAplicado` | `decimal(6,2)` | NOT NULL | Precio del suplemento en el momento del pedido. `0` para acciones Quitar o ingredientes sin coste |
 | `Cantidad` | `int` | NOT NULL, default `1` | Número de unidades del ingrediente añadido |
 
----
+</details>
 
-#### `ConsumoDesayuno`
-Controla si un alumno beneficiario del programa de desayuno gratuito ya ha consumido su zumo y/o bocadillo en el día de hoy. Hay un registro por usuario por día.
+<details>
+<summary><code>ConsumoDesayuno</code> — control diario del programa de desayuno gratuito</summary>
+<br>
+
+Controla si un alumno beneficiario ya ha consumido su zumo y/o bocadillo en el día de hoy. Hay un registro por usuario por día.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -501,10 +517,13 @@ Controla si un alumno beneficiario del programa de desayuno gratuito ya ha consu
 
 **Restricción clave:** Índice UNIQUE en `(UsuarioId, Fecha)` — garantiza a nivel de base de datos que es imposible tener dos registros del mismo alumno para el mismo día, incluso bajo carga concurrente.
 
----
+</details>
 
-#### `FranjasHorarias`
-Define las ventanas de tiempo en las que los alumnos de cada turno pueden realizar pedidos en cada instituto. Si no hay franja configurada para un turno, el sistema es permisivo y permite pedir en cualquier momento.
+<details>
+<summary><code>FranjasHorarias</code> — ventanas de pedido por instituto y turno</summary>
+<br>
+
+Define las ventanas de tiempo en las que los alumnos de cada turno pueden realizar pedidos. Si no hay franja configurada para un turno, el sistema es permisivo y permite pedir en cualquier momento.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -517,10 +536,13 @@ Define las ventanas de tiempo en las que los alumnos de cada turno pueden realiz
 | `Activa` | `bit` | NOT NULL, default `1` | Permite desactivar la franja sin eliminarla |
 | `EsBloqueada` | `bit` | NOT NULL, default `0` | `true` bloquea el pedido en esa franja aunque esté activa (ej: días festivos) |
 
----
+</details>
 
-#### `Invitaciones`
-Sistema de registro por invitación para profesores y personal. El administrador genera un enlace con un token único que el invitado usa para registrarse con el rol asignado.
+<details>
+<summary><code>Invitaciones</code> — registro por invitación para profesores y personal</summary>
+<br>
+
+El administrador genera un enlace con un token único que el invitado usa para registrarse con el rol asignado.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -534,10 +556,13 @@ Sistema de registro por invitación para profesores y personal. El administrador
 | `CreadaPorId` | `int` | FK → Usuarios, nullable | Administrador que generó la invitación |
 | `UsadaPorId` | `int` | FK → Usuarios, nullable | Usuario que se registró usando esta invitación |
 
----
+</details>
 
-#### `DispositivoTokens`
-Almacena los tokens FCM (Firebase Cloud Messaging) de los dispositivos móviles para el envío de notificaciones push. Un usuario puede tener tokens de varios dispositivos.
+<details>
+<summary><code>DispositivoTokens</code> · <code>RefreshTokens</code> — notificaciones push y renovación de sesión</summary>
+<br>
+
+**`DispositivoTokens`** — tokens FCM (Firebase Cloud Messaging) para notificaciones push. Un usuario puede tener tokens de varios dispositivos.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -546,10 +571,7 @@ Almacena los tokens FCM (Firebase Cloud Messaging) de los dispositivos móviles 
 | `Token` | `nvarchar(500)` | NOT NULL | Token FCM del dispositivo |
 | `FechaRegistro` | `datetime2` | NOT NULL | Timestamp de registro del token |
 
----
-
-#### `RefreshTokens`
-Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) expira, el cliente usa el refresh token (30 días) para obtener un nuevo par sin volver a pedir credenciales al usuario.
+**`RefreshTokens`** — tokens de renovación de sesión JWT. Cuando el access token (1h) expira, el cliente usa el refresh token (30 días) para obtener un nuevo par sin pedir credenciales al usuario.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -561,11 +583,18 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 
 **Rotación:** Cada vez que se usa un refresh token, se invalida (`Revocado = true`) y se genera uno nuevo. Si alguien roba el refresh token e intenta usarlo después de que el usuario legítimo ya lo renovó, el sistema detecta la inconsistencia.
 
+</details>
+
 ---
 
-### Enumeraciones del dominio
+#### Enumeraciones del dominio
 
-#### `RolUsuario`
+<details>
+<summary>Ver todas las enumeraciones</summary>
+<br>
+
+**`RolUsuario`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Alumno` | Estudiante del centro. Puede realizar pedidos dentro de su franja horaria |
@@ -573,7 +602,8 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 | `2` | `Personal` | Personal no docente. Sin restricción horaria |
 | `3` | `Admin` | Administrador del sistema. Acceso total al panel de gestión |
 
-#### `EstadoCuenta`
+**`EstadoCuenta`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `PendienteValidacion` | Cuenta recién creada, pendiente de aprobación por el admin |
@@ -581,7 +611,8 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 | `2` | `Suspendida` | Cuenta temporalmente bloqueada |
 | `3` | `Eliminada` | Cuenta dada de baja (soft delete — el historial de pedidos se preserva) |
 
-#### `EstadoPedido`
+**`EstadoPedido`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Pendiente` | Pedido recibido, pendiente de atención por el empleado |
@@ -590,7 +621,8 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 | `3` | `Entregado` | Pedido recogido por el alumno |
 | `4` | `Cancelado` | Pedido cancelado (por el alumno o el empleado) |
 
-#### `MetodoPago`
+**`MetodoPago`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Tarjeta` | Pago con tarjeta bancaria a través de Stripe |
@@ -598,29 +630,38 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 | `2` | `ApplePay` | Apple Pay (infraestructura preparada) |
 | `3` | `Gratuito` | Pedido del programa de desayuno escolar — sin cargo |
 
-#### `Turno`
+**`Turno`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Mañana` | Primer turno del día (ej: 10:00–10:30) |
 | `1` | `Tarde` | Segundo turno (ej: 14:00–14:30) |
 | `2` | `Noche` | Tercer turno, para centros con horario vespertino |
 
-#### `AccionIngrediente`
+**`AccionIngrediente`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Quitar` | El usuario elimina un ingrediente base del producto. Sin coste adicional |
 | `1` | `Añadir` | El usuario añade un ingrediente extra. Puede tener suplemento de precio |
 
-#### `ComponenteDesayuno`
+**`ComponenteDesayuno`**
+
 | Valor | Nombre | Descripción |
 |---|---|---|
 | `0` | `Ninguno` | El producto no forma parte del programa de desayuno |
 | `1` | `Zumo` | Este producto puede ser el zumo gratuito diario del beneficiario |
 | `2` | `Bocata` | Este producto puede ser el bocadillo gratuito diario del beneficiario |
 
+</details>
+
+</details>
+
 ---
 
-## Seguridad
+<details>
+<summary><b>🔐 Seguridad</b></summary>
+<br>
 
 | Mecanismo | Implementación |
 |---|---|
@@ -641,17 +682,21 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 | **SSL en desarrollo** | `ServerCertificateCustomValidationCallback` solo bajo `#if DEBUG` |
 | **Invitaciones** | `DiasValidez` limitado a 1–365 días; token opaco UUID |
 
+</details>
+
 ---
 
-## Pagos con Stripe
+<details>
+<summary><b>💳 Pagos con Stripe</b></summary>
+<br>
 
-### Flujo de pago
+#### Flujo de pago
 
 ```
 1. App          POST /api/pagos/crear-intent
                 ↳ API valida usuario, horario y stock
                 ↳ Calcula total en servidor (base + extras de ingredientes + descuento desayuno)
-                ↳ Crea PaymentIntent con metadata: userId, lineas (con ingredientes), notas
+                ↳ Crea PaymentIntent con metadata: userId, lineas (con ingredientes y notas), notas globales
 
 2. App          Abre WebView → stripe-form?cs={clientSecret}
                 ↳ Stripe.js recoge datos de tarjeta de forma segura
@@ -661,28 +706,34 @@ Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) e
 4. App          Navega inmediatamente a ConfirmacionPedidoPage
 
 5. Background   POST /api/pedidos  (fire-and-forget)
-                ↳ Crea el pedido en BD con ingredientes y precio correcto
+                ↳ Crea el pedido en BD con ingredientes, notas y precio correcto
 
 6. Polling      GET /api/pedidos/by-intent/{id}  cada 2 s
                 ↳ Muestra número de pedido al alumno
 
 7. Webhook      POST /api/pagos/webhook (Stripe → API)
                 ↳ Si el pedido no existe → lo reconstruye desde la metadata del PaymentIntent
-                   (ingredientes + precios incluidos en la metadata desde el paso 1)
+                   (ingredientes + precios + notas incluidos en la metadata desde el paso 1)
 ```
 
 Si el total es **0 €** (desayuno completamente gratuito) → se omiten los pasos 1-4 y se va directamente al paso 5.
 
-### Garantías
+#### Garantías
 
-- **Idempotencia**: índice UNIQUE en `Pedidos.ReferenciasPago` — el webhook nunca genera pedidos duplicados
-- **Consistencia de precio**: el servidor recalcula el total incluyendo extras; el cliente no puede manipularlo
-- **Resiliencia**: si la app se cierra tras el pago, el webhook reconstruye el pedido completo (incluidos ingredientes)
-- **Split de líneas**: las unidades gratuitas y las de pago se separan en líneas distintas para facilitar la contabilidad
+| Garantía | Mecanismo |
+|---|---|
+| **Idempotencia** | Índice UNIQUE en `Pedidos.ReferenciasPago` — el webhook nunca genera pedidos duplicados |
+| **Consistencia de precio** | El servidor recalcula el total incluyendo extras; el cliente no puede manipularlo |
+| **Resiliencia** | Si la app se cierra tras el pago, el webhook reconstruye el pedido completo (incluidos ingredientes y notas) |
+| **Split de líneas** | Las unidades gratuitas y las de pago se separan en líneas distintas para facilitar la contabilidad |
+
+</details>
 
 ---
 
-## Tiempo real con SignalR
+<details>
+<summary><b>⚡ Tiempo real con SignalR</b></summary>
+<br>
 
 Los clientes se conectan al hub `/hubs/cafeteria` al iniciar sesión y reciben actualizaciones sin polling.
 
@@ -692,17 +743,21 @@ Los clientes se conectan al hub `/hubs/cafeteria` al iniciar sesión y reciben a
 | `cafeteria-global` | Admins sin instituto específico | `NuevoPedido`, `PedidoActualizado` |
 | `user-{userId}` | El alumno propietario del pedido | `PedidoActualizado` |
 
-**Reconexión automática**: si el access token expira durante una sesión larga, `ApiService` renueva el token y reconecta SignalR automáticamente sin que el usuario lo note.
+**Reconexión automática:** si el access token expira durante una sesión larga, `ApiService` renueva el token y reconecta SignalR automáticamente sin que el usuario lo note.
 
-**Configuración**: `KeepAliveInterval = 15 s`, `ClientTimeoutInterval = 30 s`.
+**Configuración:** `KeepAliveInterval = 15 s`, `ClientTimeoutInterval = 30 s`.
+
+</details>
 
 ---
 
-## Sistema de desayuno gratuito
+<details>
+<summary><b>🍊 Sistema de desayuno gratuito</b></summary>
+<br>
 
 El programa de desayuno escolar permite a alumnos beneficiarios obtener **1 zumo + 1 bocadillo al día** sin coste.
 
-### Configuración de productos
+#### Configuración de productos
 
 Cada producto tiene un campo `ComponenteDesayuno`:
 
@@ -712,7 +767,7 @@ Cada producto tiene un campo `ComponenteDesayuno`:
 | `Zumo` | Puede ser el zumo gratuito del día |
 | `Bocata` | Puede ser el bocadillo gratuito del día |
 
-### Flujo en la app
+#### Flujo en la app
 
 1. Al abrir el carrito → `GET /api/pedidos/desayuno-status` (bloquea el botón "Pagar" mientras carga)
 2. Si hay desayuno disponible → banner 🍊 con los componentes restantes del día
@@ -720,18 +775,23 @@ Cada producto tiene un campo `ComponenteDesayuno`:
 4. Si total = 0 € → flujo gratuito: `POST /api/pedidos` directo, sin Stripe
 5. Si hay parte de pago → `POST /api/pagos/crear-intent` con metadata de precios split
 
-### Protección anti-doble-consumo
+#### Protección anti-doble-consumo (triple barrera)
 
-- Transacción **RepeatableRead** en `CrearIntent` para evitar que dos requests concurrentes lean "zumo disponible" al mismo tiempo
-- Transacción **Serializable** en `CrearPedido` para la verificación definitiva
-- Índice **UNIQUE** en `ConsumoDesayuno(UsuarioId, Fecha)` — garantía a nivel de base de datos
-- El webhook de Stripe detecta líneas a 0 € y marca el `ConsumoDesayuno` aunque la app se cierre tras el pago
+1. **Transacción RepeatableRead** en `CrearIntent` — evita que dos requests concurrentes lean "zumo disponible" al mismo tiempo
+2. **Transacción Serializable** en `CrearPedido` — verificación definitiva antes de persistir
+3. **Índice UNIQUE** en `ConsumoDesayuno(UsuarioId, Fecha)` — garantía a nivel de base de datos
+
+El webhook de Stripe detecta líneas a 0 € y marca el `ConsumoDesayuno` aunque la app se cierre tras el pago.
+
+</details>
 
 ---
 
-## Flujos de usuario
+<details>
+<summary><b>🗺️ Flujos de usuario</b></summary>
+<br>
 
-### Alumno — pedido completo
+#### 👨‍🎓 Alumno — pedido completo
 
 ```
 Abrir app → Auto-login (SecureStorage)
@@ -743,7 +803,7 @@ Abrir app → Auto-login (SecureStorage)
     → "Mis pedidos" → DetallePedidoPage: estado en tiempo real (SignalR)
 ```
 
-### Empleado — gestión del servicio
+#### 👷 Empleado — gestión del servicio
 
 ```
 Login → Pedidos del día (filtrado por instituto)
@@ -753,7 +813,7 @@ Login → Pedidos del día (filtrado por instituto)
     → Gestión de productos y stock
 ```
 
-### Administrador — gestión completa
+#### 🛠️ Administrador — gestión completa
 
 ```
 Dashboard Blazor: métricas del día + pedidos en curso (SignalR)
@@ -764,7 +824,7 @@ Dashboard Blazor: métricas del día + pedidos en curso (SignalR)
     → Institutos: alta de nuevos centros
 ```
 
-### Registro de usuarios
+#### Registro de usuarios
 
 ```
 Alumno     ──────────────────► POST /api/auth/registro/alumno
@@ -778,9 +838,13 @@ Admin      ─────────────────►  Seeding inici
                                 Credenciales en Azure App Settings
 ```
 
+</details>
+
 ---
 
-## Tests
+<details>
+<summary><b>🧪 Tests</b></summary>
+<br>
 
 El proyecto incluye **115 tests unitarios** con xUnit y EF Core InMemory:
 
@@ -798,22 +862,29 @@ dotnet test
 # → 115 tests passing, 0 failed
 ```
 
+</details>
+
 ---
 
-## Puesta en marcha local
+<details>
+<summary><b>🚀 Puesta en marcha local</b></summary>
+<br>
 
 <details>
-<summary><strong>Requisitos previos</strong></summary>
+<summary>Requisitos previos</summary>
 
 - .NET 9 SDK
-- SQL Server (Express, Developer o Docker: `docker run -e ACCEPT_EULA=Y -e SA_PASSWORD=Dev1234! -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest`)
+- SQL Server (Express, Developer o Docker):
+  ```bash
+  docker run -e ACCEPT_EULA=Y -e SA_PASSWORD=Dev1234! -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+  ```
 - Visual Studio 2022 17.8+ / JetBrains Rider / VS Code con extensión C#
 - Android SDK + MAUI Workload (solo para la app móvil): `dotnet workload install maui`
 - Cuenta Stripe en modo test (gratuita)
 
 </details>
 
-### 1. Configurar la API
+#### 1. Configurar la API
 
 Crear `CafeIES.API/appsettings.Development.json` (no incluir en git):
 
@@ -850,7 +921,7 @@ dotnet run
 # Swagger UI en https://localhost:50658/swagger
 ```
 
-### 2. Configurar el panel admin
+#### 2. Configurar el panel admin
 
 ```bash
 # Editar CafeIES.Admin/wwwroot/appsettings.json:
@@ -861,7 +932,7 @@ dotnet run
 # Panel disponible en https://localhost:50660
 ```
 
-### 3. Ejecutar la app MAUI (Android)
+#### 3. Ejecutar la app MAUI (Android)
 
 La URL de la API se selecciona por compilación en `ApiService.cs`:
 
@@ -875,13 +946,13 @@ La URL de la API se selecciona por compilación en `ApiService.cs`:
 
 Para **dispositivo físico Android**: reemplazar `10.0.2.2` por la IP local del PC en la red.
 
-Para recibir eventos del **webhook de Stripe** en local: usar [Stripe CLI](https://stripe.com/docs/stripe-cli):
+Para recibir eventos del **webhook de Stripe** en local:
 
 ```bash
 stripe listen --forward-to https://localhost:50658/api/pagos/webhook
 ```
 
-### 4. Credenciales de prueba
+#### 4. Credenciales de prueba
 
 | Rol | Email | Contraseña |
 |---|---|---|
@@ -896,11 +967,15 @@ Caducidad: cualquier fecha futura (ej: 12/29)
 CVC:       cualquier 3 dígitos
 ```
 
+</details>
+
 ---
 
-## Despliegue en Azure
+<details>
+<summary><b>☁️ Despliegue en Azure</b></summary>
+<br>
 
-### Recursos en producción
+#### Recursos en producción
 
 | Recurso | Tipo | Región |
 |---|---|---|
@@ -909,7 +984,7 @@ CVC:       cualquier 3 dígitos
 | `cafeies-storage` | Storage Account (Blob, LRS) | North Europe |
 | `cafeies-admin` | Static Web App (Free) | Global (CDN) |
 
-### Variables de entorno (Azure App Settings)
+#### Variables de entorno (Azure App Settings)
 
 ```
 ConnectionStrings__DefaultConnection  = <cadena de conexión SQL>
@@ -926,11 +1001,11 @@ BlobStorage__ConnectionString         = <cadena Azure Storage>
 BlobStorage__ContainerName            = productos
 ```
 
-### CI/CD — GitHub Actions
+#### CI/CD — GitHub Actions
 
 Los tres workflows se disparan automáticamente al hacer push a `main` según los paths modificados:
 
-| Workflow | Paths | Destino | Tiempo aprox. |
+| Workflow | Paths que lo disparan | Destino | Tiempo aprox. |
 |---|---|---|---|
 | `deploy-api.yml` | `CafeIES.API/**`, `CafeIES.Shared/**` | Azure App Service | ~4 min |
 | `deploy-admin.yml` | `CafeIES.Admin/**`, `CafeIES.Shared/**` | Azure Static Web Apps | ~2 min |
@@ -938,7 +1013,7 @@ Los tres workflows se disparan automáticamente al hacer push a `main` según lo
 
 El APK se versiona como `YYYY.MM.<run_number>` y se publica automáticamente como **latest release** en GitHub.
 
-### Instalación del APK
+#### Instalación del APK
 
 1. Ve a [Releases](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases/latest) y descarga `cafeies-X.X.X.apk`
 2. En el móvil: **Ajustes → Seguridad → Instalar apps de fuentes desconocidas** → activar para el navegador
@@ -946,9 +1021,13 @@ El APK se versiona como `YYYY.MM.<run_number>` y se publica automáticamente com
 
 > Firmado con debug keystore — apto para pruebas internas. Para publicación en Play Store se necesita keystore de producción y cuenta de desarrollador Google.
 
+</details>
+
 ---
 
-## Estructura del proyecto
+<details>
+<summary><b>📁 Estructura del proyecto</b></summary>
+<br>
 
 ```
 CafeIES/
@@ -1003,7 +1082,7 @@ CafeIES/
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR
 │   │   ├── TokenService.cs             SecureStorage para access/refresh token
-│   │   └── TicketHtmlBuilder.cs        HTML de ticket térmico 80 mm
+│   │   └── TicketHtmlBuilder.cs        HTML de ticket térmico compacto (max-width 300px)
 │   ├── Platforms/Android/
 │   │   └── AndroidPrintService.cs      WebView + PrintManager (WiFi/BT/PDF)
 │   ├── Converters/
@@ -1035,50 +1114,59 @@ CafeIES/
     └── deploy-android.yml              MAUI → GitHub Releases (APK versionado)
 ```
 
+</details>
+
 ---
 
-## Decisiones de diseño
+<details>
+<summary><b>🧠 Decisiones de diseño</b></summary>
+<br>
 
-Esta sección documenta las decisiones técnicas más relevantes y la justificación detrás de ellas, útil para comprensión del sistema o documentación académica.
-
-### Arquitectura en capas sin Repository Pattern
+#### Arquitectura en capas sin Repository Pattern
 
 Se optó por una arquitectura de **Controller → Service → DbContext** directo, sin capa de repositorio intermedia. La justificación: EF Core ya implementa el patrón Unit of Work y el contexto es inherentemente testeable con `InMemoryDatabase`. Añadir una capa de repositorio en un proyecto de este tamaño solo añade indirección sin beneficio real.
 
-### Shared library para DTOs y entidades
+#### Shared library para DTOs y entidades
 
 `CafeIES.Shared` es compilado por los cuatro proyectos. Esto garantiza que los DTOs que envía la API son exactamente los mismos que deserializa el cliente MAUI o Blazor, eliminando la posibilidad de desajustes de contratos. Las validaciones `DataAnnotations` se definen una vez y se aplican en todos los puntos de entrada.
 
-### Cálculo de precios siempre en el servidor
+#### Cálculo de precios siempre en el servidor
 
 El cliente nunca envía el importe a Stripe — solo envía la lista de productos con cantidades e ingredientes. El servidor recalcula el precio completo (base + extras de ingredientes + descuento desayuno) antes de crear el `PaymentIntent`. Esto hace imposible la manipulación del precio desde el cliente.
 
-### Metadata de Stripe con ingredientes
+#### Metadata de Stripe con ingredientes y notas
 
-El `PaymentIntent` incluye en su metadata las líneas completas del pedido (con ingredientes y precios ya calculados). Esto permite que el webhook reconstruya el pedido exacto si la app se cierra tras el pago — sin necesidad de consultar la base de datos ni recalcular nada.
+El `PaymentIntent` incluye en su metadata las líneas completas del pedido (con ingredientes, precios ya calculados y notas de línea). Esto permite que el webhook reconstruya el pedido exacto si la app se cierra tras el pago — sin necesidad de consultar la base de datos ni recalcular nada.
 
-### Split de líneas para el desayuno gratuito
+#### Split de líneas para el desayuno gratuito
 
 Cuando un producto tiene componente de desayuno gratuito y el usuario tiene crédito, la línea se divide en dos: una unidad a 0 € y el resto al precio normal. Esto simplifica la contabilidad (el ticket refleja claramente qué fue gratuito) y la lógica del webhook.
 
-### WebView adjunto al DecorView para impresión
+#### WebView adjunto al DecorView para impresión
 
 `WebView.createPrintDocumentAdapter()` en Android requiere que el WebView esté adjunto a una ventana activa para inicializar el motor de renderizado. Si el WebView no está en el árbol de vistas, el ticket sale en blanco. La solución: adjuntar el WebView al `DecorView` con tamaño 1×1 (invisible al usuario) antes de cargar el HTML, y retirarlo una vez que el `PrintManager` ha capturado el documento.
 
-### BindableLayout en lugar de CollectionView anidado
+#### BindableLayout en lugar de CollectionView anidado
 
 En `DetallePedidoPage`, los ingredientes de cada línea de pedido se renderizan con `BindableLayout.ItemsSource` en lugar de un `CollectionView` anidado. En Android, `RecyclerView` anidado dentro de otro `RecyclerView` no renderiza su contenido correctamente (el inner `CollectionView` queda vacío). `BindableLayout` es el workaround oficial de MAUI.
 
-### Transacciones por niveles de aislamiento
+#### Transacciones por niveles de aislamiento
 
 Se usan tres niveles distintos según el caso de uso:
-- **ReadCommitted** (por defecto): operaciones normales de lectura/escritura
-- **RepeatableRead**: verificación del estado del desayuno al crear el `PaymentIntent` (evita que dos requests concurrentes lean "zumo disponible" simultáneamente)
-- **Serializable**: creación del pedido y asignación del número correlativo del día (evita gaps o duplicados)
+
+| Nivel | Dónde se usa | Motivo |
+|---|---|---|
+| `ReadCommitted` | Operaciones normales | Por defecto — rendimiento óptimo |
+| `RepeatableRead` | Verificación del desayuno al crear el `PaymentIntent` | Evita que dos requests concurrentes lean "zumo disponible" al mismo tiempo |
+| `Serializable` | Creación del pedido y asignación del número correlativo del día | Evita gaps o duplicados en el número de pedido |
+
+</details>
 
 ---
 
-## Roadmap
+<details>
+<summary><b>🗓️ Roadmap</b></summary>
+<br>
 
 - [ ] Publicación en Google Play Store (requiere cuenta de desarrollador y keystore de producción)
 - [ ] Notificaciones push FCM (infraestructura implementada; falta integración con servidor Firebase)
@@ -1087,10 +1175,12 @@ Se usan tres niveles distintos según el caso de uso:
 - [ ] Pantalla de estadísticas con gráficas (ventas por día, productos más pedidos)
 - [ ] Modo offline en la app (caché de catálogo para consulta sin conexión)
 
+</details>
+
 ---
 
 <div align="center">
 
-Desarrollado con .NET 9, MAUI, Blazor, EF Core, Stripe y Azure.
+Desarrollado con .NET 9 · MAUI · Blazor · EF Core · Stripe · Azure
 
 </div>
