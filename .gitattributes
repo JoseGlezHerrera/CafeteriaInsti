@@ -1,0 +1,14 @@
+# ── Linguist: ocultar archivos que no son código principal del proyecto ──────
+# GitHub usa Linguist para calcular los porcentajes de lenguaje.
+# Estas reglas evitan que scripts de infraestructura, assets de Blazor WASM
+# y documentación distorsionen las estadísticas (todo es C#).
+
+# Scripts de infraestructura / despliegue → no son código de la aplicación
+infra/**        linguist-vendored=true
+
+# Archivos generados de Blazor WASM (Bootstrap, CSS, index.html de entrada SPA)
+CafeIES.Admin/wwwroot/**   linguist-vendored=true
+publish/**                 linguist-vendored=true
+
+# Documentación y política de privacidad (GitHub Pages)
+docs/**         linguist-documentation=true
