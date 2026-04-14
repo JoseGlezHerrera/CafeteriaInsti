@@ -11,4 +11,6 @@ CafeIES.Admin/wwwroot/**   linguist-vendored=true
 publish/**                 linguist-vendored=true
 
 # Documentación y política de privacidad (GitHub Pages)
-docs/**         linguist-documentation=true
+docs/**         linguist-vendored=true
+
+CafeIES.Admin/wwwroot/index.html linguist-vendored=true
