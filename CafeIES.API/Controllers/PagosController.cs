@@ -99,7 +99,20 @@ public class PagosController : ControllerBase
             .Where(p => productoIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
-        var lineasConPrecio = new List<(int ProductoId, int Cantidad, decimal Precio)>();
+        // Batch-cargar ingredientes referenciados en el carrito
+        var todosIngredienteIds = req.Lineas
+            .Where(l => l.Ingredientes is { Count: > 0 })
+            .SelectMany(l => l.Ingredientes!.Select(i => i.IngredienteId))
+            .ToHashSet();
+        var ingredientesDict = todosIngredienteIds.Count > 0
+            ? await _db.Ingredientes
+                .Where(i => todosIngredienteIds.Contains(i.Id) && i.Activo)
+                .ToDictionaryAsync(i => i.Id)
+            : new Dictionary<int, Ingrediente>();
+
+        // (IngredienteId, Accion como int, PrecioAplicado, Cantidad)
+        var lineasConPrecio = new List<(int ProductoId, int Cantidad, decimal Precio,
+            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings)>();
         foreach (var l in req.Lineas)
         {
             if (!productos.TryGetValue(l.ProductoId, out var producto) || !producto.Activo)
@@ -109,6 +122,28 @@ public class PagosController : ControllerBase
                 return BadRequest(new { mensaje = $"Stock insuficiente para '{producto.Nombre}'." });
 
             decimal precio = producto.Precio;
+
+            // Calcular suplemento de ingredientes extras seleccionados por el usuario
+            decimal extraPorUnidad = 0;
+            var ingsMeta = new List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)>();
+            if (l.Ingredientes is { Count: > 0 })
+            {
+                foreach (var ir in l.Ingredientes)
+                {
+                    if (ir.Accion == AccionIngrediente.Añadir &&
+                        ingredientesDict.TryGetValue(ir.IngredienteId, out var ingrediente))
+                    {
+                        extraPorUnidad += ingrediente.PrecioExtra * ir.Cantidad;
+                        ingsMeta.Add((ir.IngredienteId, (int)ir.Accion, ingrediente.PrecioExtra, ir.Cantidad));
+                    }
+                    else if (ir.Accion == AccionIngrediente.Quitar)
+                    {
+                        ingsMeta.Add((ir.IngredienteId, (int)ir.Accion, 0m, 1));
+                    }
+                }
+            }
+            precio += extraPorUnidad;
+
             bool primeraGratisPago = false;
             if (usuario.DesayunoGratuito)
             {
@@ -122,20 +157,22 @@ public class PagosController : ControllerBase
                 }
             }
 
-            // Solo 1 unidad gratuita; el resto al precio normal.
+            // Solo 1 unidad gratuita; el resto al precio normal + extras.
             // Almacenamos líneas separadas en la metadata para que el webhook
             // pueda reconstruir el pedido con los precios correctos.
             if (primeraGratisPago)
             {
-                total += producto.Precio * (l.Cantidad - 1);
-                lineasConPrecio.Add((l.ProductoId, 1, 0m));                              // unidad gratuita
+                // La unidad gratuita lleva precio 0 (extras incluidos a 0 para el beneficiario)
+                var ingsGratis = ingsMeta.Select(i => (i.IngredienteId, i.Accion, 0m, i.Cantidad)).ToList();
+                total += precio * (l.Cantidad - 1); // precio ya incluye extraPorUnidad
+                lineasConPrecio.Add((l.ProductoId, 1, 0m, ingsGratis));
                 if (l.Cantidad > 1)
-                    lineasConPrecio.Add((l.ProductoId, l.Cantidad - 1, producto.Precio)); // resto al precio normal
+                    lineasConPrecio.Add((l.ProductoId, l.Cantidad - 1, precio, ingsMeta));
             }
             else
             {
                 total += precio * l.Cantidad;
-                lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio));
+                lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio, ingsMeta));
             }
             descripcionItems.Add($"{producto.Nombre} ×{l.Cantidad}");
         }
@@ -148,7 +185,14 @@ public class PagosController : ControllerBase
         // con los mismos precios (ya descontados) sin necesidad de re-aplicar la lógica.
         var userIdStr = userId.Value.ToString();
         var lineasJson = JsonSerializer.Serialize(
-            lineasConPrecio.Select(l => new { l.ProductoId, l.Cantidad, l.Precio }));
+            lineasConPrecio.Select(l => new {
+                l.ProductoId,
+                l.Cantidad,
+                l.Precio,
+                Ingredientes = l.Ings.Count > 0
+                    ? (object)l.Ings.Select(i => new { i.IngredienteId, i.Accion, i.PrecioAplicado, i.Cantidad })
+                    : null
+            }));
         var metadata = new Dictionary<string, string>
         {
             ["userId"]      = userIdStr,
@@ -404,7 +448,8 @@ public class PagosController : ControllerBase
             : MetodoPago.Tarjeta;
 
         // Parsear las líneas del pedido (incluyen PrecioUnitario ya descontado si hay desayuno gratuito)
-        List<(int ProductoId, int Cantidad, decimal? PrecioUnitario)> lineas;
+        List<(int ProductoId, int Cantidad, decimal? PrecioUnitario,
+            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings)> lineas;
         try
         {
             var parsed = JsonSerializer.Deserialize<List<JsonElement>>(lineasJson);
@@ -413,11 +458,29 @@ public class PagosController : ControllerBase
                 _logger.LogError("❌ Webhook: metadatos de líneas vacíos para {Id}.", intent.Id);
                 return;
             }
-            lineas = parsed.Select(e => (
-                e.GetProperty("ProductoId").GetInt32(),
-                e.GetProperty("Cantidad").GetInt32(),
-                e.TryGetProperty("Precio", out var pElem) && pElem.TryGetDecimal(out var p) ? (decimal?)p : null
-            )).ToList();
+            lineas = parsed.Select(e =>
+            {
+                var ings = new List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)>();
+                if (e.TryGetProperty("Ingredientes", out var ingsElem) &&
+                    ingsElem.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var ing in ingsElem.EnumerateArray())
+                    {
+                        ings.Add((
+                            ing.GetProperty("IngredienteId").GetInt32(),
+                            ing.GetProperty("Accion").GetInt32(),
+                            ing.TryGetProperty("PrecioAplicado", out var pa) && pa.TryGetDecimal(out var paVal) ? paVal : 0m,
+                            ing.TryGetProperty("Cantidad", out var cElem) ? cElem.GetInt32() : 1
+                        ));
+                    }
+                }
+                return (
+                    e.GetProperty("ProductoId").GetInt32(),
+                    e.GetProperty("Cantidad").GetInt32(),
+                    e.TryGetProperty("Precio", out var pElem) && pElem.TryGetDecimal(out var p) ? (decimal?)p : null,
+                    ings
+                );
+            }).ToList();
         }
         catch (Exception ex)
         {
@@ -438,7 +501,7 @@ public class PagosController : ControllerBase
             var consumoWh = await _desayuno.ObtenerOCrearConsumoHoyAsync(
                 userId, usuarioWh?.DesayunoGratuito == true);
 
-            foreach (var (productoId, cantidad, precioMetadata) in lineas)
+            foreach (var (productoId, cantidad, precioMetadata, ingsLinea) in lineas)
             {
                 var producto = await _db.Productos.FindAsync(productoId);
                 if (producto is null || !producto.Activo)
@@ -459,6 +522,15 @@ public class PagosController : ControllerBase
                 if (consumoWh is not null && precioUnitario == 0m)
                     DesayunoService.MarcarConsumoForzado(producto.ComponenteDesayuno, consumoWh);
 
+                // Reconstruir modificaciones de ingredientes desde metadata
+                var ingredientesLinea = ingsLinea.Select(i => new LineaPedidoIngrediente
+                {
+                    IngredienteId  = i.IngredienteId,
+                    Accion         = (AccionIngrediente)i.Accion,
+                    PrecioAplicado = i.PrecioAplicado,
+                    Cantidad       = i.Cantidad
+                }).ToList();
+
                 if (producto.Stock != -1)
                 {
                     if (producto.Stock < cantidad)
@@ -470,22 +542,26 @@ public class PagosController : ControllerBase
                         var cantidadReal = Math.Min(cantidad, producto.Stock);
                         notasAjuste.Add($"{producto.Nombre} (pedido: {cantidad}, servido: {cantidadReal})");
                         producto.Stock -= cantidadReal;
-                        lineasPedido.Add(new LineaPedido
+                        var lineaAjustada = new LineaPedido
                         {
                             ProductoId = productoId, Cantidad = cantidadReal,
                             PrecioUnitario = precioUnitario
-                        });
+                        };
+                        foreach (var ing in ingredientesLinea) lineaAjustada.Ingredientes.Add(ing);
+                        lineasPedido.Add(lineaAjustada);
                         total += precioUnitario * cantidadReal;
                         continue;
                     }
                     producto.Stock -= cantidad;
                 }
 
-                lineasPedido.Add(new LineaPedido
+                var linea = new LineaPedido
                 {
                     ProductoId = productoId, Cantidad = cantidad,
                     PrecioUnitario = precioUnitario
-                });
+                };
+                foreach (var ing in ingredientesLinea) linea.Ingredientes.Add(ing);
+                lineasPedido.Add(linea);
                 total += precioUnitario * cantidad;
             }
 
