@@ -193,19 +193,19 @@ erDiagram
         int Id PK
         string Nombre
         string Direccion
-        string CodigoCorto UK
+        string CodigoCorto
         bool Activo
     }
     Usuario {
         int Id PK
         string NombreCompleto
-        string Email UK
+        string Email
         string PasswordHash
         int Rol
         int Turno
         int Estado
         datetime FechaRegistro
-        int InstitutoId FK
+        int InstitutoId
         bool DesayunoGratuito
     }
     Producto {
@@ -213,7 +213,7 @@ erDiagram
         string Nombre
         decimal Precio
         int Stock
-        int CategoriaId FK
+        int CategoriaId
         string ImagenUrl
         int ComponenteDesayuno
         bool Activo
@@ -227,8 +227,9 @@ erDiagram
         bool Activo
     }
     ProductoIngrediente {
-        int ProductoId FK
-        int IngredienteId FK
+        int Id PK
+        int ProductoId
+        int IngredienteId
         bool EsBase
         bool EsQuitable
         int CantidadMaxima
@@ -236,40 +237,40 @@ erDiagram
     Pedido {
         int Id PK
         int NumeroPedido
-        int UsuarioId FK
+        int UsuarioId
         int Estado
         int MetodoPago
         decimal Total
         string Notas
-        string ReferenciasPago UK
+        string ReferenciasPago
         datetime FechaCreacion
     }
     LineaPedido {
         int Id PK
-        int PedidoId FK
-        int ProductoId FK
+        int PedidoId
+        int ProductoId
         int Cantidad
         decimal PrecioUnitario
         string Notas
     }
     LineaPedidoIngrediente {
         int Id PK
-        int LineaPedidoId FK
-        int IngredienteId FK
+        int LineaPedidoId
+        int IngredienteId
         int Accion
         decimal PrecioAplicado
         int Cantidad
     }
     ConsumoDesayuno {
         int Id PK
-        int UsuarioId FK
-        date Fecha
+        int UsuarioId
+        string Fecha
         bool ZumoConsumido
         bool BocataConsumido
     }
     FranjaHoraria {
         int Id PK
-        int InstitutoId FK
+        int InstitutoId
         int Turno
         string HoraInicio
         string HoraFin
@@ -278,25 +279,25 @@ erDiagram
     }
     Invitacion {
         int Id PK
-        string Token UK
-        int InstitutoId FK
+        string Token
+        int InstitutoId
         int Rol
         int DiasValidez
         int Estado
         datetime FechaCreacion
     }
 
-    Instituto ||--o{ Usuario : "tiene"
-    Instituto ||--o{ FranjaHoraria : "configura"
-    Instituto ||--o{ Invitacion : "genera"
-    Usuario ||--o{ Pedido : "realiza"
-    Usuario ||--o{ ConsumoDesayuno : "registra"
-    Pedido ||--o{ LineaPedido : "contiene"
-    LineaPedido ||--o{ LineaPedidoIngrediente : "modifica"
-    Producto ||--o{ LineaPedido : "aparece en"
-    Producto ||--o{ ProductoIngrediente : "tiene"
-    Ingrediente ||--o{ ProductoIngrediente : "asignado a"
-    Ingrediente ||--o{ LineaPedidoIngrediente : "referenciado en"
+    Instituto ||--o{ Usuario : tiene
+    Instituto ||--o{ FranjaHoraria : configura
+    Instituto ||--o{ Invitacion : genera
+    Usuario ||--o{ Pedido : realiza
+    Usuario ||--o{ ConsumoDesayuno : registra
+    Pedido ||--o{ LineaPedido : contiene
+    LineaPedido ||--o{ LineaPedidoIngrediente : modifica
+    Producto ||--o{ LineaPedido : incluido-en
+    Producto ||--o{ ProductoIngrediente : tiene
+    Ingrediente ||--o{ ProductoIngrediente : asignado
+    Ingrediente ||--o{ LineaPedidoIngrediente : referenciado
 ```
 
 ### Índices relevantes
