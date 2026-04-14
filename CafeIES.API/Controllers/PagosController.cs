@@ -112,7 +112,7 @@ public class PagosController : ControllerBase
 
         // (IngredienteId, Accion como int, PrecioAplicado, Cantidad)
         var lineasConPrecio = new List<(int ProductoId, int Cantidad, decimal Precio,
-            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings)>();
+            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings, string? Notas)>();
         foreach (var l in req.Lineas)
         {
             if (!productos.TryGetValue(l.ProductoId, out var producto) || !producto.Activo)
@@ -165,14 +165,14 @@ public class PagosController : ControllerBase
                 // La unidad gratuita lleva precio 0 (extras incluidos a 0 para el beneficiario)
                 var ingsGratis = ingsMeta.Select(i => (i.IngredienteId, i.Accion, 0m, i.Cantidad)).ToList();
                 total += precio * (l.Cantidad - 1); // precio ya incluye extraPorUnidad
-                lineasConPrecio.Add((l.ProductoId, 1, 0m, ingsGratis));
+                lineasConPrecio.Add((l.ProductoId, 1, 0m, ingsGratis, l.Notas));
                 if (l.Cantidad > 1)
-                    lineasConPrecio.Add((l.ProductoId, l.Cantidad - 1, precio, ingsMeta));
+                    lineasConPrecio.Add((l.ProductoId, l.Cantidad - 1, precio, ingsMeta, l.Notas));
             }
             else
             {
                 total += precio * l.Cantidad;
-                lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio, ingsMeta));
+                lineasConPrecio.Add((l.ProductoId, l.Cantidad, precio, ingsMeta, l.Notas));
             }
             descripcionItems.Add($"{producto.Nombre} ×{l.Cantidad}");
         }
@@ -191,7 +191,8 @@ public class PagosController : ControllerBase
                 l.Precio,
                 Ingredientes = l.Ings.Count > 0
                     ? (object)l.Ings.Select(i => new { i.IngredienteId, i.Accion, i.PrecioAplicado, i.Cantidad })
-                    : null
+                    : null,
+                Notas = string.IsNullOrWhiteSpace(l.Notas) ? null : l.Notas
             }));
         var metadata = new Dictionary<string, string>
         {
@@ -449,7 +450,7 @@ public class PagosController : ControllerBase
 
         // Parsear las líneas del pedido (incluyen PrecioUnitario ya descontado si hay desayuno gratuito)
         List<(int ProductoId, int Cantidad, decimal? PrecioUnitario,
-            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings)> lineas;
+            List<(int IngredienteId, int Accion, decimal PrecioAplicado, int Cantidad)> Ings, string? Notas)> lineas;
         try
         {
             var parsed = JsonSerializer.Deserialize<List<JsonElement>>(lineasJson);
@@ -478,7 +479,8 @@ public class PagosController : ControllerBase
                     e.GetProperty("ProductoId").GetInt32(),
                     e.GetProperty("Cantidad").GetInt32(),
                     e.TryGetProperty("Precio", out var pElem) && pElem.TryGetDecimal(out var p) ? (decimal?)p : null,
-                    ings
+                    ings,
+                    e.TryGetProperty("Notas", out var notasElem) && notasElem.ValueKind == JsonValueKind.String ? notasElem.GetString() : null
                 );
             }).ToList();
         }
@@ -501,7 +503,7 @@ public class PagosController : ControllerBase
             var consumoWh = await _desayuno.ObtenerOCrearConsumoHoyAsync(
                 userId, usuarioWh?.DesayunoGratuito == true);
 
-            foreach (var (productoId, cantidad, precioMetadata, ingsLinea) in lineas)
+            foreach (var (productoId, cantidad, precioMetadata, ingsLinea, notasLinea) in lineas)
             {
                 var producto = await _db.Productos.FindAsync(productoId);
                 if (producto is null || !producto.Activo)
@@ -545,7 +547,8 @@ public class PagosController : ControllerBase
                         var lineaAjustada = new LineaPedido
                         {
                             ProductoId = productoId, Cantidad = cantidadReal,
-                            PrecioUnitario = precioUnitario
+                            PrecioUnitario = precioUnitario,
+                            Notas = notasLinea
                         };
                         foreach (var ing in ingredientesLinea) lineaAjustada.Ingredientes.Add(ing);
                         lineasPedido.Add(lineaAjustada);
@@ -558,7 +561,8 @@ public class PagosController : ControllerBase
                 var linea = new LineaPedido
                 {
                     ProductoId = productoId, Cantidad = cantidad,
-                    PrecioUnitario = precioUnitario
+                    PrecioUnitario = precioUnitario,
+                    Notas = notasLinea
                 };
                 foreach (var ing in ingredientesLinea) linea.Ingredientes.Add(ing);
                 lineasPedido.Add(linea);

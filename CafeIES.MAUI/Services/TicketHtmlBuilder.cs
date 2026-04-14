@@ -42,7 +42,7 @@ public static class TicketHtmlBuilder
                 font-size: 8pt; color: #000; background: #fff;
                 max-width: 300px; margin: 0 auto; padding: 8px;
               }
-              @media print { body { max-width: 100%; } }
+              @media print { body { max-width: 300px; } }
               .center  { text-align: center; }
               .bold    { font-weight: bold; }
               .title   { font-size: 12pt; font-weight: bold; text-align: center; letter-spacing: 2px; }
