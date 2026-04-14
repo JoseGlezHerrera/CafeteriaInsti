@@ -310,6 +310,314 @@ erDiagram
 | `DispositivoTokens` | `IX_Dispositivos_UsuarioId` | Normal | Lookup de tokens FCM por usuario |
 | `Usuarios` | `IX_Usuarios_Email` | UNIQUE | Login por email |
 
+### Descripción detallada de tablas
+
+#### `Institutos`
+Representa cada centro educativo dado de alta en el sistema. Toda la información de usuarios, horarios e invitaciones está asociada a un instituto — es la unidad de multi-tenancy del sistema.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único del instituto |
+| `Nombre` | `nvarchar(120)` | NOT NULL | Nombre completo del centro (ej: "IES La Laguna") |
+| `Direccion` | `nvarchar(200)` | nullable | Dirección postal del centro |
+| `CodigoCorto` | `nvarchar(10)` | UNIQUE, NOT NULL | Código breve para identificar el instituto en listas (ej: "IES-01") |
+| `Activo` | `bit` | NOT NULL, default `1` | Permite deshabilitar un instituto sin borrarlo |
+
+---
+
+#### `Usuarios`
+Almacena todos los usuarios del sistema: alumnos, profesores, personal y administradores. El rol y el estado determinan qué puede hacer cada usuario.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único del usuario |
+| `NombreCompleto` | `nvarchar(100)` | NOT NULL | Nombre y apellidos |
+| `Email` | `nvarchar(150)` | UNIQUE, NOT NULL | Dirección de correo — usada como credencial de login |
+| `PasswordHash` | `nvarchar(max)` | NOT NULL | Hash BCrypt de la contraseña (workFactor 12) |
+| `Rol` | `int` (enum) | NOT NULL | `0=Alumno`, `1=Profesor`, `2=Personal`, `3=Admin` |
+| `Turno` | `int` (enum) | NOT NULL | `0=Mañana`, `1=Tarde`, `2=Noche` — determina la franja horaria permitida |
+| `Estado` | `int` (enum) | NOT NULL | `0=PendienteValidacion`, `1=Activa`, `2=Suspendida`, `3=Eliminada` |
+| `FechaRegistro` | `datetime2` | NOT NULL, default `UtcNow` | Timestamp de creación de la cuenta |
+| `FechaValidacion` | `datetime2` | nullable | Timestamp en que el admin aprobó la cuenta |
+| `InstitutoId` | `int` | FK → Institutos, nullable | Instituto al que pertenece el usuario (`null` para admins globales) |
+| `DesayunoGratuito` | `bit` | NOT NULL, default `0` | Indica si el alumno es beneficiario del programa de desayuno escolar |
+| `RefreshToken` | `nvarchar(200)` | nullable | Token opaco para renovar el JWT sin volver a hacer login |
+| `RefreshTokenExpiry` | `datetime2` | nullable | Fecha de expiración del refresh token (30 días desde la emisión) |
+
+**Reglas de negocio:**
+- Un alumno recién registrado tiene `Estado = PendienteValidacion` y no puede pedir hasta que un admin cambie su estado a `Activa`.
+- Solo un usuario con `DesayunoGratuito = true` puede acceder al flujo de desayuno sin coste.
+- El campo `Rol` controla el acceso a las secciones admin/empleado de la app.
+
+---
+
+#### `Categorias`
+Agrupación de productos del catálogo de la cafetería (ej: Bocadillos, Bebidas, Bollería). No están asociadas a un instituto específico — son globales.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre de la categoría (ej: "Bocadillos") |
+| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🥪") |
+| `Orden` | `int` | NOT NULL, default `0` | Posición en la lista ordenada del catálogo |
+
+---
+
+#### `Productos`
+Catálogo de artículos disponibles en la cafetería. Cada producto puede tener imagen, pertenecer a una categoría, estar asociado a alérgenos e ingredientes personalizables, y opcionalmente ser parte del programa de desayuno gratuito.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `Nombre` | `nvarchar(120)` | NOT NULL | Nombre visible en el catálogo (ej: "Bocadillo de jamón") |
+| `Descripcion` | `nvarchar(300)` | nullable | Descripción opcional mostrada en el detalle del producto |
+| `Precio` | `decimal(6,2)` | NOT NULL | Precio base en euros (sin extras de ingredientes) |
+| `Stock` | `int` | NOT NULL, `[ConcurrencyCheck]` | Unidades disponibles. `-1` = ilimitado. `0` = agotado |
+| `CategoriaId` | `int` | FK → Categorias, NOT NULL | Categoría a la que pertenece el producto |
+| `ImagenUrl` | `nvarchar(500)` | nullable | URL de la imagen (Azure Blob en producción, ruta local en desarrollo) |
+| `ComponenteDesayuno` | `int` (enum) | NOT NULL, default `0` | `0=Ninguno`, `1=Zumo`, `2=Bocata` — define si este producto puede ser el zumo o bocadillo gratuito del día |
+| `Activo` | `bit` | NOT NULL, default `1` | Permite ocultar un producto del catálogo sin eliminarlo |
+
+**Notas:**
+- El campo `Stock` tiene `[ConcurrencyCheck]` — si dos usuarios intentan comprar el último artículo al mismo tiempo, EF Core lanza una excepción de concurrencia y solo uno lo obtiene.
+- `Precio` es el precio base. El precio final de una línea de pedido puede ser mayor si el usuario añade ingredientes extra.
+
+---
+
+#### `Alergenos`
+Catálogo de alérgenos alimentarios que pueden estar presentes en los productos (gluten, lactosa, frutos secos, etc.).
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del alérgeno (ej: "Gluten") |
+| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🌾") |
+
+---
+
+#### `ProductoAlergenos` *(tabla pivote)*
+Relación muchos-a-muchos entre `Productos` y `Alergenos`. Un producto puede tener varios alérgenos y un alérgeno puede estar en varios productos.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `ProductoId` | `int` | FK → Productos, PK compuesta | |
+| `AlergenoId` | `int` | FK → Alergenos, PK compuesta | |
+
+---
+
+#### `Ingredientes`
+Catálogo de ingredientes que los usuarios pueden añadir o quitar al personalizar un producto. Cada ingrediente puede tener un suplemento de precio y su propio control de stock.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del ingrediente (ej: "Jamón ibérico") |
+| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo (ej: "🥩") |
+| `PrecioExtra` | `decimal(6,2)` | NOT NULL, default `0` | Suplemento en euros que se añade al precio del producto si el usuario elige este ingrediente. `0` para ingredientes sin coste adicional |
+| `Stock` | `int` | NOT NULL | Unidades disponibles. `-1` = ilimitado |
+| `Activo` | `bit` | NOT NULL, default `1` | Permite ocultar el ingrediente sin eliminarlo |
+
+---
+
+#### `ProductoIngredientes` *(tabla pivote)*
+Define qué ingredientes puede personalizar el usuario en cada producto, y con qué restricciones (si es base del producto, si se puede quitar, cuántas unidades puede añadir como máximo).
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `ProductoId` | `int` | FK → Productos, NOT NULL | Producto al que pertenece esta configuración |
+| `IngredienteId` | `int` | FK → Ingredientes, NOT NULL | Ingrediente configurable |
+| `EsBase` | `bit` | NOT NULL, default `1` | `true` = el ingrediente viene incluido por defecto en el producto |
+| `EsQuitable` | `bit` | NOT NULL, default `1` | `true` = el usuario puede pedir el producto sin este ingrediente |
+| `CantidadMaxima` | `int` | NOT NULL, default `1` | Máximo de unidades de este ingrediente que el usuario puede añadir |
+| `Orden` | `int` | NOT NULL, default `0` | Posición en la lista de ingredientes del producto |
+
+---
+
+#### `Pedidos`
+Cabecera de cada pedido realizado. Contiene el estado, el método de pago, el total y la referencia de Stripe si se pagó con tarjeta.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador interno del pedido |
+| `NumeroPedido` | `int` | NOT NULL | Número correlativo del día (reinicia a 1 cada día). El alumno ve este número en la app |
+| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario que realizó el pedido |
+| `Estado` | `int` (enum) | NOT NULL, default `0` | `0=Pendiente`, `1=EnPreparacion`, `2=Listo`, `3=Entregado`, `4=Cancelado` |
+| `MetodoPago` | `int` (enum) | NOT NULL | `0=Tarjeta`, `1=GooglePay`, `2=ApplePay`, `3=Gratuito` |
+| `Total` | `decimal(8,2)` | NOT NULL | Importe total del pedido en euros (calculado en servidor) |
+| `Notas` | `nvarchar(300)` | nullable | Nota libre del cliente para el pedido completo (sanitizada antes de persistir) |
+| `ReferenciasPago` | `nvarchar(200)` | UNIQUE, nullable | ID del PaymentIntent de Stripe. El índice UNIQUE evita pedidos duplicados desde el webhook |
+| `FechaCreacion` | `datetime2` | NOT NULL, default `UtcNow` | Timestamp UTC de creación del pedido |
+
+**Máquina de estados de `EstadoPedido`:**
+```
+Pendiente → EnPreparacion → Listo → Entregado
+    └──────────────────────────────→ Cancelado (desde cualquier estado no terminal)
+```
+Solo las transiciones válidas están permitidas en la API.
+
+---
+
+#### `LineasPedido`
+Cada fila representa un producto dentro de un pedido, con su cantidad y el precio unitario en el momento del pedido (snapshot inmutable — si el producto cambia de precio después, el historial no se altera).
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `PedidoId` | `int` | FK → Pedidos, NOT NULL | Pedido al que pertenece la línea |
+| `ProductoId` | `int` | FK → Productos, SetNull | Producto pedido. Se pone a `null` si el producto se elimina del catálogo (historial preservado) |
+| `Cantidad` | `int` | NOT NULL | Número de unidades del producto |
+| `PrecioUnitario` | `decimal(6,2)` | NOT NULL | Precio por unidad **incluyendo extras de ingredientes** en el momento del pedido |
+| `Notas` | `nvarchar(200)` | nullable | Nota específica para esta línea (ej: "sin sal") |
+
+**Nota:** `Subtotal` es una propiedad calculada `[NotMapped]` = `Cantidad × PrecioUnitario`. No se persiste en la base de datos.
+
+---
+
+#### `LineaPedidoIngredientes`
+Registra cada modificación de ingrediente dentro de una línea de pedido. Si el usuario añadió jamón extra o quitó el tomate, cada acción queda registrada aquí con el precio aplicado en ese momento.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `LineaPedidoId` | `int` | FK → LineasPedido, NOT NULL | Línea de pedido a la que pertenece esta modificación |
+| `IngredienteId` | `int` | FK → Ingredientes, SetNull | Ingrediente modificado. Se pone a `null` si el ingrediente se elimina del catálogo |
+| `Accion` | `int` (enum) | NOT NULL | `0=Quitar` (sin coste), `1=Añadir` (puede tener suplemento) |
+| `PrecioAplicado` | `decimal(6,2)` | NOT NULL | Precio del suplemento en el momento del pedido. `0` para acciones Quitar o ingredientes sin coste |
+| `Cantidad` | `int` | NOT NULL, default `1` | Número de unidades del ingrediente añadido |
+
+---
+
+#### `ConsumoDesayuno`
+Controla si un alumno beneficiario del programa de desayuno gratuito ya ha consumido su zumo y/o bocadillo en el día de hoy. Hay un registro por usuario por día.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Alumno beneficiario |
+| `Fecha` | `date` | NOT NULL | Fecha del consumo (zona horaria España) |
+| `ZumoConsumido` | `bit` | NOT NULL, default `0` | `true` si ya tomó el zumo gratuito hoy |
+| `BocataConsumido` | `bit` | NOT NULL, default `0` | `true` si ya tomó el bocadillo gratuito hoy |
+
+**Restricción clave:** Índice UNIQUE en `(UsuarioId, Fecha)` — garantiza a nivel de base de datos que es imposible tener dos registros del mismo alumno para el mismo día, incluso bajo carga concurrente.
+
+---
+
+#### `FranjasHorarias`
+Define las ventanas de tiempo en las que los alumnos de cada turno pueden realizar pedidos en cada instituto. Si no hay franja configurada para un turno, el sistema es permisivo y permite pedir en cualquier momento.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `InstitutoId` | `int` | FK → Institutos, NOT NULL | Instituto al que aplica esta franja |
+| `Turno` | `int` (enum) | NOT NULL | `0=Mañana`, `1=Tarde`, `2=Noche` |
+| `Descripcion` | `nvarchar(100)` | nullable | Texto descriptivo opcional (ej: "Recreo 1º turno") |
+| `HoraInicio` | `nvarchar(5)` | NOT NULL | Hora de apertura en formato `HH:mm` (ej: `"10:00"`) |
+| `HoraFin` | `nvarchar(5)` | NOT NULL | Hora de cierre en formato `HH:mm` (ej: `"10:30"`) |
+| `Activa` | `bit` | NOT NULL, default `1` | Permite desactivar la franja sin eliminarla |
+| `EsBloqueada` | `bit` | NOT NULL, default `0` | `true` bloquea el pedido en esa franja aunque esté activa (ej: días festivos) |
+
+---
+
+#### `Invitaciones`
+Sistema de registro por invitación para profesores y personal. El administrador genera un enlace con un token único que el invitado usa para registrarse con el rol asignado.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `Token` | `nvarchar(100)` | UNIQUE, NOT NULL | UUID opaco generado al crear la invitación — forma parte del enlace de registro |
+| `InstitutoId` | `int` | FK → Institutos, NOT NULL | Instituto al que se incorporará el invitado |
+| `Rol` | `int` (enum) | NOT NULL | Rol que se asignará al usuario registrado (`1=Profesor`, `2=Personal`) |
+| `DiasValidez` | `int` | NOT NULL | Días de validez de la invitación desde su creación (1–365) |
+| `Estado` | `int` (enum) | NOT NULL | `0=Pendiente`, `1=Aceptada`, `2=Caducada` |
+| `FechaCreacion` | `datetime2` | NOT NULL | Timestamp UTC de creación |
+| `CreadaPorId` | `int` | FK → Usuarios, nullable | Administrador que generó la invitación |
+| `UsadaPorId` | `int` | FK → Usuarios, nullable | Usuario que se registró usando esta invitación |
+
+---
+
+#### `DispositivoTokens`
+Almacena los tokens FCM (Firebase Cloud Messaging) de los dispositivos móviles para el envío de notificaciones push. Un usuario puede tener tokens de varios dispositivos.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario propietario del dispositivo |
+| `Token` | `nvarchar(500)` | NOT NULL | Token FCM del dispositivo |
+| `FechaRegistro` | `datetime2` | NOT NULL | Timestamp de registro del token |
+
+---
+
+#### `RefreshTokens`
+Almacena los tokens de renovación de sesión JWT. Cuando el access token (1h) expira, el cliente usa el refresh token (30 días) para obtener un nuevo par sin volver a pedir credenciales al usuario.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| `Id` | `int` | PK, autoincremento | Identificador único |
+| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario al que pertenece el token |
+| `Token` | `nvarchar(200)` | NOT NULL | Token opaco generado aleatoriamente |
+| `Expiry` | `datetime2` | NOT NULL | Fecha de expiración (30 días desde la emisión) |
+| `Revocado` | `bit` | NOT NULL, default `0` | `true` si el token fue invalidado (logout o rotación) |
+
+**Rotación:** Cada vez que se usa un refresh token, se invalida (`Revocado = true`) y se genera uno nuevo. Si alguien roba el refresh token e intenta usarlo después de que el usuario legítimo ya lo renovó, el sistema detecta la inconsistencia.
+
+---
+
+### Enumeraciones del dominio
+
+#### `RolUsuario`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Alumno` | Estudiante del centro. Puede realizar pedidos dentro de su franja horaria |
+| `1` | `Profesor` | Docente. Sin restricción horaria para pedir |
+| `2` | `Personal` | Personal no docente. Sin restricción horaria |
+| `3` | `Admin` | Administrador del sistema. Acceso total al panel de gestión |
+
+#### `EstadoCuenta`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `PendienteValidacion` | Cuenta recién creada, pendiente de aprobación por el admin |
+| `1` | `Activa` | Cuenta operativa — puede iniciar sesión y realizar pedidos |
+| `2` | `Suspendida` | Cuenta temporalmente bloqueada |
+| `3` | `Eliminada` | Cuenta dada de baja (soft delete — el historial de pedidos se preserva) |
+
+#### `EstadoPedido`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Pendiente` | Pedido recibido, pendiente de atención por el empleado |
+| `1` | `EnPreparacion` | El empleado está preparando el pedido |
+| `2` | `Listo` | Pedido preparado, esperando que el alumno lo recoja |
+| `3` | `Entregado` | Pedido recogido por el alumno |
+| `4` | `Cancelado` | Pedido cancelado (por el alumno o el empleado) |
+
+#### `MetodoPago`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Tarjeta` | Pago con tarjeta bancaria a través de Stripe |
+| `1` | `GooglePay` | Google Pay (infraestructura preparada) |
+| `2` | `ApplePay` | Apple Pay (infraestructura preparada) |
+| `3` | `Gratuito` | Pedido del programa de desayuno escolar — sin cargo |
+
+#### `Turno`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Mañana` | Primer turno del día (ej: 10:00–10:30) |
+| `1` | `Tarde` | Segundo turno (ej: 14:00–14:30) |
+| `2` | `Noche` | Tercer turno, para centros con horario vespertino |
+
+#### `AccionIngrediente`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Quitar` | El usuario elimina un ingrediente base del producto. Sin coste adicional |
+| `1` | `Añadir` | El usuario añade un ingrediente extra. Puede tener suplemento de precio |
+
+#### `ComponenteDesayuno`
+| Valor | Nombre | Descripción |
+|---|---|---|
+| `0` | `Ninguno` | El producto no forma parte del programa de desayuno |
+| `1` | `Zumo` | Este producto puede ser el zumo gratuito diario del beneficiario |
+| `2` | `Bocata` | Este producto puede ser el bocadillo gratuito diario del beneficiario |
+
 ---
 
 ## Seguridad
