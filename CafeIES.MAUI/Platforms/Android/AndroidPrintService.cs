@@ -68,18 +68,11 @@ public class AndroidPrintService : IPrintService
 
             var adapter = view.CreatePrintDocumentAdapter(_jobName);
 
-            // Tamaño personalizado: 80 mm de ancho (rollo térmico estándar) × alto A4.
-            // Android PrintManager espera dimensiones en milésimas de pulgada (mils).
-            // 1 mm = 1000/25,4 mils ≈ 39,37 mils.
-            // El alto (297 mm ≈ A4) sirve como cota superior; el HTML fija el alto real
-            // mediante @page { size: 80mm auto } en el CSS del ticket.
-            const int widthMils  = 3150;   // 80 mm  (80 × 39,37 ≈ 3150)
-            const int heightMils = 11693;  // 297 mm (A4, techo para rollos largos)
-            var receiptSize = new PrintAttributes.MediaSize(
-                "thermal_receipt_80mm", "Rollo térmico 80 mm", widthMils, heightMils);
-
+            // IsoA5 (148×210 mm) como tamaño de referencia para el diálogo de impresión.
+            // El HTML del ticket se centra a max-width:300px dentro de la página,
+            // dando un aspecto compacto de tíquet sin forzar un ancho de rollo térmico.
             var attrs = new PrintAttributes.Builder()
-                .SetMediaSize(receiptSize)
+                .SetMediaSize(PrintAttributes.MediaSize.IsoA5)
                 .SetMinMargins(PrintAttributes.Margins.NoMargins)
                 .Build();
 
