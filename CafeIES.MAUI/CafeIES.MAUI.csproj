@@ -4,7 +4,7 @@
 		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-windows10.0.19041.0</TargetFrameworks>
 		<RootNamespace>CafeIES.MAUI</RootNamespace>
 		<ApplicationId>es.cafeies.app</ApplicationId>
-		<ApplicationTitle>CaféIES</ApplicationTitle>
+		<ApplicationTitle>PikUp</ApplicationTitle>
 		<ApplicationVersion>1</ApplicationVersion>
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<Nullable>enable</Nullable>

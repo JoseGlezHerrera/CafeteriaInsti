@@ -26,7 +26,7 @@ public static class MauiProgram
                 fonts.AddFont("DMSans-Medium.ttf", "DMSansMedium");
             });
 
-        // â”€â”€ HTTP Client â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── HTTP Client ─────────────────────────────────────────────────────────────
 #if DEBUG
         // Desarrollo: 10.0.2.2 es localhost visto desde el emulador Android
 #if ANDROID
@@ -35,7 +35,7 @@ public static class MauiProgram
         var apiBase = "https://localhost:50658/";
 #endif
 #else
-        // ProducciÃ³n: URL de la API desplegada en Azure App Service
+        // Producción: URL de la API desplegada en Azure App Service
         // REEMPLAZAR con la URL real tras el despliegue
         var apiBase = "https://cafeies-api.azurewebsites.net/";
 #endif
@@ -44,7 +44,7 @@ public static class MauiProgram
             var handler = new HttpClientHandler();
 #if DEBUG
             // Solo en desarrollo: aceptar certificados autofirmados de localhost.
-            // ELIMINAR esta lÃ­nea antes de publicar en producciÃ³n.
+            // ELIMINAR esta línea antes de publicar en producción.
             handler.ServerCertificateCustomValidationCallback = (m, c, ch, e) => true;
 #endif
             var http = new HttpClient(handler)
@@ -56,7 +56,7 @@ public static class MauiProgram
             return new ApiService(http, sp.GetRequiredService<TokenService>(), logger);
         });
 
-        // â”€â”€ Servicios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Servicios ───────────────────────────────────────────────────────────────
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddSingleton<CarritoViewModel>();
         builder.Services.AddSingleton<PushNotificationService>();
@@ -66,7 +66,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IPrintService, NoOpPrintService>();
 #endif
 
-        // â”€â”€ ViewModels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── ViewModels ──────────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<RegistroViewModel>();
         builder.Services.AddTransient<RegistroInvitacionViewModel>();
@@ -87,7 +87,7 @@ public static class MauiProgram
         builder.Services.AddTransient<EmpleadoPedidosViewModel>();
         builder.Services.AddTransient<EmpleadoProductosViewModel>();
 
-        // â”€â”€ PÃ¡ginas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Páginas ─────────────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegistroPage>();
         builder.Services.AddTransient<RegistroInvitacionPage>();
