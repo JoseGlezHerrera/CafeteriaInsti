@@ -23,12 +23,12 @@
                 <!-- Logo -->
                 <Label FontFamily="SyneBold" FontSize="42" TextColor="{DynamicResource TextColor}"
                        SemanticProperties.HeadingLevel="Level1"
-                       SemanticProperties.Description="CaféIES"
+                       SemanticProperties.Description="PikUp"
                        Margin="0,0,0,4">
                     <Label.FormattedText>
                         <FormattedString>
-                            <Span Text="Café"/>
-                            <Span Text="IES" TextColor="{StaticResource AccentColor}"/>
+                            <Span Text="Pik"/>
+                            <Span Text="Up" TextColor="{StaticResource AccentColor}"/>
                         </FormattedString>
                     </Label.FormattedText>
                 </Label>

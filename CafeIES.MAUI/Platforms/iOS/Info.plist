@@ -4,10 +4,10 @@
 <dict>
 	<!-- Requerido por MediaPicker.CapturePhotoAsync() -->
 	<key>NSCameraUsageDescription</key>
-	<string>CaféIES necesita acceso a la cámara para fotografiar los productos del catálogo.</string>
+	<string>PikUp necesita acceso a la cámara para fotografiar los productos del catálogo.</string>
 
 	<!-- Requerido por MediaPicker.PickPhotoAsync() -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>CaféIES necesita acceso a la galería para seleccionar imágenes de los productos del catálogo.</string>
+	<string>PikUp necesita acceso a la galería para seleccionar imágenes de los productos del catálogo.</string>
 </dict>
 </plist>

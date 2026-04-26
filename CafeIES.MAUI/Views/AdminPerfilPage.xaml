@@ -107,7 +107,7 @@
                     FontFamily="SyneBold" FontSize="15" HeightRequest="52" CornerRadius="16"
                     Command="{Binding CerrarSesionCommand}"/>
 
-            <Label Text="CaféIES v1.0 · IES"
+            <Label Text="PikUp v1.0 · IES"
                    HorizontalOptions="Center" Margin="0,24,0,16"/>
 
         </VerticalStackLayout>
