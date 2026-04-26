@@ -6,6 +6,9 @@
 # Scripts de infraestructura / despliegue → no son código de la aplicación
 infra/**        linguist-vendored=true
 
+# Archivos Razor de Blazor → forzar C# para que no cuenten como HTML
+*.razor                    linguist-language=C#
+
 # Archivos generados de Blazor WASM (Bootstrap, CSS, index.html de entrada SPA)
 CafeIES.Admin/wwwroot/**   linguist-vendored=true
 publish/**                 linguist-vendored=true
