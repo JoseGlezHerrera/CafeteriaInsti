@@ -1,4 +1,5 @@
 using CafeIES.Shared.Models;
+using System.Linq;
 using System.Text;
 
 namespace CafeIES.MAUI.Services;
@@ -51,6 +52,7 @@ public static class TicketHtmlBuilder
               .row     { display: flex; justify-content: space-between; margin: 1pt 0; }
               .prod    { font-weight: bold; margin-top: 3pt; }
               .mod     { padding-left: 8pt; font-size: 7pt; font-style: italic; color: #444; }
+              .alergenos { padding-left: 8pt; font-size: 7pt; color: #7a2e2e; }
               .nota    { padding-left: 8pt; font-size: 7pt; font-style: italic; color: #444; }
               .nota-global { font-size: 7pt; font-weight: bold; }
               .subtotal{ text-align: right; font-size: 7pt; color: #555; }
@@ -87,6 +89,12 @@ public static class TicketHtmlBuilder
                         : string.Empty;
                     sb.AppendLine($"<div class=\"mod\">{accion} {Esc(ing.Nombre)}{cantStr}{precioStr}</div>");
                 }
+            }
+
+            if (l.Alergenos is { Count: > 0 })
+            {
+                var alergenos = string.Join(", ", l.Alergenos.Select(a => Esc(a.Nombre)));
+                sb.AppendLine($"<div class=\"alergenos\">Alérgenos: {alergenos}</div>");
             }
 
             if (!string.IsNullOrWhiteSpace(l.Notas))

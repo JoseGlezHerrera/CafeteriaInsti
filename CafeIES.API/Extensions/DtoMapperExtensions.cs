@@ -52,6 +52,9 @@ public static class DtoMapperExtensions
         DateTime.SpecifyKind(p.FechaCreacion, DateTimeKind.Utc), p.Estado, p.MetodoPago, p.Total, p.Notas,
         p.Lineas.Select(l => new LineaPedidoDto(
             l.ProductoId ?? 0, l.Producto?.Nombre ?? "Producto eliminado",
+            (l.Producto?.Alergenos.Count ?? 0) > 0
+                ? l.Producto!.Alergenos.Select(a => a.ToDto()).ToList()
+                : null,
             l.Cantidad, l.PrecioUnitario, l.Subtotal, l.Notas,
             l.Ingredientes.Count > 0
                 ? l.Ingredientes.Select(li => li.ToDto()).ToList()

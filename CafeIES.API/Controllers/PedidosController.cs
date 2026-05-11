@@ -382,7 +382,7 @@ public class PedidosController : ControllerBase
             .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto).ThenInclude(p => p.Alergenos)
             .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario) // Instituto omitido: no se muestra en historial propio
             .ToListAsync();
@@ -416,7 +416,7 @@ public class PedidosController : ControllerBase
 
         // BUG-008: una sola consulta con todos los includes necesarios para DTO y autorización
         var pedido = await _db.Pedidos
-            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto).ThenInclude(p => p.Alergenos)
             .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -456,7 +456,7 @@ public class PedidosController : ControllerBase
     public async Task<ActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest req)
     {
         var pedido = await _db.Pedidos
-            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto).ThenInclude(p => p.Alergenos)
             .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -586,7 +586,7 @@ public class PedidosController : ControllerBase
         var pedidos = await query
             .OrderByDescending(p => p.FechaCreacion).ThenByDescending(p => p.Id)
             .Take(200)
-            .Include(p => p.Lineas).ThenInclude(l => l.Producto)
+            .Include(p => p.Lineas).ThenInclude(l => l.Producto).ThenInclude(p => p.Alergenos)
             .Include(p => p.Lineas).ThenInclude(l => l.Ingredientes).ThenInclude(li => li.Ingrediente)
             .Include(p => p.Usuario).ThenInclude(u => u.Instituto)
             .ToListAsync();

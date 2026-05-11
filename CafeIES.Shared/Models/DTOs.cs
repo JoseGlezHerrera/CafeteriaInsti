@@ -202,6 +202,7 @@ public record PedidoDto(
 public record LineaPedidoDto(
     int     ProductoId,
     string  ProductoNombre,
+    IReadOnlyList<AlergenoDto>? Alergenos,
     int     Cantidad,
     decimal PrecioUnitario,
     decimal Subtotal,
