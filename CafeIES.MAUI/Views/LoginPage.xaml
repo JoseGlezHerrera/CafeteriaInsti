@@ -40,7 +40,9 @@
                        TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,0,0,8"/>
                 <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
                         BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="14"/>
+                    </Border.StrokeShape>
                     <Entry Style="{StaticResource InputEntry}"
                            Text="{Binding Email}"
                            Placeholder="correo@ies.edu"
@@ -53,7 +55,9 @@
                        TextColor="{DynamicResource MutedColor}" CharacterSpacing="2" Margin="0,16,0,8"/>
                 <Border StrokeThickness="1.5" Stroke="{DynamicResource BorderColor}"
                         BackgroundColor="{DynamicResource Surface2Color}" Padding="4,0">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="14"/>
+                    </Border.StrokeShape>
                     <Entry Style="{StaticResource InputEntry}"
                            Text="{Binding Password}"
                            Placeholder="••••••••"
@@ -65,7 +69,9 @@
                 <Border BackgroundColor="#26e05252" StrokeThickness="1" Stroke="#40e05252"
                         Padding="14,10" Margin="0,16,0,0"
                         IsVisible="{Binding HayError}">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="12"/></Border.StrokeShape>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
                     <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource RedColor}"
                            FontFamily="DMSans" FontSize="13"/>
                 </Border>
@@ -102,7 +108,7 @@
                         Margin="0,8,0,0"
                         SemanticProperties.Hint="Pulsa si tienes un código de invitación"/>
 
-                <Label Text="¿Problemas? Contacta con secretaría"
+                <Label Text="¿Te interesa esta app? · jose.gonzalezh@protonmail.com"
                        TextColor="{DynamicResource MutedColor}" FontSize="12"
                        HorizontalOptions="Center" Margin="0,12,0,0"/>
             </VerticalStackLayout>

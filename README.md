@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☕ CaféIES
+# ☕ PikUp
 
 **Sistema integral de gestión de pedidos para cafeterías de institutos de educación secundaria.**
 
@@ -28,13 +28,13 @@
 
 ---
 
-CaféIES cubre el ciclo completo de una cafetería escolar: el alumno pide desde el móvil y paga con tarjeta (Stripe), el empleado prepara y cambia el estado del pedido, el alumno recibe la notificación en tiempo real, y el administrador supervisa todo desde un panel Blazor con reportes exportables. Está desarrollado con **tecnologías de producción reales** — CI/CD, despliegue en Azure, JWT con refresh tokens, SignalR y webhook de Stripe. No es una simulación.
+PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alumno pide desde el móvil y paga con tarjeta (Stripe), el empleado prepara y cambia el estado del pedido, el alumno recibe la notificación en tiempo real, y el administrador supervisa todo desde un panel Blazor con reportes exportables. Está desarrollado con **tecnologías de producción reales** — CI/CD, despliegue en Azure, JWT con refresh tokens, SignalR y webhook de Stripe. No es una simulación.
 
 <br>
 
 | Componente | Tecnología | Descripción |
 |---|---|---|
-| **App móvil** | .NET MAUI Android | Catálogo, personalización de ingredientes, carrito, Stripe, seguimiento en tiempo real, impresión de tickets |
+| **App móvil (PikUp)** | .NET MAUI Android | Catálogo, personalización de ingredientes, carrito, Stripe, seguimiento en tiempo real, impresión de tickets |
 | **Panel admin** | Blazor WebAssembly | Gestión de usuarios, productos, pedidos, horarios, desayunos y reportes Excel/PDF |
 | **API REST** | ASP.NET Core 9 | JWT, rate limiting (4 políticas), audit trail, SignalR y webhook de Stripe |
 | **Base de datos** | SQL Server (Azure) | 15 tablas, multi-tenancy por instituto, ingredientes personalizables, control de stock |
@@ -147,7 +147,7 @@ CaféIES cubre el ciclo completo de una cafetería escolar: el alumno pide desde
 
 - Vista de pedidos del día filtrada por instituto
 - Cambio de estado de pedidos con un toque (barra de progreso en tiempo real)
-- Impresión de tickets térmicos por WiFi, Bluetooth o exportación a PDF
+- Impresión de tickets térmicos por WiFi/Bluetooth/PDF o ESC/POS directo por red (TCP), con alérgenos en texto
 - Gestión de productos: crear, editar, controlar stock
 - Gestión de ingredientes, categorías y alérgenos
 
@@ -808,7 +808,7 @@ Abrir app → Auto-login (SecureStorage)
 ```
 Login → Pedidos del día (filtrado por instituto)
     → "Preparar" → estado cambia a En preparación (SignalR notifica al alumno)
-    → "Listo" → imprimir ticket 🖨 (WiFi / BT / PDF)
+    → "Listo" → imprimir ticket 🖨 (WiFi / BT / PDF / ESC/POS)
     → "Entregar" (o "Cancelar")
     → Gestión de productos y stock
 ```
@@ -1082,7 +1082,8 @@ CafeIES/
 │   ├── Services/
 │   │   ├── ApiService.cs               HTTP client (timeout 45s) + SignalR
 │   │   ├── TokenService.cs             SecureStorage para access/refresh token
-│   │   └── TicketHtmlBuilder.cs        HTML de ticket térmico compacto (max-width 300px)
+│   │   ├── TicketHtmlBuilder.cs        HTML de ticket térmico compacto (max-width 300px, con alérgenos)
+│   │   └── EscPosPrinterService.cs     Impresión ESC/POS directa por red (TCP)
 │   ├── Platforms/Android/
 │   │   └── AndroidPrintService.cs      WebView + PrintManager (WiFi/BT/PDF)
 │   ├── Converters/
@@ -1145,6 +1146,10 @@ Cuando un producto tiene componente de desayuno gratuito y el usuario tiene cré
 #### WebView adjunto al DecorView para impresión
 
 `WebView.createPrintDocumentAdapter()` en Android requiere que el WebView esté adjunto a una ventana activa para inicializar el motor de renderizado. Si el WebView no está en el árbol de vistas, el ticket sale en blanco. La solución: adjuntar el WebView al `DecorView` con tamaño 1×1 (invisible al usuario) antes de cargar el HTML, y retirarlo una vez que el `PrintManager` ha capturado el documento.
+
+#### Impresión ESC/POS directa por red (TCP)
+
+Para impresoras térmicas con Ethernet (p. ej. AVPos TC300), se añadió un flujo ESC/POS directo que envía bytes al puerto 9100 sin pasar por el `PrintManager` de Android. Esto evita diálogos del sistema y ofrece una impresión más rápida y controlada cuando la impresora está en la misma red.
 
 #### BindableLayout en lugar de CollectionView anidado
 
