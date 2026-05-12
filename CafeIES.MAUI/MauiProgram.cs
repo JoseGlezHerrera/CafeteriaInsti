@@ -65,6 +65,7 @@ public static class MauiProgram
 #else
         builder.Services.AddSingleton<IPrintService, NoOpPrintService>();
 #endif
+        builder.Services.AddSingleton<EscPosPrinterService>();
 
         // ── ViewModels ──────────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
