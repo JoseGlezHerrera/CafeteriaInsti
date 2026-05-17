@@ -37,11 +37,14 @@ public static class MauiProgram
 #else
         // Producción: URL de la API desplegada en Azure App Service
         // REEMPLAZAR con la URL real tras el despliegue
-        var apiBase = "https://cafeies-api.azurewebsites.net/";
+        var apiBase = "http://proyectos2dam.duckdns.org:5000/";
 #endif
         builder.Services.AddSingleton(sp =>
         {
             var handler = new HttpClientHandler();
+#if !DEBUG
+            handler.ServerCertificateCustomValidationCallback = (m, c, ch, e) => true;
+#endif
 #if DEBUG
             // Solo en desarrollo: aceptar certificados autofirmados de localhost.
             // ELIMINAR esta línea antes de publicar en producción.
