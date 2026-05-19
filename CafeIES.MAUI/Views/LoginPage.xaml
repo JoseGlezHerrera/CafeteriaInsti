@@ -36,7 +36,7 @@
                 <Label Text="Pide sin esperas, paga sin efectivo"
                        Style="{StaticResource SubtitleLabel}" Margin="0,0,0,12"/>
 
-                <Label Text="¿Te interesa esta app? · jose.gonzalezh@protonmail.com"
+                <Label Text="¿Te interesa esta app? · jose.gonzalezh@proton.me"
                        TextColor="{StaticResource AccentColor}" FontFamily="DMSans"
                        FontSize="13" Margin="0,0,0,48"/>
 
