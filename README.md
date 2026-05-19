@@ -4,15 +4,14 @@
 
 **Sistema integral de gestión de pedidos para cafeterías de institutos de educación secundaria.**
 
-*App Android nativa · Panel web de administración · API REST en producción · Pagos reales con Stripe*
+*App Android nativa · API REST en producción · Pagos reales con Stripe*
 
 <br>
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![MAUI Android](https://img.shields.io/badge/MAUI-Android-3DDC84?logo=android&logoColor=white)](https://learn.microsoft.com/dotnet/maui/)
-[![Blazor WASM](https://img.shields.io/badge/Blazor-WebAssembly-7B2FBE?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![Stripe](https://img.shields.io/badge/Stripe-PaymentIntent-635bff?logo=stripe&logoColor=white)](https://stripe.com/)
-[![Azure](https://img.shields.io/badge/Azure-Producción-0089D6?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
+[![Proxmox](https://img.shields.io/badge/Proxmox-LXC-E57000?logo=proxmox&logoColor=white)](https://www.proxmox.com/)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
 [![Tests](https://img.shields.io/badge/Tests-115_passing-4caf50?logo=xunit&logoColor=white)](#-tests)
 [![License](https://img.shields.io/badge/Licencia-MIT-22c55e)](LICENSE)
@@ -20,24 +19,23 @@
 <br>
 
 [**📲 Descargar APK**](https://github.com/JoseGlezHerrera/CafeteriaInsti/releases/latest) &nbsp;·&nbsp;
-[**🖥️ Panel Admin**](https://cafeies-admin.azurestaticapps.net) &nbsp;·&nbsp;
-[**📖 API Swagger**](https://cafeies-api.azurewebsites.net/swagger) &nbsp;·&nbsp;
+[**📖 API Swagger**](http://proyectos2dam.duckdns.org:5000/swagger) &nbsp;·&nbsp;
 [**🔒 Política de privacidad**](https://JoseGlezHerrera.github.io/CafeteriaInsti/politica-privacidad.html)
 
 </div>
 
 ---
 
-PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alumno pide desde el móvil y paga con tarjeta (Stripe), el empleado prepara y cambia el estado del pedido, el alumno recibe la notificación en tiempo real, y el administrador supervisa todo desde un panel Blazor con reportes exportables. Está desarrollado con **tecnologías de producción reales** — CI/CD, despliegue en Azure, JWT con refresh tokens, SignalR y webhook de Stripe. No es una simulación.
+PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alumno pide desde el móvil y paga con tarjeta (Stripe), el empleado prepara y cambia el estado del pedido, el alumno recibe la notificación en tiempo real, y el administrador gestiona todo desde la propia app MAUI. Está desarrollado con **tecnologías de producción reales** — CI/CD, despliegue en contenedor LXC sobre Proxmox, JWT con refresh tokens, SignalR y webhook de Stripe. No es una simulación.
 
 <br>
 
 | Componente | Tecnología | Descripción |
 |---|---|---|
-| **App móvil (PikUp)** | .NET MAUI Android | Catálogo, personalización de ingredientes, carrito, Stripe, seguimiento en tiempo real, impresión de tickets |
-| **Panel admin** | Blazor WebAssembly | Gestión de usuarios, productos, pedidos, horarios, desayunos y reportes Excel/PDF |
+| **App móvil (PikUp)** | .NET MAUI Android | Catálogo, personalización de ingredientes, carrito, Stripe, seguimiento en tiempo real, impresión de tickets, panel admin y empleado integrados |
 | **API REST** | ASP.NET Core 9 | JWT, rate limiting (4 políticas), audit trail, SignalR y webhook de Stripe |
-| **Base de datos** | SQL Server (Azure) | 15 tablas, multi-tenancy por instituto, ingredientes personalizables, control de stock |
+| **Base de datos** | SQL Server 2022 (Docker) | 15 tablas, multi-tenancy por instituto, ingredientes personalizables, control de stock |
+| **Almacenamiento** | Disco local (wwwroot) | Imágenes de productos servidas directamente desde la API |
 | **Desayuno gratuito** | — | 1 zumo + 1 bocadillo/día para beneficiarios, con protección anti-doble-consumo por triple barrera |
 
 ---
@@ -50,18 +48,18 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
 ┌───────────────────────────────────────────────────────────────────┐
 │                         CLIENTES                                  │
 │                                                                   │
-│   ┌────────────────┐              ┌────────────────────────────┐  │
-│   │  CafeIES.MAUI  │              │     CafeIES.Admin          │  │
-│   │  Android (APK) │              │     Blazor WebAssembly     │  │
-│   │                │              │     Azure Static Web Apps  │  │
-│   └───────┬────────┘              └────────────┬───────────────┘  │
-└───────────┼────────────────────────────────────┼──────────────────┘
-            │  HTTPS + JSON                      │  HTTPS + JSON
-            │  SignalR WebSocket                 │  SignalR WebSocket
-            ▼                                    ▼
+│   ┌────────────────────────────────────────────────────────────┐  │
+│   │  CafeIES.MAUI  (Android APK)                               │  │
+│   │  Alumno · Empleado · Administrador (mismo binario, por rol) │  │
+│   └───────────────────────────┬────────────────────────────────┘  │
+└───────────────────────────────┼───────────────────────────────────┘
+                                │  HTTP + JSON
+                                │  SignalR WebSocket
+                                ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│                    CafeIES.API  (ASP.NET Core 9)                  │
-│                    Azure App Service · Linux · .NET 9             │
+│              CafeIES.API  (ASP.NET Core 9)                        │
+│              Contenedor LXC · Debian 13 · Proxmox                 │
+│              http://proyectos2dam.duckdns.org:5000                │
 │                                                                   │
 │   AuthController       PedidosController    PagosController       │
 │   ProductosController  AdminController      EmpleadoController    │
@@ -74,10 +72,9 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
                │                       │
        ┌───────▼──────┐     ┌──────────▼──────────┐
        │  SQL Server  │     │   Servicios externos │
-       │  Azure SQL   │     │   ─────────────────  │
+       │  Docker      │     │   ─────────────────  │
        │  15 tablas   │     │   Stripe (pagos)     │
-       └──────────────┘     │   Azure Blob Storage │
-                            │   FCM (notificacion) │
+       └──────────────┘     │   FCM (notificacion) │
                             └─────────────────────┘
             ▲
             │  Shared DTOs, Entidades, Enums, Validaciones
@@ -89,9 +86,9 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
 ```
 
 **Flujo de comunicación:**
-- Clientes ↔ API: HTTPS/JSON para peticiones REST; WebSocket (SignalR) para actualizaciones en tiempo real
+- Clientes ↔ API: HTTP/JSON para peticiones REST; WebSocket (SignalR) para actualizaciones en tiempo real
 - Stripe → API: webhook firmado con HMAC para confirmar pagos y reconstruir pedidos huérfanos
-- API → Azure Blob: almacenamiento de imágenes de productos
+- API → disco local: almacenamiento de imágenes de productos en `wwwroot/productos/`
 - API → FCM: notificaciones push (infraestructura disponible; envío opcional)
 
 </details>
@@ -104,18 +101,16 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
 
 | Capa | Tecnología | Versión | Justificación |
 |---|---|---|---|
-| **Backend** | ASP.NET Core | .NET 9 | Framework maduro, alto rendimiento, soporte nativo para SignalR y Minimal APIs |
+| **Backend** | ASP.NET Core | .NET 9 | Framework maduro, alto rendimiento, soporte nativo para SignalR |
 | **ORM** | Entity Framework Core | 9.0 | Code-First con migraciones; LINQ type-safe; integración directa con SQL Server |
-| **Base de datos** | SQL Server (Azure SQL) | — | ACID, transacciones Serializable para proteger el desayuno gratuito |
+| **Base de datos** | SQL Server 2022 (Docker) | — | ACID, transacciones Serializable para proteger el desayuno gratuito |
 | **App móvil** | .NET MAUI | .NET 9 | Código C# compartido con el resto del proyecto; Android e iOS desde una sola base |
-| **Panel admin** | Blazor WebAssembly | .NET 9 | SPA en C# sin JavaScript adicional; compartición de DTOs con la API |
 | **Autenticación** | JWT Bearer + BCrypt | — | Access token (1h) + refresh token (30d) rotativo; BCrypt workFactor 12 |
 | **Pagos** | Stripe PaymentIntent | Stripe.net 50.x | El importe lo calcula el servidor; el cliente solo recibe el `clientSecret` |
 | **Tiempo real** | SignalR | — | Actualización del estado del pedido sin polling; reconexión automática |
-| **Imágenes** | Azure Blob Storage | 12.x | Escalable; URL pública directa; local en desarrollo |
-| **Hosting API** | Azure App Service | F1 Linux .NET 9 | Despliegue con un push; soporte WebSocket nativo |
-| **Hosting Admin** | Azure Static Web Apps | Free tier | CDN global; integración con GitHub Actions |
-| **CI/CD** | GitHub Actions | — | 3 workflows: API → Azure, Admin → Azure, MAUI → GitHub Releases |
+| **Imágenes** | Disco local (wwwroot) | — | Servidas directamente desde la API; sin dependencias externas |
+| **Hosting** | Contenedor LXC (Proxmox) | Debian 13 | Despliegue en infraestructura del centro educativo, sin coste adicional |
+| **CI/CD** | GitHub Actions | — | 2 workflows: API → servidor, MAUI → GitHub Releases |
 | **Reportes** | ClosedXML + QuestPDF | — | Excel con múltiples hojas; PDF con plantilla personalizada |
 | **MVVM (MAUI)** | CommunityToolkit.Mvvm | 8.3.x | Source generators; ObservableProperty, RelayCommand sin boilerplate |
 | **QR** | QRCoder | — | Generación de QR de invitaciones en PNG |
@@ -153,7 +148,7 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
 
 #### 🛠️ Administrador
 
-- Dashboard Blazor con métricas del día e historial de pedidos en tiempo real
+- Dashboard con métricas del día e historial de pedidos en tiempo real (SignalR), integrado en la app MAUI
 - Gestión de usuarios: aprobar alumnos, asignar rol, activar desayuno gratuito
 - Creación de invitaciones para profesores/personal con QR descargable
 - CRUD completo de productos con imagen (cámara o galería)
@@ -179,7 +174,7 @@ PikUp (antes CaféIES) cubre el ciclo completo de una cafetería escolar: el alu
 <summary><b>🗄️ Modelo de datos</b></summary>
 <br>
 
-La base de datos es **SQL Server** gestionada con **EF Core 9 Code-First**. El esquema tiene **15 tablas** con multi-tenancy por instituto.
+La base de datos es **SQL Server 2022** gestionada con **EF Core 9 Code-First**. El esquema tiene **15 tablas** con multi-tenancy por instituto.
 
 #### Diagrama entidad-relación
 
@@ -306,355 +301,6 @@ erDiagram
 | `DispositivoTokens` | `IX_Dispositivos_UsuarioId` | Normal | Lookup de tokens FCM por usuario |
 | `Usuarios` | `IX_Usuarios_Email` | UNIQUE | Login por email |
 
----
-
-#### Descripción detallada de tablas
-
-<details>
-<summary><code>Institutos</code> — centros educativos (unidad de multi-tenancy)</summary>
-<br>
-
-Representa cada centro educativo dado de alta en el sistema. Toda la información de usuarios, horarios e invitaciones está asociada a un instituto — es la unidad de multi-tenancy del sistema.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único del instituto |
-| `Nombre` | `nvarchar(120)` | NOT NULL | Nombre completo del centro (ej: "IES La Laguna") |
-| `Direccion` | `nvarchar(200)` | nullable | Dirección postal del centro |
-| `CodigoCorto` | `nvarchar(10)` | UNIQUE, NOT NULL | Código breve para identificar el instituto en listas (ej: "IES-01") |
-| `Activo` | `bit` | NOT NULL, default `1` | Permite deshabilitar un instituto sin borrarlo |
-
-</details>
-
-<details>
-<summary><code>Usuarios</code> — alumnos, profesores, personal y administradores</summary>
-<br>
-
-Almacena todos los usuarios del sistema. El rol y el estado determinan qué puede hacer cada usuario.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único del usuario |
-| `NombreCompleto` | `nvarchar(100)` | NOT NULL | Nombre y apellidos |
-| `Email` | `nvarchar(150)` | UNIQUE, NOT NULL | Dirección de correo — usada como credencial de login |
-| `PasswordHash` | `nvarchar(max)` | NOT NULL | Hash BCrypt de la contraseña (workFactor 12) |
-| `Rol` | `int` (enum) | NOT NULL | `0=Alumno`, `1=Profesor`, `2=Personal`, `3=Admin` |
-| `Turno` | `int` (enum) | NOT NULL | `0=Mañana`, `1=Tarde`, `2=Noche` — determina la franja horaria permitida |
-| `Estado` | `int` (enum) | NOT NULL | `0=PendienteValidacion`, `1=Activa`, `2=Suspendida`, `3=Eliminada` |
-| `FechaRegistro` | `datetime2` | NOT NULL, default `UtcNow` | Timestamp de creación de la cuenta |
-| `FechaValidacion` | `datetime2` | nullable | Timestamp en que el admin aprobó la cuenta |
-| `InstitutoId` | `int` | FK → Institutos, nullable | Instituto al que pertenece el usuario (`null` para admins globales) |
-| `DesayunoGratuito` | `bit` | NOT NULL, default `0` | Indica si el alumno es beneficiario del programa de desayuno escolar |
-| `RefreshToken` | `nvarchar(200)` | nullable | Token opaco para renovar el JWT sin volver a hacer login |
-| `RefreshTokenExpiry` | `datetime2` | nullable | Fecha de expiración del refresh token (30 días desde la emisión) |
-
-**Reglas de negocio:**
-- Un alumno recién registrado tiene `Estado = PendienteValidacion` y no puede pedir hasta que un admin cambie su estado a `Activa`.
-- Solo un usuario con `DesayunoGratuito = true` puede acceder al flujo de desayuno sin coste.
-- El campo `Rol` controla el acceso a las secciones admin/empleado de la app.
-
-</details>
-
-<details>
-<summary><code>Categorias</code> — agrupación de productos del catálogo</summary>
-<br>
-
-Agrupación de productos del catálogo de la cafetería (ej: Bocadillos, Bebidas, Bollería). Son globales — no están asociadas a un instituto específico.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre de la categoría (ej: "Bocadillos") |
-| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🥪") |
-| `Orden` | `int` | NOT NULL, default `0` | Posición en la lista ordenada del catálogo |
-
-</details>
-
-<details>
-<summary><code>Productos</code> — artículos del catálogo de la cafetería</summary>
-<br>
-
-Catálogo de artículos disponibles. Cada producto puede tener imagen, pertenecer a una categoría, estar asociado a alérgenos e ingredientes personalizables, y opcionalmente ser parte del programa de desayuno gratuito.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `Nombre` | `nvarchar(120)` | NOT NULL | Nombre visible en el catálogo (ej: "Bocadillo de jamón") |
-| `Descripcion` | `nvarchar(300)` | nullable | Descripción opcional mostrada en el detalle del producto |
-| `Precio` | `decimal(6,2)` | NOT NULL | Precio base en euros (sin extras de ingredientes) |
-| `Stock` | `int` | NOT NULL, `[ConcurrencyCheck]` | Unidades disponibles. `-1` = ilimitado. `0` = agotado |
-| `CategoriaId` | `int` | FK → Categorias, NOT NULL | Categoría a la que pertenece el producto |
-| `ImagenUrl` | `nvarchar(500)` | nullable | URL de la imagen (Azure Blob en producción, ruta local en desarrollo) |
-| `ComponenteDesayuno` | `int` (enum) | NOT NULL, default `0` | `0=Ninguno`, `1=Zumo`, `2=Bocata` — define si este producto puede ser el zumo o bocadillo gratuito del día |
-| `Activo` | `bit` | NOT NULL, default `1` | Permite ocultar un producto del catálogo sin eliminarlo |
-
-**Notas:**
-- El campo `Stock` tiene `[ConcurrencyCheck]` — si dos usuarios intentan comprar el último artículo al mismo tiempo, EF Core lanza una excepción de concurrencia y solo uno lo obtiene.
-- `Precio` es el precio base. El precio final de una línea de pedido puede ser mayor si el usuario añade ingredientes extra.
-
-</details>
-
-<details>
-<summary><code>Alergenos</code> · <code>ProductoAlergenos</code> — alérgenos y su asignación a productos</summary>
-<br>
-
-**`Alergenos`** — catálogo de alérgenos alimentarios (gluten, lactosa, frutos secos, etc.)
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del alérgeno (ej: "Gluten") |
-| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo para la UI (ej: "🌾") |
-
-**`ProductoAlergenos`** — tabla pivote M:N entre `Productos` y `Alergenos`
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `ProductoId` | `int` | FK → Productos, PK compuesta | |
-| `AlergenoId` | `int` | FK → Alergenos, PK compuesta | |
-
-</details>
-
-<details>
-<summary><code>Ingredientes</code> · <code>ProductoIngredientes</code> — personalización de productos</summary>
-<br>
-
-**`Ingredientes`** — catálogo de ingredientes que los usuarios pueden añadir o quitar al personalizar un producto.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `Nombre` | `nvarchar(80)` | NOT NULL | Nombre del ingrediente (ej: "Jamón ibérico") |
-| `Emoji` | `nvarchar(10)` | nullable | Emoji representativo (ej: "🥩") |
-| `PrecioExtra` | `decimal(6,2)` | NOT NULL, default `0` | Suplemento en euros que se añade al precio si el usuario elige este ingrediente |
-| `Stock` | `int` | NOT NULL | Unidades disponibles. `-1` = ilimitado |
-| `Activo` | `bit` | NOT NULL, default `1` | Permite ocultar el ingrediente sin eliminarlo |
-
-**`ProductoIngredientes`** — define qué ingredientes puede personalizar el usuario en cada producto y con qué restricciones.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `ProductoId` | `int` | FK → Productos, NOT NULL | Producto al que pertenece esta configuración |
-| `IngredienteId` | `int` | FK → Ingredientes, NOT NULL | Ingrediente configurable |
-| `EsBase` | `bit` | NOT NULL, default `1` | `true` = el ingrediente viene incluido por defecto en el producto |
-| `EsQuitable` | `bit` | NOT NULL, default `1` | `true` = el usuario puede pedir el producto sin este ingrediente |
-| `CantidadMaxima` | `int` | NOT NULL, default `1` | Máximo de unidades de este ingrediente que el usuario puede añadir |
-| `Orden` | `int` | NOT NULL, default `0` | Posición en la lista de ingredientes del producto |
-
-</details>
-
-<details>
-<summary><code>Pedidos</code> — cabecera de cada pedido realizado</summary>
-<br>
-
-Contiene el estado, el método de pago, el total y la referencia de Stripe si se pagó con tarjeta.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador interno del pedido |
-| `NumeroPedido` | `int` | NOT NULL | Número correlativo del día (reinicia a 1 cada día). El alumno ve este número en la app |
-| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario que realizó el pedido |
-| `Estado` | `int` (enum) | NOT NULL, default `0` | `0=Pendiente`, `1=EnPreparacion`, `2=Listo`, `3=Entregado`, `4=Cancelado` |
-| `MetodoPago` | `int` (enum) | NOT NULL | `0=Tarjeta`, `1=GooglePay`, `2=ApplePay`, `3=Gratuito` |
-| `Total` | `decimal(8,2)` | NOT NULL | Importe total del pedido en euros (calculado en servidor) |
-| `Notas` | `nvarchar(300)` | nullable | Nota libre del cliente para el pedido completo (sanitizada antes de persistir) |
-| `ReferenciasPago` | `nvarchar(200)` | UNIQUE, nullable | ID del PaymentIntent de Stripe. El índice UNIQUE evita pedidos duplicados desde el webhook |
-| `FechaCreacion` | `datetime2` | NOT NULL, default `UtcNow` | Timestamp UTC de creación del pedido |
-
-**Máquina de estados de `EstadoPedido`:**
-```
-Pendiente → EnPreparacion → Listo → Entregado
-    └──────────────────────────────→ Cancelado (desde cualquier estado no terminal)
-```
-Solo las transiciones válidas están permitidas en la API.
-
-</details>
-
-<details>
-<summary><code>LineasPedido</code> · <code>LineaPedidoIngredientes</code> — detalle de productos e ingredientes por pedido</summary>
-<br>
-
-**`LineasPedido`** — cada fila representa un producto dentro de un pedido, con su cantidad y el precio unitario en el momento del pedido (snapshot inmutable).
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `PedidoId` | `int` | FK → Pedidos, NOT NULL | Pedido al que pertenece la línea |
-| `ProductoId` | `int` | FK → Productos, SetNull | Producto pedido. Se pone a `null` si el producto se elimina del catálogo (historial preservado) |
-| `Cantidad` | `int` | NOT NULL | Número de unidades del producto |
-| `PrecioUnitario` | `decimal(6,2)` | NOT NULL | Precio por unidad **incluyendo extras de ingredientes** en el momento del pedido |
-| `Notas` | `nvarchar(200)` | nullable | Nota específica para esta línea (ej: "sin sal") |
-
-> `Subtotal` es una propiedad calculada `[NotMapped]` = `Cantidad × PrecioUnitario`. No se persiste en la base de datos.
-
-**`LineaPedidoIngredientes`** — registra cada modificación de ingrediente dentro de una línea de pedido.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `LineaPedidoId` | `int` | FK → LineasPedido, NOT NULL | Línea de pedido a la que pertenece esta modificación |
-| `IngredienteId` | `int` | FK → Ingredientes, SetNull | Ingrediente modificado. Se pone a `null` si el ingrediente se elimina del catálogo |
-| `Accion` | `int` (enum) | NOT NULL | `0=Quitar` (sin coste), `1=Añadir` (puede tener suplemento) |
-| `PrecioAplicado` | `decimal(6,2)` | NOT NULL | Precio del suplemento en el momento del pedido. `0` para acciones Quitar o ingredientes sin coste |
-| `Cantidad` | `int` | NOT NULL, default `1` | Número de unidades del ingrediente añadido |
-
-</details>
-
-<details>
-<summary><code>ConsumoDesayuno</code> — control diario del programa de desayuno gratuito</summary>
-<br>
-
-Controla si un alumno beneficiario ya ha consumido su zumo y/o bocadillo en el día de hoy. Hay un registro por usuario por día.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Alumno beneficiario |
-| `Fecha` | `date` | NOT NULL | Fecha del consumo (zona horaria España) |
-| `ZumoConsumido` | `bit` | NOT NULL, default `0` | `true` si ya tomó el zumo gratuito hoy |
-| `BocataConsumido` | `bit` | NOT NULL, default `0` | `true` si ya tomó el bocadillo gratuito hoy |
-
-**Restricción clave:** Índice UNIQUE en `(UsuarioId, Fecha)` — garantiza a nivel de base de datos que es imposible tener dos registros del mismo alumno para el mismo día, incluso bajo carga concurrente.
-
-</details>
-
-<details>
-<summary><code>FranjasHorarias</code> — ventanas de pedido por instituto y turno</summary>
-<br>
-
-Define las ventanas de tiempo en las que los alumnos de cada turno pueden realizar pedidos. Si no hay franja configurada para un turno, el sistema es permisivo y permite pedir en cualquier momento.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `InstitutoId` | `int` | FK → Institutos, NOT NULL | Instituto al que aplica esta franja |
-| `Turno` | `int` (enum) | NOT NULL | `0=Mañana`, `1=Tarde`, `2=Noche` |
-| `Descripcion` | `nvarchar(100)` | nullable | Texto descriptivo opcional (ej: "Recreo 1º turno") |
-| `HoraInicio` | `nvarchar(5)` | NOT NULL | Hora de apertura en formato `HH:mm` (ej: `"10:00"`) |
-| `HoraFin` | `nvarchar(5)` | NOT NULL | Hora de cierre en formato `HH:mm` (ej: `"10:30"`) |
-| `Activa` | `bit` | NOT NULL, default `1` | Permite desactivar la franja sin eliminarla |
-| `EsBloqueada` | `bit` | NOT NULL, default `0` | `true` bloquea el pedido en esa franja aunque esté activa (ej: días festivos) |
-
-</details>
-
-<details>
-<summary><code>Invitaciones</code> — registro por invitación para profesores y personal</summary>
-<br>
-
-El administrador genera un enlace con un token único que el invitado usa para registrarse con el rol asignado.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `Token` | `nvarchar(100)` | UNIQUE, NOT NULL | UUID opaco generado al crear la invitación — forma parte del enlace de registro |
-| `InstitutoId` | `int` | FK → Institutos, NOT NULL | Instituto al que se incorporará el invitado |
-| `Rol` | `int` (enum) | NOT NULL | Rol que se asignará al usuario registrado (`1=Profesor`, `2=Personal`) |
-| `DiasValidez` | `int` | NOT NULL | Días de validez de la invitación desde su creación (1–365) |
-| `Estado` | `int` (enum) | NOT NULL | `0=Pendiente`, `1=Aceptada`, `2=Caducada` |
-| `FechaCreacion` | `datetime2` | NOT NULL | Timestamp UTC de creación |
-| `CreadaPorId` | `int` | FK → Usuarios, nullable | Administrador que generó la invitación |
-| `UsadaPorId` | `int` | FK → Usuarios, nullable | Usuario que se registró usando esta invitación |
-
-</details>
-
-<details>
-<summary><code>DispositivoTokens</code> · <code>RefreshTokens</code> — notificaciones push y renovación de sesión</summary>
-<br>
-
-**`DispositivoTokens`** — tokens FCM (Firebase Cloud Messaging) para notificaciones push. Un usuario puede tener tokens de varios dispositivos.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario propietario del dispositivo |
-| `Token` | `nvarchar(500)` | NOT NULL | Token FCM del dispositivo |
-| `FechaRegistro` | `datetime2` | NOT NULL | Timestamp de registro del token |
-
-**`RefreshTokens`** — tokens de renovación de sesión JWT. Cuando el access token (1h) expira, el cliente usa el refresh token (30 días) para obtener un nuevo par sin pedir credenciales al usuario.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `Id` | `int` | PK, autoincremento | Identificador único |
-| `UsuarioId` | `int` | FK → Usuarios, NOT NULL | Usuario al que pertenece el token |
-| `Token` | `nvarchar(200)` | NOT NULL | Token opaco generado aleatoriamente |
-| `Expiry` | `datetime2` | NOT NULL | Fecha de expiración (30 días desde la emisión) |
-| `Revocado` | `bit` | NOT NULL, default `0` | `true` si el token fue invalidado (logout o rotación) |
-
-**Rotación:** Cada vez que se usa un refresh token, se invalida (`Revocado = true`) y se genera uno nuevo. Si alguien roba el refresh token e intenta usarlo después de que el usuario legítimo ya lo renovó, el sistema detecta la inconsistencia.
-
-</details>
-
----
-
-#### Enumeraciones del dominio
-
-<details>
-<summary>Ver todas las enumeraciones</summary>
-<br>
-
-**`RolUsuario`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Alumno` | Estudiante del centro. Puede realizar pedidos dentro de su franja horaria |
-| `1` | `Profesor` | Docente. Sin restricción horaria para pedir |
-| `2` | `Personal` | Personal no docente. Sin restricción horaria |
-| `3` | `Admin` | Administrador del sistema. Acceso total al panel de gestión |
-
-**`EstadoCuenta`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `PendienteValidacion` | Cuenta recién creada, pendiente de aprobación por el admin |
-| `1` | `Activa` | Cuenta operativa — puede iniciar sesión y realizar pedidos |
-| `2` | `Suspendida` | Cuenta temporalmente bloqueada |
-| `3` | `Eliminada` | Cuenta dada de baja (soft delete — el historial de pedidos se preserva) |
-
-**`EstadoPedido`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Pendiente` | Pedido recibido, pendiente de atención por el empleado |
-| `1` | `EnPreparacion` | El empleado está preparando el pedido |
-| `2` | `Listo` | Pedido preparado, esperando que el alumno lo recoja |
-| `3` | `Entregado` | Pedido recogido por el alumno |
-| `4` | `Cancelado` | Pedido cancelado (por el alumno o el empleado) |
-
-**`MetodoPago`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Tarjeta` | Pago con tarjeta bancaria a través de Stripe |
-| `1` | `GooglePay` | Google Pay (infraestructura preparada) |
-| `2` | `ApplePay` | Apple Pay (infraestructura preparada) |
-| `3` | `Gratuito` | Pedido del programa de desayuno escolar — sin cargo |
-
-**`Turno`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Mañana` | Primer turno del día (ej: 10:00–10:30) |
-| `1` | `Tarde` | Segundo turno (ej: 14:00–14:30) |
-| `2` | `Noche` | Tercer turno, para centros con horario vespertino |
-
-**`AccionIngrediente`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Quitar` | El usuario elimina un ingrediente base del producto. Sin coste adicional |
-| `1` | `Añadir` | El usuario añade un ingrediente extra. Puede tener suplemento de precio |
-
-**`ComponenteDesayuno`**
-
-| Valor | Nombre | Descripción |
-|---|---|---|
-| `0` | `Ninguno` | El producto no forma parte del programa de desayuno |
-| `1` | `Zumo` | Este producto puede ser el zumo gratuito diario del beneficiario |
-| `2` | `Bocata` | Este producto puede ser el bocadillo gratuito diario del beneficiario |
-
-</details>
-
 </details>
 
 ---
@@ -668,9 +314,9 @@ El administrador genera un enlace con un token único que el invitado usa para r
 | **Contraseñas** | BCrypt workFactor 12 — hash adaptativo resistente a fuerza bruta |
 | **Complejidad** | Mínimo 8 caracteres + mayúscula + número + símbolo (`PasswordComplexityAttribute`) |
 | **JWT access token** | HMAC-SHA256, expiración 1 hora |
-| **JWT refresh token** | 30 días, rotación en cada renovación, almacenado solo en `SecureStorage` (MAUI) o en memoria (Blazor) |
+| **JWT refresh token** | 30 días, rotación en cada renovación, almacenado solo en `SecureStorage` (MAUI) |
 | **Rate limiting** | 4 políticas: auth (10 req/min/IP), general (60 req/min/IP), invitaciones (5 req/min/IP), pagos (20 req/min/IP) |
-| **Audit trail** | Todas las acciones de escritura del administrador se registran con prefijo `[AUDIT]` en los logs de Azure |
+| **Audit trail** | Todas las acciones de escritura del administrador se registran con prefijo `[AUDIT]` en los logs |
 | **Total de pago** | Calculado siempre en el servidor — el cliente solo recibe el `clientSecret`; los extras de ingredientes se calculan en servidor |
 | **Webhook Stripe** | Rechazado con 503 si `WebhookSecret` no está configurado; firma HMAC verificada antes de procesar |
 | **Stock** | `ReadCommitted` + `[ConcurrencyCheck]` en `Producto.Stock` para prevenir sobreventa concurrente |
@@ -816,7 +462,7 @@ Login → Pedidos del día (filtrado por instituto)
 #### 🛠️ Administrador — gestión completa
 
 ```
-Dashboard Blazor: métricas del día + pedidos en curso (SignalR)
+Dashboard MAUI: métricas del día + pedidos en curso (SignalR)
     → Usuarios: aprobar pendientes, activar desayuno 🍊, crear invitaciones QR
     → Productos: CRUD con imagen, ingredientes personalizables, ComponenteDesayuno
     → Reportes: exportar Excel (pedidos/usuarios/productos) o PDF
@@ -829,13 +475,13 @@ Dashboard Blazor: métricas del día + pedidos en curso (SignalR)
 ```
 Alumno     ──────────────────► POST /api/auth/registro/alumno
                                 Estado inicial: PendienteValidacion
-                                Admin aprueba desde MAUI o Blazor
+                                Admin aprueba desde la app MAUI
 
 Profe/     ── QR o enlace ───► POST /api/auth/registro/invitado
 Personal                        Token de invitación válido y no caducado
 
 Admin      ─────────────────►  Seeding inicial (DbSeeder.cs)
-                                Credenciales en Azure App Settings
+                                Credenciales en appsettings.Production.json
 ```
 
 </details>
@@ -876,10 +522,10 @@ dotnet test
 - .NET 9 SDK
 - SQL Server (Express, Developer o Docker):
   ```bash
-  docker run -e ACCEPT_EULA=Y -e SA_PASSWORD=Dev1234! -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+  docker run -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Dev1234! -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
   ```
 - Visual Studio 2022 17.8+ / JetBrains Rider / VS Code con extensión C#
-- Android SDK + MAUI Workload (solo para la app móvil): `dotnet workload install maui`
+- Android SDK + MAUI Workload (solo para la app móvil): `dotnet workload install maui-android`
 - Cuenta Stripe en modo test (gratuita)
 
 </details>
@@ -895,8 +541,8 @@ Crear `CafeIES.API/appsettings.Development.json` (no incluir en git):
   },
   "Jwt": {
     "Key": "clave-secreta-de-minimo-32-caracteres-aqui",
-    "Issuer": "CafeIES",
-    "Audience": "CafeIES"
+    "Issuer": "CafeIES.API",
+    "Audience": "CafeIES.App"
   },
   "Admin": {
     "Email": "admin@cafeies.local",
@@ -906,9 +552,6 @@ Crear `CafeIES.API/appsettings.Development.json` (no incluir en git):
     "SecretKey": "sk_test_...",
     "PublishableKey": "pk_test_...",
     "WebhookSecret": "whsec_..."
-  },
-  "BlobStorage": {
-    "UseAzure": false
   }
 }
 ```
@@ -921,26 +564,19 @@ dotnet run
 # Swagger UI en https://localhost:50658/swagger
 ```
 
-#### 2. Configurar el panel admin
+#### 2. Ejecutar la app MAUI (Android)
 
-```bash
-# Editar CafeIES.Admin/wwwroot/appsettings.json:
-# { "ApiBaseUrl": "https://localhost:50658" }
-
-cd CafeIES.Admin
-dotnet run
-# Panel disponible en https://localhost:50660
-```
-
-#### 3. Ejecutar la app MAUI (Android)
-
-La URL de la API se selecciona por compilación en `ApiService.cs`:
+La URL de la API se selecciona por directiva de compilación en `MauiProgram.cs`:
 
 ```csharp
+#if DEBUG
 #if ANDROID
-    private const string ApiBaseUrl = "https://10.0.2.2:50658"; // Emulador
+    var apiBase = "https://10.0.2.2:50658/";  // Emulador Android
 #else
-    private const string ApiBaseUrl = "https://localhost:50658"; // iOS / Windows
+    var apiBase = "https://localhost:50658/";   // iOS / Windows
+#endif
+#else
+    var apiBase = "http://proyectos2dam.duckdns.org:5000/";  // Producción
 #endif
 ```
 
@@ -952,7 +588,7 @@ Para recibir eventos del **webhook de Stripe** en local:
 stripe listen --forward-to https://localhost:50658/api/pagos/webhook
 ```
 
-#### 4. Credenciales de prueba
+#### 3. Credenciales de prueba
 
 | Rol | Email | Contraseña |
 |---|---|---|
@@ -972,43 +608,25 @@ CVC:       cualquier 3 dígitos
 ---
 
 <details>
-<summary><b>☁️ Despliegue en Azure</b></summary>
+<summary><b>🖥️ Despliegue en producción (Proxmox LXC)</b></summary>
 <br>
 
-#### Recursos en producción
+El sistema está desplegado en un contenedor LXC Debian 13 sobre Proxmox, accesible en `http://proyectos2dam.duckdns.org:5000`.
 
-| Recurso | Tipo | Región |
+#### Servicios en producción
+
+| Servicio | Tecnología | Puerto |
 |---|---|---|
-| `cafeies-api` | App Service (F1, Linux, .NET 9) | North Europe |
-| `cafeies-sql` | Azure SQL Database (Basic) | North Europe |
-| `cafeies-storage` | Storage Account (Blob, LRS) | North Europe |
-| `cafeies-admin` | Static Web App (Free) | Global (CDN) |
-
-#### Variables de entorno (Azure App Settings)
-
-```
-ConnectionStrings__DefaultConnection  = <cadena de conexión SQL>
-Jwt__Key                              = <clave secreta de producción, ≥ 32 chars>
-Jwt__Issuer                           = CafeIES
-Jwt__Audience                         = CafeIES
-Admin__Email                          = <email del administrador>
-Admin__Password                       = <contraseña segura>
-Stripe__SecretKey                     = sk_live_...
-Stripe__PublishableKey                = pk_live_...
-Stripe__WebhookSecret                 = whsec_...
-BlobStorage__UseAzure                 = true
-BlobStorage__ConnectionString         = <cadena Azure Storage>
-BlobStorage__ContainerName            = productos
-```
+| API REST | ASP.NET Core 9 (systemd) | 5000 |
+| Base de datos | SQL Server 2022 (Docker) | 1433 (interno) |
+| Imágenes | wwwroot/productos/ (disco local) | — |
 
 #### CI/CD — GitHub Actions
 
-Los tres workflows se disparan automáticamente al hacer push a `main` según los paths modificados:
+Los workflows se disparan automáticamente al hacer push a `main`:
 
 | Workflow | Paths que lo disparan | Destino | Tiempo aprox. |
 |---|---|---|---|
-| `deploy-api.yml` | `CafeIES.API/**`, `CafeIES.Shared/**` | Azure App Service | ~4 min |
-| `deploy-admin.yml` | `CafeIES.Admin/**`, `CafeIES.Shared/**` | Azure Static Web Apps | ~2 min |
 | `deploy-android.yml` | `CafeIES.MAUI/**`, `CafeIES.Shared/**` | GitHub Releases (APK) | ~3 min |
 
 El APK se versiona como `YYYY.MM.<run_number>` y se publica automáticamente como **latest release** en GitHub.
@@ -1045,7 +663,7 @@ CafeIES/
 │   └── Validation/
 │       └── PasswordComplexityAttribute.cs
 │
-├── CafeIES.API/                        ← Backend REST (puerto local 50658)
+├── CafeIES.API/                        ← Backend REST (puerto 5000 en producción)
 │   ├── Controllers/
 │   │   ├── AuthController.cs           Login, registro, refresh JWT, logout
 │   │   ├── ProductosController.cs      CRUD + imagen + ingredientes
@@ -1065,8 +683,8 @@ CafeIES/
 │   │   ├── DesayunoService.cs          Lógica del programa de desayuno gratuito
 │   │   ├── StripeService.cs            PaymentIntent, cancelación, firma de webhooks
 │   │   ├── FcmService.cs               FCM HTTP v1 con GoogleCredential cacheado
-│   │   ├── LocalBlobStorageService.cs  Almacenamiento local (dev) con validación path-traversal
-│   │   ├── AzureBlobStorageService.cs  Azure Blob Storage (prod)
+│   │   ├── LocalBlobStorageService.cs  Almacenamiento local en wwwroot/productos/
+│   │   ├── AzureBlobStorageService.cs  Azure Blob Storage (alternativa cloud)
 │   │   ├── ReporteExcelService.cs      Excel con ClosedXML
 │   │   └── ReportePdfService.cs        PDF con QuestPDF (límite 1.000 registros)
 │   ├── Extensions/
@@ -1091,27 +709,9 @@ CafeIES/
 │   └── Resources/Styles/
 │       └── AppStyles.xaml              Paleta dark & warm (ámbar/naranja), tipografía Syne+DMSans
 │
-├── CafeIES.Admin/                      ← Panel administración Blazor WASM
-│   ├── Pages/
-│   │   ├── Dashboard.razor             Métricas del día + pedidos en tiempo real (SignalR)
-│   │   ├── Pedidos.razor               Lista paginada + cambio de estado
-│   │   ├── Productos.razor             CRUD con imagen y badge ComponenteDesayuno
-│   │   ├── Usuarios.razor              Lista + toggle desayuno gratuito 🍊
-│   │   ├── Desayunos.razor             Beneficiarios y consumos del día
-│   │   ├── Institutos.razor            CRUD multi-instituto
-│   │   ├── Horarios.razor              Franjas horarias por instituto y turno
-│   │   ├── Invitaciones.razor          Crear invitaciones + QR descargable
-│   │   └── Reportes.razor              Exportar Excel/PDF
-│   ├── Services/
-│   │   └── AdminApiService.cs          HTTP client con refresh automático de token
-│   └── wwwroot/
-│       └── appsettings.json            URL base de la API (configurable sin recompilar)
-│
 ├── CafeIES.Tests/                      ← 115 tests unitarios (xUnit + EF InMemory)
 │
 └── .github/workflows/
-    ├── deploy-api.yml                  API → Azure App Service
-    ├── deploy-admin.yml                Admin → Azure Static Web Apps
     └── deploy-android.yml              MAUI → GitHub Releases (APK versionado)
 ```
 
@@ -1129,7 +729,7 @@ Se optó por una arquitectura de **Controller → Service → DbContext** direct
 
 #### Shared library para DTOs y entidades
 
-`CafeIES.Shared` es compilado por los cuatro proyectos. Esto garantiza que los DTOs que envía la API son exactamente los mismos que deserializa el cliente MAUI o Blazor, eliminando la posibilidad de desajustes de contratos. Las validaciones `DataAnnotations` se definen una vez y se aplican en todos los puntos de entrada.
+`CafeIES.Shared` es compilado por los tres proyectos. Esto garantiza que los DTOs que envía la API son exactamente los mismos que deserializa el cliente MAUI, eliminando la posibilidad de desajustes de contratos. Las validaciones `DataAnnotations` se definen una vez y se aplican en todos los puntos de entrada.
 
 #### Cálculo de precios siempre en el servidor
 
@@ -1154,6 +754,10 @@ Para impresoras térmicas con Ethernet (p. ej. AVPos TC300), se añadió un fluj
 #### BindableLayout en lugar de CollectionView anidado
 
 En `DetallePedidoPage`, los ingredientes de cada línea de pedido se renderizan con `BindableLayout.ItemsSource` en lugar de un `CollectionView` anidado. En Android, `RecyclerView` anidado dentro de otro `RecyclerView` no renderiza su contenido correctamente (el inner `CollectionView` queda vacío). `BindableLayout` es el workaround oficial de MAUI.
+
+#### Almacenamiento local de imágenes
+
+Las imágenes de productos se guardan en `wwwroot/productos/` y se sirven directamente desde la API en el puerto 5000. Si `AzureStorage:ConnectionString` está configurado, el sistema usa Azure Blob Storage automáticamente. Esto permite desplegar sin dependencias externas de pago.
 
 #### Transacciones por niveles de aislamiento
 
@@ -1186,6 +790,6 @@ Se usan tres niveles distintos según el caso de uso:
 
 <div align="center">
 
-Desarrollado con .NET 9 · MAUI · Blazor · EF Core · Stripe · Azure
+Desarrollado con .NET 9 · MAUI · EF Core · Stripe · Proxmox
 
 </div>

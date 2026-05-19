@@ -32,8 +32,13 @@
                         </FormattedString>
                     </Label.FormattedText>
                 </Label>
+
                 <Label Text="Pide sin esperas, paga sin efectivo"
-                       Style="{StaticResource SubtitleLabel}" Margin="0,0,0,48"/>
+                       Style="{StaticResource SubtitleLabel}" Margin="0,0,0,12"/>
+
+                <Label Text="¿Te interesa esta app? · jose.gonzalezh@protonmail.com"
+                       TextColor="{StaticResource AccentColor}" FontFamily="DMSans"
+                       FontSize="13" Margin="0,0,0,48"/>
 
                 <!-- Email -->
                 <Label Text="EMAIL" FontFamily="SyneBold" FontSize="11"
@@ -98,7 +103,7 @@
                         Command="{Binding IrARegistroCommand}"
                         SemanticProperties.Hint="Pulsa para crear una cuenta de alumno"/>
 
-                <!-- Botón invitación (profesor / personal / empleado cafetería) -->
+                <!-- Botón invitación -->
                 <Button Text="🔗 Tengo un código de invitación"
                         BackgroundColor="Transparent"
                         TextColor="{DynamicResource MutedColor}"
@@ -108,9 +113,6 @@
                         Margin="0,8,0,0"
                         SemanticProperties.Hint="Pulsa si tienes un código de invitación"/>
 
-                <Label Text="¿Te interesa esta app? · jose.gonzalezh@protonmail.com"
-                       TextColor="{DynamicResource MutedColor}" FontSize="12"
-                       HorizontalOptions="Center" Margin="0,12,0,0"/>
             </VerticalStackLayout>
 
         </Grid>
