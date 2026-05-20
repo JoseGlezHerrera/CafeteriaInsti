@@ -229,6 +229,7 @@ app.UseCors("AllowAdmin");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<CafeIES.API.Middleware.LicenciaMiddleware>();
 
 app.MapControllers();
 app.MapHub<CafeteriaHub>("/hubs/cafeteria");

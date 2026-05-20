@@ -26,6 +26,7 @@ public class Instituto
     public string CodigoCorto { get; set; } = string.Empty;
 
     public bool Activo { get; set; } = true;
+    public DateTime? FechaExpiracion { get; set; }
 
     // Navegación
     public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
@@ -258,6 +259,7 @@ public class Producto
     public string? ImagenUrl { get; set; }
 
     public bool Activo { get; set; } = true;
+    public DateTime? FechaExpiracion { get; set; }
 
     /// <summary>
     /// Indica si este producto forma parte del desayuno gratuito (zumo o bocata).
@@ -383,6 +385,7 @@ public class Ingrediente
     public int Stock { get; set; } = -1;
 
     public bool Activo { get; set; } = true;
+    public DateTime? FechaExpiracion { get; set; }
 
     // Navegación
     public ICollection<ProductoIngrediente>    ProductoIngredientes    { get; set; } = new List<ProductoIngrediente>();
